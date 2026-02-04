@@ -33,3 +33,55 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+
+
+// import 'package:flutter/material.dart';
+// import 'package:provider/provider.dart';
+
+// // استدعاء الـ HomeScreen
+// import 'features/homepage/presentation/home_screen.dart';
+
+// void main() {
+//   runApp(const MyApp());
+// }
+
+// class MyApp extends StatelessWidget {
+//   const MyApp({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       debugShowCheckedModeBanner: false,
+//       title: 'Test HomeScreen',
+//       theme: ThemeData(
+//         primarySwatch: Colors.blue,
+//       ),
+//       home: const HomeScreen(),
+//     );
+//   }
+// }
+
+
+// import 'package:flutter/material.dart';
+// import 'package:roadmaps/features/main_Screen.dart'; // هنا نستدعي MainScreen
+
+// void main() {
+//   runApp(const MyApp());
+// }
+
+// class MyApp extends StatelessWidget {
+//   const MyApp({super.key});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       debugShowCheckedModeBanner: false,
+//       title: 'MainScreen Test',
+//       theme: ThemeData(
+//         primarySwatch: Colors.blue,
+//       ),
+//       home: const MainScreen(), // أول شاشة بعد اللوجين
+//     );
+//   }
+// }

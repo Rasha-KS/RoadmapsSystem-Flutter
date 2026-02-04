@@ -1,7 +1,33 @@
-
 import 'package:flutter/material.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
+
+// CustomTextFormField - Reusable Text Input Widget
+//
+// This widget is a reusable wrapper around Flutter's TextFormField,
+// designed for consistent styling and behavior across the app's forms.
+//
+// Features:
+// - Right-to-left text alignment (TextAlign.right) for Arabic content.
+// - Optional controller for managing input text.
+// - Optional validator for form validation logic.
+// - Optional focus node for programmatic focus handling.
+// - Optional suffixIcon for toggling password visibility or other actions.
+// - Optional onTap callback to handle taps on the field.
+//
+// Styling:
+// - Padding is responsive, based on screen width.
+// - Rounded borders with 20px radius.
+// - Colors are pulled from AppColors for enabled, focused, and error states.
+// - Label styling uses AppTextStyles.body with text color from AppColors.
+//
+// Behavior:
+// - Supports obscured text for password fields via obscureText property.
+// - Floating label aligns to start and automatically floats when the field is focused or has content.
+// - RTL text direction is enforced for Arabic language support.
+//
+
+
 
 class CustomTextFormField extends StatelessWidget {
   final String label;
@@ -25,8 +51,10 @@ class CustomTextFormField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Padding(
-      padding: const EdgeInsets.all(8),
+      padding: EdgeInsets.all(screenWidth * 0.02),
       child: TextFormField(
         onTap: onTap,
         focusNode: fieldFocuse,
@@ -34,7 +62,6 @@ class CustomTextFormField extends StatelessWidget {
         obscureText: obscureText,
         textAlign: TextAlign.right,
         textDirection: TextDirection.rtl,
-       // autovalidateMode: AutovalidateMode.onUnfocus,
         validator: validator,
         decoration: InputDecoration(
           suffixIcon: suffixIcon,

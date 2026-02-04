@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:roadmaps/core/theme/app_colors.dart';
+import 'package:roadmaps/core/theme/app_text_styles.dart';
+import 'package:roadmaps/core/widgets/auth_custom_button.dart';
+import 'package:roadmaps/core/widgets/auth_custom_text_field.dart';
+import 'package:roadmaps/features/auth/presentation/forget_password_screen.dart';
+import 'package:roadmaps/features/auth/presentation/register_screen.dart';
+import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,195 +18,254 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _MyAppState extends State<LoginScreen> {
+  GlobalKey<FormState> formStateKey = GlobalKey();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final emailFocus = FocusNode();
+  final passwordFocus = FocusNode();
+  bool isPasswordHidden = true;
+  bool isPasswordHiddenVisibile = false;
+  @override
+  void dispose() {
+    super.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    emailFocus.dispose();
+    passwordFocus.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: SafeArea(
+    return GestureDetector(
+      onTap: () {
+        isPasswordHiddenVisibile = false;
+        FocusScope.of(context).unfocus();
+      },
+      child: SafeArea(
         child: Scaffold(
-          appBar: AppBar(  
-          backgroundColor: Color.fromRGBO(238, 241, 243, 1),
-          actions:[
-           IconButton(
-            iconSize: 35,
-            splashRadius: 35,
-            padding: EdgeInsets.all(30),
-            onPressed: (){
-           Navigator.of(context).pop();
-          }, 
-          icon: Icon(Icons.arrow_right_alt_rounded,size: 35,color: Color.fromRGBO(12, 32, 49, 1),)
-          ,)
-          ,]
-           ),
-          backgroundColor: Color.fromRGBO(238, 241, 243, 1),
-          body: Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 100, 20, 50),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(50),
-                      child: Text(
-                        "تسجيل دخول",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 24,
-                          color: Color.fromRGBO(45, 49, 96, 1),
-                          fontWeight: FontWeight.bold,
-                        ),
+          appBar: AppBar(
+            actionsPadding: EdgeInsets.all(8),
+            automaticallyImplyLeading: false,
+            backgroundColor: AppColors.background,
+            actions: [
+              IconButton(
+                alignment: Alignment.center,
+                onPressed: () {
+                  clearFieldsAndFocusLogin();
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SplashScreen(),
+                    ),
+                  );
+                },
+                icon: Icon(
+                  Icons.arrow_right_alt_rounded,
+                  size: 35,
+                  color: AppColors.text_3,
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.background,
+          body: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 100, 20, 50),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(30),
+                    child: Text(
+                      "تسجيل دخول",
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.heading3.copyWith(
+                        color: AppColors.primary,
                       ),
                     ),
-                
-                    Column(
+                  ),
+
+                  Form(
+                    key: formStateKey,
+                    child: Column(
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: TextField(
-                            textAlign: TextAlign.right,
-                            decoration: InputDecoration(
-                              hintText: "البريد الالكتروني",
-                              border: OutlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: Color.fromRGBO(184, 198, 209, 1),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide(
-                                  color: Color.fromRGBO(184, 198, 209, 1),
-                                ),
-                              ),
-                              disabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide(
-                                  color: Color.fromRGBO(248, 154, 100, 1),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide(
-                                  color: Color.fromRGBO(248, 154, 100, 1),
-                                ),
-                              ),
+                        Directionality(
+                          textDirection: TextDirection.rtl,
+                          child: Padding(
+                            padding: const EdgeInsets.all(5),
+                            child: CustomTextFormField(
+                              onTap: () {
+                                setState(() {
+                                  isPasswordHiddenVisibile = false;
+                                });
+                              },
+                              fieldFocuse: emailFocus,
+                              label: "البريد الالكتروني",
+                              controller: emailController,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'الرجاء إدخال البريد الإلكتروني';
+                                }
+                                if (!value.contains('@')) {
+                                  return 'البريد الإلكتروني غير صحيح';
+                                }
+                                return null;
+                              },
                             ),
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(10, 10, 10, 1),
-                          child: TextField(
-                            textAlign: TextAlign.right,
-                            decoration: InputDecoration(
-                              hintText: "كلمة المرور",
-                              border: OutlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: Color.fromRGBO(184, 198, 209, 1),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide(
-                                  color: Color.fromRGBO(184, 198, 209, 1),
-                                ),
-                              ),
-                              disabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide(
-                                  color: Color.fromRGBO(248, 154, 100, 1),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide(
-                                  color: Color.fromRGBO(248, 154, 100, 1),
-                                ),
-                              ),
+                        Directionality(
+                          textDirection: TextDirection.rtl,
+                          child: Padding(
+                            padding: const EdgeInsets.all(5),
+                            child: CustomTextFormField(
+                              onTap: () {
+                                setState(() {
+                                  isPasswordHiddenVisibile = true;
+                                });
+                              },
+                              fieldFocuse: passwordFocus,
+                              label: "كلمة المرور",
+                              controller: passwordController,
+                              obscureText: isPasswordHidden ? true : false,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'الرجاء إدخال كلمة المرور';
+                                }
+                                return null;
+                              },
+                              suffixIcon: isPasswordHiddenVisibile
+                                  ? IconButton(
+                                      padding: const EdgeInsets.all(10),
+                                      icon: Icon(
+                                        isPasswordHidden
+                                            ? Icons.visibility_off_outlined
+                                            : Icons.visibility_outlined,
+                                        color: AppColors.primary1,
+                                        size: 22,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          isPasswordHidden = !isPasswordHidden;
+                                        });
+                                      },
+                                    )
+                                  : null,
                             ),
                           ),
                         ),
                         Align(
-                          alignment: AlignmentGeometry.centerRight,
+                          alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              clearFieldsAndFocusLogin();
+                              FocusManager.instance.primaryFocus?.unfocus();
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const ForgetPasswordScreen(),
+                                ),
+                              );
+                            },
                             child: Text(
                               "هل نسيت كلمة المرور؟",
-                              style: TextStyle(
-                                color: Color.fromRGBO(201, 110, 58, 1),
+                              style: AppTextStyles.smallText.copyWith(
+                                color: AppColors.text_4,
                               ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                
-                    Padding(
-                         padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                      child: MaterialButton(
-                        onPressed: () {},
-                        height: 45,
-                        minWidth: 187,
-                        color: Color.fromRGBO(254, 202, 172, 1),
-                        disabledColor: Color.fromRGBO(134, 204, 255, 0.2),
-                        shape: RoundedRectangleBorder(
-                          side: BorderSide(
-                            color: Color.fromRGBO(248, 154, 100, 1),
-                          ),
-                          borderRadius: BorderRadius.circular(20),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: CustomButton(
+                      text: "تسجيل",
+                      fontsize: 17,
+                      onPressed: () {
+                        if (formStateKey.currentState?.validate() ?? false) {
+                          // Proceed with login logic here
+                          FocusScope.of(context).unfocus();
+                          clearFieldsAndFocusLogin();
+                        }
+                      },
+                      height: 45,
+                      width: 187,
+                    ),
+                  ),
+
+                  /// إنشاء حساب جديد
+                  TextButton(
+                    onPressed: () {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      clearFieldsAndFocusLogin();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RegisterScreen(),
                         ),
+                      );
+                    },
+                    child: Text(
+                      "إنشاء حساب جديد",
+                      style: AppTextStyles.smallText.copyWith(
+                        fontSize: 17,
+                        color: AppColors.text_4,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  /// أو تسجيل دخول بـ
+                  Row(
+                    children: [
+                      Expanded(child: Divider()),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
-                          "تسجيل",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color.fromRGBO(34, 51, 66, 1),
+                          "او تسجيل دخول بـ",
+                          style: AppTextStyles.smallText.copyWith(
+                            color: AppColors.text_1,
                           ),
                         ),
                       ),
-                    ),
-                
-                    /// إنشاء حساب جديد
-                    TextButton(
-                      onPressed: () {},
-                      child: const Text(
-                        "إنشاء حساب جديد",
-                        style: TextStyle(
-                          color: Color.fromRGBO(248, 154, 100, 1),
-                          fontSize: 14,
-                        ),
+                      Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 25),
+                  Column(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          FocusManager.instance.primaryFocus?.unfocus();
+                          clearFieldsAndFocusLogin();
+                        },
+                        icon: Icon(Icons.g_mobiledata, size: 50),
                       ),
-                    ),
-                
-                    const SizedBox(height: 15),
-                
-                    /// أو تسجيل دخول بـ
-                    Row(
-                      children: const [
-                        Expanded(child: Divider()),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text("او تسجيل دخول بـ"),
-                        ),
-                        Expanded(child: Divider()),
-                      ],
-                    ),
-                 const SizedBox(height: 25),
-                    Column(
-                      children: [
-                        IconButton(
-                          onPressed: () {},
-                          icon: Icon(Icons.g_mobiledata, size: 50),
-                        ),
-                        Text("Google",style: TextStyle(
-                           color: Color.fromRGBO(45, 49, 96, 1),
-                        ),),
-                      ],
-                    ),
-                  ],
-                ),
+                      Text(
+                        "Google",
+                        style: TextStyle(color: AppColors.primary1),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  void clearFieldsAndFocusLogin() {
+    emailController.clear();
+    passwordController.clear();
+    isPasswordHiddenVisibile = false;
+    emailFocus.unfocus();
+    passwordFocus.unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 }

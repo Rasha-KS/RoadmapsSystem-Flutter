@@ -74,8 +74,10 @@ class _SplashScreenState extends State<SplashScreen> {
                 Column(
                   children: [
                     CustomButton(
-                      height: screenHeight * 0.07,
-                      width: screenWidth * 0.6,
+                      width:241,
+                      height:50,
+                      // height: screenHeight * 0.07,
+                      // width: screenWidth * 0.6,
                       text: "تسجيل دخول",
                       fontsize: 20, 
                       onPressed: () {
@@ -89,8 +91,10 @@ class _SplashScreenState extends State<SplashScreen> {
                     ),
                     SizedBox(height: screenHeight * 0.05),
                     CustomButton(
-                      height: screenHeight * 0.07,
-                      width: screenWidth * 0.6,
+                      width:241,
+                      height:50,
+                      // height: screenHeight * 0.07,
+                      // width: screenWidth * 0.6,
                       text: "إنشاء حساب",
                       fontsize: 20, 
                       onPressed: () {

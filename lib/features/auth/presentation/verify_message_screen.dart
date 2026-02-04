@@ -128,9 +128,11 @@ class VerifyMessageScreen extends StatelessWidget {
                     Padding(
                       padding: EdgeInsets.all(screenWidth * 0.05),
                       child: CustomButton(
+                        height: 45,
+                        width: 187,
                         onPressed: () {},
-                        height: screenHeight * 0.07,
-                        width: screenWidth * 0.6,
+                        // height: screenHeight * 0.07,
+                        // width: screenWidth * 0.6,
                         text: "متابعة",
                         fontsize: 17,
                       ),

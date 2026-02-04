@@ -13,7 +13,7 @@ import 'package:roadmaps/core/theme/app_colors.dart';
 ///
 /// Returns:
 /// - An [AppBar] widget with left and right aligned action buttons.
-/// 
+///
 /// Notes on required vs optional callbacks:
 /// - [onNotificationsTap] is marked as required because the notifications
 ///   action is considered a core feature of the AppBar and is expected
@@ -27,21 +27,18 @@ AppBar buildAppBar({
   VoidCallback? onSettingsTap,
   required BuildContext context,
 }) {
-
-     final screenWidth = MediaQuery.of(context).size.width;
-     final screenHeight = MediaQuery.of(context).size.height;
-     final double iconSize = ((screenWidth + screenHeight) / 2) * 0.05;
-     final double rightPadding = screenWidth * 0.03;
-
+  final screenWidth = MediaQuery.of(context).size.width;
+  final screenHeight = MediaQuery.of(context).size.height;
+  final double iconSize = ((screenWidth + screenHeight) / 2) * 0.04;
+  final double rightPadding = screenWidth * 0.03;
 
   return AppBar(
     // Left side: Notifications
     leading: IconButton(
-      icon:  Icon(
-        Icons.notifications_none_outlined, 
+      icon: Icon(
+        Icons.notifications_none_outlined,
         color: AppColors.primary,
         size: iconSize,
-
       ),
       onPressed: onNotificationsTap,
     ),
@@ -49,17 +46,17 @@ AppBar buildAppBar({
     // Right side: Settings (outline)
     actions: [
       if (onSettingsTap != null)
-      Padding(
-          padding: EdgeInsets.only(right: rightPadding , top:1),
+        Padding(
+          padding: EdgeInsets.only(right: rightPadding, top: 1),
           child: IconButton(
-          icon:  Icon(
-          Icons.settings_outlined, 
-          color: AppColors.primary,
-          size: iconSize,
+            icon: Icon(
+              Icons.settings_outlined,
+              color: AppColors.primary,
+              size: iconSize,
+            ),
+            onPressed: onSettingsTap,
+          ),
         ),
-        onPressed: onSettingsTap,
-      ),
-     ),
     ],
   );
 }

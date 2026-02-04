@@ -279,14 +279,16 @@ class _MyAppState extends State<RegisterScreen> {
 
                     // Buttons
                     CustomButton(
+                        height: 45,
+                        width: 187,
                       onPressed: () {
                         if (formStateKey.currentState?.validate() ?? false) {
                           FocusScope.of(context).unfocus();
                           clearFieldsAndFocusSignUp();
                         }
                       },
-                      height: screenHeight * 0.07,
-                      width: screenWidth * 0.6,
+                  //    height: screenHeight * 0.07,
+                  //    width: screenWidth * 0.6,
                       text: "إنشاء حساب",
                       fontsize: 17, // الخط ثابت
                     ),

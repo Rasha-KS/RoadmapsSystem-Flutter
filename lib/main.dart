@@ -15,24 +15,24 @@
 بسم الله الرحمن الرحيم
  */
 
-import 'package:flutter/material.dart';
-import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
+// import 'package:flutter/material.dart';
+// import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+// void main() {
+//   runApp(const MyApp());
+// }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+// class MyApp extends StatelessWidget {
+//   const MyApp({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       debugShowCheckedModeBanner: false,
+//       home: const SplashScreen(),
+//     );
+//   }
+// }
 
 
 
@@ -63,25 +63,25 @@ class MyApp extends StatelessWidget {
 // }
 
 
-// import 'package:flutter/material.dart';
-// import 'package:roadmaps/features/main_Screen.dart'; // هنا نستدعي MainScreen
+import 'package:flutter/material.dart';
+import 'package:roadmaps/features/main_Screen.dart'; // هنا نستدعي MainScreen
 
-// void main() {
-//   runApp(const MyApp());
-// }
+void main() {
+  runApp(const MyApp());
+}
 
-// class MyApp extends StatelessWidget {
-//   const MyApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       debugShowCheckedModeBanner: false,
-//       title: 'MainScreen Test',
-//       theme: ThemeData(
-//         primarySwatch: Colors.blue,
-//       ),
-//       home: const MainScreen(), // أول شاشة بعد اللوجين
-//     );
-//   }
-// }
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'MainScreen Test',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const MainScreen(), // أول شاشة بعد اللوجين
+    );
+  }
+}

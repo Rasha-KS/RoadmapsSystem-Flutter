@@ -146,6 +146,8 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
 
                     // متابعة button
                     CustomButton(
+                      height: 45,
+                        width: 187,
                       onPressed: () {
                         if (formStateKey.currentState?.validate() ?? false) {
                           FocusScope.of(context).unfocus();
@@ -161,8 +163,8 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                           clearFieldsAndFocusForget();
                         }
                       },
-                      height: screenHeight * 0.07,
-                      width: screenWidth * 0.6,
+                      // height: screenHeight * 0.07,
+                      // width: screenWidth * 0.6,
                       text: "متابعة",
                       fontsize: 17,
                     ),

@@ -75,14 +75,13 @@ Widget buildAppBottomNav({
                       children: [
                         Icon(
                           item['icon'] as IconData,
-                          size: 26,
+                          size:28,
                           color: AppColors.primary,
                         ),
                         const SizedBox(height: 2),
                         Text(
                           item['label'] as String,
-                          style: AppTextStyles.smallText.copyWith(
-                            fontSize: 10,
+                          style: AppTextStyles.textNav.copyWith(
                             color: AppColors.primary,
                           ),
                           maxLines: 1,

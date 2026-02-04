@@ -45,4 +45,8 @@ class AppTextStyles {
     fontFamily: 'Tajawal_M',
     fontSize: 14,
   );
+  static const TextStyle textNav = TextStyle(
+    fontFamily: 'Tajawal_R',
+    fontSize: 14,
+  );
 }

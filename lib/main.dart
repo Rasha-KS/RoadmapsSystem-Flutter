@@ -64,6 +64,7 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:roadmaps/features/auth/presentation/confirm_new_password_screen.dart';
 import 'package:roadmaps/features/main_Screen.dart'; // هنا نستدعي MainScreen
 
 void main() {
@@ -81,7 +82,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MainScreen(), // أول شاشة بعد اللوجين
+      home: const ConfirmNewPasswordScreen(), // أول شاشة بعد اللوجين
     );
   }
 }

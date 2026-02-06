@@ -6,6 +6,7 @@ class HomeCourseModel extends HomeCourseEntity {
     required super.title,
     required super.level,
     required super.description,
+    super.status
   });
 
   factory HomeCourseModel.fromJson(Map<String, dynamic> json) {
@@ -14,6 +15,7 @@ class HomeCourseModel extends HomeCourseEntity {
       title: json['title'],
       level: json['level'],
       description: json['description'],
+      status: json['status']
     );
   }
 }

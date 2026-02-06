@@ -1,15 +1,13 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+// التنسيقات والألوان
+import 'package:roadmaps/core/theme/app_text_styles.dart';
+import 'package:roadmaps/core/theme/app_colors.dart';
+import 'package:roadmaps/core/widgets/lesson_card_1.dart';
+import 'package:roadmaps/core/widgets/lesson_card_2.dart';
 
-import '../../../core/theme/app_colors.dart';
-
-// home
-import '../data/home_repository.dart';
-import '../domain/get_home_data_usecase.dart';
+// Providers
 import 'home_provider.dart';
-
-// announcements
-import '../../announcements/data/announcements_repository.dart';
 import '../../announcements/presentation/announcements_provider.dart';
 import '../../announcements/presentation/announcement_widget.dart';
 
@@ -18,87 +16,189 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        // 🏠 Home
-        ChangeNotifierProvider(
-          create: (_) => HomeProvider(
-            GetHomeDataUseCase(
-              HomeRepository(),
-            ),
-          )..loadHome(),
-        ),
-
-        // 🔔 Announcements
-        ChangeNotifierProvider(
-          create: (_) => AnnouncementsProvider(
-            AnnouncementsRepository(),
-          )..loadAnnouncement(),
-        ),
-      ],
-      child: const _HomeView(),
-    );
-  }
-}
-
-
-class _HomeView extends StatefulWidget {
-  const _HomeView();
-
-  @override
-  State<_HomeView> createState() => _HomeViewState();
-}
-
-class _HomeViewState extends State<_HomeView> {
-  int navIndex = 2;
-
-  @override
-  Widget build(BuildContext context) {
     final homeProvider = context.watch<HomeProvider>();
+    final size = MediaQuery.of(context).size;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: homeProvider.loading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              children: [
-                const AnnouncementWidget(),
+    if (homeProvider.state == HomeState.loading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary2),
+      );
+    }
 
-                _sectionTitle('كورسات مقترحة'),
-                _coursesList(homeProvider.recommended),
-
-                _sectionTitle('كورساتي'),
-                _coursesList(homeProvider.myCourses),
-              ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        await homeProvider.loadHome();
+        await context.read<AnnouncementsProvider>().loadAnnouncements();
+      },
+      color: AppColors.primary2,
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          children: [
+            const AnnouncementWidget(),
+            const SizedBox(height: 12),
+            Divider(color: AppColors.secondary2, thickness: 1, height: 2),
+            const SizedBox(height: 12),
+            _sectionHeader(
+              "المسارات المقترحة",
+              context,
+              onButtonPressed: () => print("ضغطت على عرض المزيد"),
             ),
-    );
-  }
+            const SizedBox(height: 3),
+            // تمرير العرض هنا لضمان تناسق الكاردات
+            _buildRecommendedSection(homeProvider.recommended),
 
-  Widget _sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
+            const SizedBox(height: 12),
+            Divider(color: AppColors.secondary2, thickness: 1, height: 2),
+            const SizedBox(height: 12),
+
+           
+
+            homeProvider.myCourses.isEmpty
+                ? _buildEmptyState(size)
+                : _sectionHeader("مساراتي", context),
+            const SizedBox(height: 3), _buildMyCoursesList(homeProvider.myCourses),
+            const SizedBox(height: 50),
+          ],
         ),
       ),
     );
   }
 
-  Widget _coursesList(List courses) {
-    return Column(
-      children: courses.map((c) {
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: ListTile(
-            title: Text(c.title),
-            subtitle: Text(c.description),
-            trailing: const Icon(Icons.arrow_back),
+  Widget _sectionHeader(
+    String title,
+    BuildContext context, {
+    VoidCallback? onButtonPressed,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    final buttonHorizontalPadding = screenWidth * 0.04;
+    final buttonVerticalPadding = screenHeight * 0.003;
+    final buttonFontSize = screenHeight * 0.016;
+    final titleFontSize = screenHeight * 0.03;
+    final spaceBetween = screenWidth * 0.10;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.05,
+        vertical: screenHeight * 0.01,
+      ),
+      child: Row(
+        children: [
+          if (onButtonPressed != null)
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: TextButton(
+                onPressed: onButtonPressed,
+                style: TextButton.styleFrom(
+                  backgroundColor: AppColors.accent_1,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: buttonHorizontalPadding,
+                    vertical: buttonVerticalPadding,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(17),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  "عرض الكل",
+                  style: AppTextStyles.boldSmallText.copyWith(
+                    color: AppColors.text_4,
+                    fontSize: buttonFontSize,
+                  ),
+                ),
+              ),
+            ),
+          if (onButtonPressed != null) SizedBox(width: spaceBetween),
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                title,
+                textAlign: TextAlign.right,
+                style: AppTextStyles.boldHeading5.copyWith(
+                  color: AppColors.text_3,
+                  fontSize: titleFontSize,
+                ),
+              ),
+            ),
           ),
-        );
-      }).toList(),
+        ],
+      ),
     );
+  }
+
+  Widget _buildRecommendedSection(List courses) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      reverse: true,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Row(
+        children: [
+          for (final course in courses)
+            LessonCard2(course: course, widthMultiplier: 0.75),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMyCoursesList(List courses) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      reverse: true,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Row(
+        children: [
+          for (final course in courses)
+            LessonCard1(
+              course: course,
+              widthMultiplier: 0.85,
+              onDelete: () => print("حذف من القائمة الرئيسية"),
+              onRefresh: () => print("تحديث القائمة الرئيسية"),
+              onTap: () => print("فتح المسار"),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(Size size) {
+    return Padding(padding: EdgeInsets.all(15),
+    child: Column(
+      children: [
+        Icon(
+          Icons.polyline_rounded,
+          size: size.width * 0.2,
+          color: AppColors.text_1,
+        ),
+        RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            text: "هل انت مستعد لأن تسلك ",
+            style: AppTextStyles.heading4.copyWith(
+              color: AppColors.text_1
+              
+            ),
+            children: [
+              TextSpan(
+                text: "مسارك",
+                style:AppTextStyles.heading4.copyWith(
+                  color:AppColors.primary2, // البرتقالي
+                )
+              ),
+              TextSpan(
+                text: " الاول؟",
+                style: AppTextStyles.heading4.copyWith(
+                  color:AppColors.text_1
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),) ;
   }
 }

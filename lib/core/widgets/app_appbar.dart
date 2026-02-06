@@ -33,6 +33,7 @@ AppBar buildAppBar({
   final double rightPadding = screenWidth * 0.03;
 
   return AppBar(
+    backgroundColor: AppColors.background,
     // Left side: Notifications
     leading: IconButton(
       icon: Icon(

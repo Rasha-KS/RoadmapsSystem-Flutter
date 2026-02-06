@@ -62,13 +62,30 @@
 //   }
 // }
 
-
 import 'package:flutter/material.dart';
-import 'package:roadmaps/features/auth/presentation/confirm_new_password_screen.dart';
-import 'package:roadmaps/features/main_Screen.dart'; // هنا نستدعي MainScreen
+import 'package:provider/provider.dart';
+import 'package:roadmaps/core/theme/app_colors.dart';
+import 'package:roadmaps/features/main_Screen.dart';
+import 'package:roadmaps/injection.dart'; // هنا نستدعي MainScreen
 
 void main() {
-  runApp(const MyApp());
+  // لضمان استقرار التطبيق عند البدء
+  WidgetsFlutterBinding.ensureInitialized();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        // نقوم بإنشاء الـ Provider فقط بدون استدعاء دوال التحميل
+        ChangeNotifierProvider(
+          create: (_) => Injection.provideHomeProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => Injection.provideAnnouncementsProvider(),
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -78,11 +95,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'MainScreen Test',
+      title: 'Roadmaps App',
       theme: ThemeData(
+        // يمكنك تخصيص الألوان والخطوط هنا لتكون متناسقة مع AppColors و AppTextStyles
         primarySwatch: Colors.blue,
+        fontFamily: 'Tajawal_R', 
+        scaffoldBackgroundColor: AppColors.background// مثال للون الخلفية
       ),
-      home: const ConfirmNewPasswordScreen(), // أول شاشة بعد اللوجين
+      home: const MainScreen(), // أول شاشة بعد اللوجين
     );
   }
 }

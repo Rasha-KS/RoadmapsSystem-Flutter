@@ -35,7 +35,7 @@ Widget buildAppBottomNav({
 
       return Container(
         height: navHeight,
-        padding: const EdgeInsets.symmetric(vertical: 2), // Vertical spacing from top and bottom
+        padding: const EdgeInsets.symmetric(vertical: 5,horizontal: 4), // Vertical spacing from top and bottom
         decoration: BoxDecoration(
           color: AppColors.background,
           borderRadius: const BorderRadius.vertical(
@@ -64,7 +64,7 @@ Widget buildAppBottomNav({
                     child: AnimatedContainer(
                   duration: const Duration(milliseconds: 100),  // Smooth transition for background
                   curve: Curves.easeInOut,
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal:6, vertical:4),
                   decoration: BoxDecoration(
                     color: isSelected ? AppColors.accent_1 : Colors.transparent,
                     borderRadius: BorderRadius.circular(14),
@@ -75,7 +75,7 @@ Widget buildAppBottomNav({
                       children: [
                         Icon(
                           item['icon'] as IconData,
-                          size:28,
+                          size:27,
                           color: AppColors.primary,
                         ),
                         const SizedBox(height: 2),

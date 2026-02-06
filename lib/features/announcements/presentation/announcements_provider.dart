@@ -1,43 +1,25 @@
-import 'dart:async';
+// features/announcements/presentation/announcements_provider.dart
 import 'package:flutter/material.dart';
-import '../data/announcements_repository.dart';
 import '../domain/announcement_entity.dart';
+import '../domain/get_active_announcements_usecase.dart';
 
 class AnnouncementsProvider extends ChangeNotifier {
-  final AnnouncementsRepository repository;
+  final GetActiveAnnouncementsUseCase useCase;
+  AnnouncementsProvider(this.useCase);
 
-  AnnouncementsProvider(this.repository);
+  List<AnnouncementEntity> _announcements = [];
+  List<AnnouncementEntity> get announcements => _announcements;
 
-  AnnouncementEntity? current;
-  Timer? _timer;
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
 
-  Future<void> loadAnnouncement() async {
-    final list = await repository.getActiveAnnouncements();
-    final now = DateTime.now();
-
-    final active = list.where((a) =>
-        a.isActive &&
-        a.startsAt.isBefore(now) &&
-        a.endsAt.isAfter(now));
-
-    if (active.isEmpty) return;
-
-    current = active.first;
+  Future<void> loadAnnouncements() async {
+    _isLoading = true;
     notifyListeners();
 
-    _timer?.cancel();
-    _timer = Timer(
-      current!.endsAt.difference(now),
-      () {
-        current = null;
-        notifyListeners();
-      },
-    );
-  }
+    _announcements = await useCase.execute();
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+    _isLoading = false;
+    notifyListeners();
   }
 }

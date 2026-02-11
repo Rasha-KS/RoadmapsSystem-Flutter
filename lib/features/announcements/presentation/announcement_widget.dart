@@ -52,26 +52,37 @@ class _AnnouncementWidgetState extends State<AnnouncementWidget> {
     super.dispose();
   }
 
-  Future<void> _openLink(String? link) async {
-    if (link == null) return;
-    final uri = Uri.parse(link);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+ Future<void> _openLink(String? link) async {
+
+  if (link == null || link.trim().isEmpty) return;
+
+  final uri = Uri.tryParse(link);
+  if (uri == null) return;
+
+  final canLaunch = await canLaunchUrl(uri);
+  if (!canLaunch) {
+    debugPrint('Cannot launch: $link');
+    return;
   }
+
+  await launchUrl(
+    uri,
+    mode: LaunchMode.externalApplication,
+  );
+}
 
   @override
   Widget build(BuildContext context) {
     final announcements = context.watch<AnnouncementsProvider>().announcements;
 
     if (announcements.isEmpty) {
-      return SizedBox(height: 100, child: _buildMotivationCard());
+      return SizedBox(height: 120, child: _buildMotivationCard());
     }
 
     return Column(
       children: [
         SizedBox(
-          height: 100,
+          height: 120,
           child: PageView.builder(
             controller: _pageController,
             reverse: true, // من اليمين لليسار
@@ -117,11 +128,12 @@ class _AnnouncementWidgetState extends State<AnnouncementWidget> {
   Widget _buildAnnouncementCard(AnnouncementEntity item) {
     final screenWidth = MediaQuery.of(context).size.width;
 
+
     return Center(
       child: Container(
-        width: screenWidth * 0.85, // أصغر قليلًا
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        width: screenWidth * 0.75,
+        margin: const EdgeInsets.symmetric(vertical:5),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.secondary2,
           borderRadius: BorderRadius.circular(22),
@@ -137,7 +149,7 @@ class _AnnouncementWidgetState extends State<AnnouncementWidget> {
         child: Row(
           children: [
             if (item.link != null)
-              _ArrowButton(onTap: () => _openLink(item.link)),
+             Padding(padding: EdgeInsets.only(top: 25) ,child:_ArrowButton(onTap: () => _openLink(item.link)),),
             if (item.link != null) const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -155,11 +167,11 @@ class _AnnouncementWidgetState extends State<AnnouncementWidget> {
                       textAlign: TextAlign.right,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
-                      vertical: 2,
+                      vertical:3,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -173,7 +185,7 @@ class _AnnouncementWidgetState extends State<AnnouncementWidget> {
                         style: AppTextStyles.boldSmallText.copyWith(
                           color: AppColors.text_4,
                         ),
-                        maxLines: 2,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.right,
                       ),
@@ -182,6 +194,7 @@ class _AnnouncementWidgetState extends State<AnnouncementWidget> {
                 ],
               ),
             ),
+            
           ],
         ),
       ),
@@ -196,12 +209,23 @@ class _AnnouncementWidgetState extends State<AnnouncementWidget> {
 
     return Center(
       child: Container(
-        width: screenWidth * 0.85,
+        width: screenWidth * 0.75,
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.secondary2,
+          gradient: LinearGradient(
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+            colors: [
+              AppColors.secondary2,
+              AppColors.secondary2.withValues(alpha: 0.85),
+            ],
+          ),
           borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: AppColors.primary2.withValues(alpha: 0.25),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
               color: AppColors.primary1.withValues(alpha:0.7),
@@ -211,20 +235,42 @@ class _AnnouncementWidgetState extends State<AnnouncementWidget> {
             ),
           ],
         ),
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              '!ابدأ اليوم، مستقبلك البرمجي ينتظرك',
-              style: AppTextStyles.boldHeading5.copyWith(
-                color: AppColors.text_3,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary1.withValues(alpha: 0.25),
+                    offset: const Offset(0, 2),
+                    blurRadius: 4,
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
+              child: Icon(
+                Icons.rocket_launch_rounded,
+                size: 22,
+                color: AppColors.primary2,
+              ),
+            ),            const SizedBox(width: 8),
+            Expanded(
+              child: Directionality(textDirection: TextDirection.rtl, child: Text(
+                'مشوار الألف ميل يبدأ بخطوة والخطوة تصنع مستقبلا !',
+                style: AppTextStyles.boldHeading5.copyWith(
+                  color: AppColors.text_1,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
+              ),)
             ),
-          ),
+          ],
         ),
-      ),
-    );
+    ),);
   }
 }
 
@@ -287,7 +333,7 @@ class _ArrowButtonState extends State<_ArrowButton> {
             ),
             child: Icon(
               Icons.arrow_back,
-              size: 18,
+              size: 21,
               color: _isHovered ? Colors.black87 : Colors.black,
             ),
           ),

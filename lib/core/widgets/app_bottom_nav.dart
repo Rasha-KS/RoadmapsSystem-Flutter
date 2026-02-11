@@ -75,7 +75,7 @@ Widget buildAppBottomNav({
                       children: [
                         Icon(
                           item['icon'] as IconData,
-                          size:27,
+                          size:29,
                           color: AppColors.primary,
                         ),
                         const SizedBox(height: 2),

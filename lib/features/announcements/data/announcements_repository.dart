@@ -12,7 +12,7 @@ class AnnouncementsRepository {
       startsAt: DateTime(2026, 2, 1),
       endsAt: DateTime(2026, 2, 15),
       isActive: true,
-      link: 'https://example.com/tech-day',
+      link: 'https://google.com',
     ),
 
     AnnouncementEntity(
@@ -22,7 +22,7 @@ class AnnouncementsRepository {
       startsAt: DateTime(2026, 1, 1),
       endsAt: DateTime(2026, 3, 20),
       isActive: true,
-      link: 'https://example.com/flutter-course',
+      link: 'https://google.com',
     ),
 
     AnnouncementEntity(
@@ -32,7 +32,7 @@ class AnnouncementsRepository {
       startsAt: DateTime(2026, 2, 1),
       endsAt: DateTime(2026, 2, 25),
       isActive: true,
-      link: 'https://example.com/discount',
+      link: 'https://google.com',
     ),
 
     AnnouncementEntity(
@@ -42,7 +42,7 @@ class AnnouncementsRepository {
       startsAt: DateTime(2026, 2, 1),
       endsAt: DateTime(2026, 2, 12),
       isActive: true,
-      link: 'https://example.com/platform-update',
+      link: 'https://google.com',
     ),
     ];
   }

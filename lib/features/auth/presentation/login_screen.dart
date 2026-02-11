@@ -6,6 +6,7 @@ import 'package:roadmaps/core/widgets/auth_custom_text_field.dart';
 import 'package:roadmaps/features/auth/presentation/forget_password_screen.dart';
 import 'package:roadmaps/features/auth/presentation/register_screen.dart';
 import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
+import 'package:roadmaps/features/main_Screen.dart';
 
 // LoginScreen - User Login Page
 //
@@ -36,7 +37,6 @@ import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
 // - FocusNode manages input focus, allowing dismissal of keyboard on tap outside.
 // - dispose() is used to free resources when the screen is destroyed.
 //
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -112,7 +112,9 @@ class _MyAppState extends State<LoginScreen> {
                     Text(
                       "تسجيل دخول",
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.heading3.copyWith(color: AppColors.primary),
+                      style: AppTextStyles.heading3.copyWith(
+                        color: AppColors.primary,
+                      ),
                     ),
                     SizedBox(height: screenHeight * 0.03),
 
@@ -168,7 +170,9 @@ class _MyAppState extends State<LoginScreen> {
                                 },
                                 suffixIcon: isPasswordHiddenVisibile
                                     ? IconButton(
-                                        padding: EdgeInsets.all(screenWidth * 0.02),
+                                        padding: EdgeInsets.all(
+                                          screenWidth * 0.02,
+                                        ),
                                         icon: Icon(
                                           isPasswordHidden
                                               ? Icons.visibility_off_outlined
@@ -178,7 +182,8 @@ class _MyAppState extends State<LoginScreen> {
                                         ),
                                         onPressed: () {
                                           setState(() {
-                                            isPasswordHidden = !isPasswordHidden;
+                                            isPasswordHidden =
+                                                !isPasswordHidden;
                                           });
                                         },
                                       )
@@ -195,7 +200,8 @@ class _MyAppState extends State<LoginScreen> {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => const ForgetPasswordScreen(),
+                                    builder: (context) =>
+                                        const ForgetPasswordScreen(),
                                   ),
                                 );
                               },
@@ -216,12 +222,20 @@ class _MyAppState extends State<LoginScreen> {
                     // Buttons
                     CustomButton(
                       height: 45,
-                        width: 187,
+                      width: 187,
                       onPressed: () {
                         if (formStateKey.currentState?.validate() ?? false) {
                           FocusScope.of(context).unfocus();
                           clearFieldsAndFocusLogin();
+                           Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MainScreen(),
+                          ),
+                        );
                         }
+                        passwordFocus.unfocus();
+                        emailFocus.unfocus();
                       },
                       // height: screenHeight * 0.07,
                       // width: screenWidth * 0.6,
@@ -235,7 +249,9 @@ class _MyAppState extends State<LoginScreen> {
                         clearFieldsAndFocusLogin();
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => const RegisterScreen(),
+                          ),
                         );
                       },
                       child: Text(
@@ -251,7 +267,9 @@ class _MyAppState extends State<LoginScreen> {
                       children: [
                         Expanded(child: Divider()),
                         Padding(
-                          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.02,
+                          ),
                           child: Text(
                             "او تسجيل دخول بـ",
                             style: AppTextStyles.smallText.copyWith(
@@ -270,7 +288,10 @@ class _MyAppState extends State<LoginScreen> {
                           onPressed: () {
                             clearFieldsAndFocusLogin();
                           },
-                          icon: Icon(Icons.g_mobiledata, size: screenWidth * 0.12),
+                          icon: Icon(
+                            Icons.g_mobiledata,
+                            size: screenWidth * 0.12,
+                          ),
                         ),
                         Text(
                           "Google",

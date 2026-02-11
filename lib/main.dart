@@ -65,9 +65,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
-import 'package:roadmaps/features/main_screen.dart';
-// استيراد ملف الـ Injection الذي أنشأناه يدوياً
-import 'package:roadmaps/injection.dart'; 
+import 'package:roadmaps/features/main_Screen.dart';
+import 'package:roadmaps/injection.dart'; // هنا نستدعي MainScreen
 
 void main() {
   // لضمان استقرار التطبيق عند البدء
@@ -103,7 +102,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Tajawal_R', 
         scaffoldBackgroundColor: AppColors.background// مثال للون الخلفية
       ),
-      home: const MainScreen(),
+      home: const MainScreen(), // أول شاشة بعد اللوجين
     );
   }
 }

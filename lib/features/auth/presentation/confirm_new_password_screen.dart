@@ -43,8 +43,8 @@ import 'package:roadmaps/features/main_Screen.dart';
 // - dispose() is used to free resources when the screen is destroyed.
 //
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+class ConfirmNewPasswordScreen extends StatefulWidget {
+  const ConfirmNewPasswordScreen({super.key});
 
   @override
   State<StatefulWidget> createState() {
@@ -52,17 +52,16 @@ class RegisterScreen extends StatefulWidget {
   }
 }
 
-class _MyAppState extends State<RegisterScreen> {
+class _MyAppState extends State<ConfirmNewPasswordScreen> {
   GlobalKey<FormState> formStateKey = GlobalKey();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController =
+
+  final TextEditingController newPasswordController = TextEditingController();
+  final TextEditingController confirmNewPasswordController =
       TextEditingController();
-  final TextEditingController userNameController = TextEditingController();
-  final emailFocus = FocusNode();
-  final passwordFocus = FocusNode();
-  final confirmPasswordFocus = FocusNode();
-  final userNameFocus = FocusNode();
+
+  final newPasswordFocus = FocusNode();
+  final confirmNewPasswordFocus = FocusNode();
+
   bool isPasswordHidden = true;
   bool isConfirmPasswordHidden = true;
   bool isPasswordHiddenVisibile = false;
@@ -70,12 +69,9 @@ class _MyAppState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    emailController.dispose();
-    passwordController.dispose();
-    userNameController.dispose();
-    confirmPasswordController.dispose();
-    emailFocus.dispose();
-    passwordFocus.dispose();
+    newPasswordController.dispose();
+    confirmNewPasswordController.dispose();
+    newPasswordFocus.dispose();
     super.dispose();
   }
 
@@ -100,11 +96,11 @@ class _MyAppState extends State<RegisterScreen> {
               IconButton(
                 alignment: Alignment.center,
                 onPressed: () {
-                  clearFieldsAndFocusSignUp();
+                  clearFieldsAndFocusConfirmPass();
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const SplashScreen(),
+                      builder: (context) => const LoginScreen(),
                     ),
                   );
                 },
@@ -127,14 +123,22 @@ class _MyAppState extends State<RegisterScreen> {
                   children: [
                     SizedBox(height: screenHeight * 0.05),
                     Text(
-                      "إنشاء حساب",
+                      "تغيير كلمة المرور",
                       textAlign: TextAlign.center,
                       style: AppTextStyles.heading3.copyWith(
                         color: AppColors.primary,
                       ),
                     ),
                     SizedBox(height: screenHeight * 0.03),
-
+                    Text(
+                      "سيتم استبدال كلمة المرور القديمة بالجديدة",
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.body.copyWith(
+                        fontSize: 17,
+                        color: AppColors.text_4,
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.03),
                     // Form Fields
                     Form(
                       key: formStateKey,
@@ -147,62 +151,13 @@ class _MyAppState extends State<RegisterScreen> {
                               child: CustomTextFormField(
                                 onTap: () {
                                   setState(() {
-                                    isconfirmPasswordHiddenVisibile = false;
-                                    isPasswordHiddenVisibile = false;
-                                  });
-                                },
-                                fieldFocuse: userNameFocus,
-                                label: "اسم المستخدم",
-                                controller: userNameController,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'الرجاء إدخال اسم المستخدم';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                          ),
-                          Directionality(
-                            textDirection: TextDirection.rtl,
-                            child: Padding(
-                              padding: EdgeInsets.all(screenWidth * 0.02),
-                              child: CustomTextFormField(
-                                onTap: () {
-                                  setState(() {
-                                    isconfirmPasswordHiddenVisibile = false;
-                                    isPasswordHiddenVisibile = false;
-                                  });
-                                },
-                                fieldFocuse: emailFocus,
-                                label: "البريد الالكتروني",
-                                controller: emailController,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'الرجاء إدخال البريد الإلكتروني';
-                                  }
-                                  if (!value.contains('@')) {
-                                    return 'البريد الإلكتروني غير صحيح';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                          ),
-                          Directionality(
-                            textDirection: TextDirection.rtl,
-                            child: Padding(
-                              padding: EdgeInsets.all(screenWidth * 0.02),
-                              child: CustomTextFormField(
-                                onTap: () {
-                                  setState(() {
                                     isPasswordHiddenVisibile = true;
                                     isconfirmPasswordHiddenVisibile = false;
                                   });
                                 },
-                                fieldFocuse: passwordFocus,
+                                fieldFocuse: newPasswordFocus,
                                 label: "كلمة المرور",
-                                controller: passwordController,
+                                controller: newPasswordController,
                                 obscureText: isPasswordHidden,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -244,15 +199,15 @@ class _MyAppState extends State<RegisterScreen> {
                                     isconfirmPasswordHiddenVisibile = true;
                                   });
                                 },
-                                fieldFocuse: confirmPasswordFocus,
+                                fieldFocuse: confirmNewPasswordFocus,
                                 label: "تأكيد كلمة المرور",
-                                controller: confirmPasswordController,
+                                controller: confirmNewPasswordController,
                                 obscureText: isConfirmPasswordHidden,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'الرجاء إدخال كلمة المرور';
                                   }
-                                  if (value != passwordController.text) {
+                                  if (value != newPasswordController.text) {
                                     return 'كلمة المرور غير متطابقة';
                                   }
                                   return null;
@@ -293,82 +248,24 @@ class _MyAppState extends State<RegisterScreen> {
                       onPressed: () {
                         if (formStateKey.currentState?.validate() ?? false) {
                           FocusScope.of(context).unfocus();
-                          clearFieldsAndFocusSignUp();
-                           Navigator.pushReplacement(
+                          clearFieldsAndFocusConfirmPass();
+                        Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const MainScreen(),
                           ),
                         );
+                          
                         }
-                        passwordFocus.unfocus();
-                        confirmPasswordFocus.unfocus();
-                        emailFocus.unfocus();
-                        userNameFocus.unfocus();
+                        newPasswordFocus.unfocus();
+                        confirmNewPasswordFocus.unfocus();
+                       
                       },
                       //    height: screenHeight * 0.07,
                       //    width: screenWidth * 0.6,
-                      text: "إنشاء حساب",
+                      text: "تأكيد ",
                       fontsize: 17, // الخط ثابت
                     ),
-                    SizedBox(height: screenHeight * 0.02),
-                    TextButton(
-                      onPressed: () {
-                        FocusManager.instance.primaryFocus?.unfocus();
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginScreen(),
-                          ),
-                        );
-                        clearFieldsAndFocusSignUp();
-                      },
-                      child: Text(
-                        " تسجيل الدخول ",
-                        style: AppTextStyles.smallText.copyWith(
-                          color: AppColors.text_4,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: screenHeight * 0.02),
-
-                    Row(
-                      children: [
-                        Expanded(child: Divider()),
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: screenWidth * 0.02,
-                          ),
-                          child: Text(
-                            "او إنشاء حساب بـ",
-                            style: AppTextStyles.smallText.copyWith(
-                              color: AppColors.text_1,
-                            ),
-                          ),
-                        ),
-                        Expanded(child: Divider()),
-                      ],
-                    ),
-                    SizedBox(height: screenHeight * 0.02),
-
-                    Column(
-                      children: [
-                        IconButton(
-                          onPressed: () {
-                            clearFieldsAndFocusSignUp();
-                          },
-                          icon: Icon(
-                            Icons.g_mobiledata,
-                            size: screenWidth * 0.12,
-                          ),
-                        ),
-                        Text(
-                          "Google",
-                          style: TextStyle(color: AppColors.primary1),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: screenHeight * 0.05),
                   ],
                 ),
               ),
@@ -379,13 +276,10 @@ class _MyAppState extends State<RegisterScreen> {
     );
   }
 
-  void clearFieldsAndFocusSignUp() {
-    emailController.clear();
-    passwordController.clear();
-    confirmPasswordController.clear();
-    userNameController.clear();
-    emailFocus.unfocus();
-    passwordFocus.unfocus();
+  void clearFieldsAndFocusConfirmPass() {
+    newPasswordController.clear();
+    confirmNewPasswordController.clear();
+    newPasswordFocus.unfocus();
     isconfirmPasswordHiddenVisibile = false;
     isPasswordHiddenVisibile = false;
     FocusManager.instance.primaryFocus?.unfocus();

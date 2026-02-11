@@ -33,7 +33,6 @@ import 'package:roadmaps/features/auth/presentation/verify_message_screen.dart';
 // - Ensures email input is trimmed before use.
 //
 
-
 class ForgetPasswordScreen extends StatefulWidget {
   const ForgetPasswordScreen({super.key});
 
@@ -112,7 +111,9 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                     // الوصف
                     Text(
                       "سنرسل لك رسالة عبر البريد الالكتروني",
-                      style: AppTextStyles.body.copyWith(color: AppColors.text_4),
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.text_4,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: screenHeight * 0.03),
@@ -147,7 +148,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                     // متابعة button
                     CustomButton(
                       height: 45,
-                        width: 187,
+                      width: 187,
                       onPressed: () {
                         if (formStateKey.currentState?.validate() ?? false) {
                           FocusScope.of(context).unfocus();
@@ -162,6 +163,8 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                           );
                           clearFieldsAndFocusForget();
                         }
+                        emailFocus.unfocus();
+                        
                       },
                       // height: screenHeight * 0.07,
                       // width: screenWidth * 0.6,

@@ -29,7 +29,7 @@ AppBar buildAppBar({
 }) {
   final screenWidth = MediaQuery.of(context).size.width;
   final screenHeight = MediaQuery.of(context).size.height;
-  final double iconSize = ((screenWidth + screenHeight) / 2) * 0.04;
+  final double iconSize = ((screenWidth + screenHeight) / 2) * 0.045;
   final double rightPadding = screenWidth * 0.03;
 
   return AppBar(

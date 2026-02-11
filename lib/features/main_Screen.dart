@@ -50,8 +50,8 @@ class _MainScreenState extends State<MainScreen> {
         backgroundColor: AppColors.background,
         appBar: buildAppBar(
           context: context,
-          onNotificationsTap: () => print("تم الضغط على التنبيهات"),
-          onSettingsTap: () => print("تم الضغط على الإعدادات"),
+          onNotificationsTap: () => 0, //print("تم الضغط على التنبيهات"),
+          onSettingsTap: () =>0,// print("تم الضغط على الإعدادات"),
         ),
         body: IndexedStack(
           index: currentIndex,

@@ -16,7 +16,7 @@ class LessonCard2 extends StatefulWidget {
     super.key,
     required this.course,
     required this.widthMultiplier,
-    this.trimLength = 45,
+    required this.trimLength,
     this.onDelete,
     this.onRefresh,
     this.onTap,
@@ -34,8 +34,9 @@ class _LessonCard2State extends State<LessonCard2>
   Widget build(BuildContext context) {
     if (_isEnrolled) {
       return LessonCard1(
+        trimLength:70 ,
         course: widget.course,
-        widthMultiplier: widget.widthMultiplier,
+        widthMultiplier: 0.80,
         onDelete: () {
           setState(() => _isEnrolled = false);
           widget.onDelete?.call();
@@ -52,8 +53,9 @@ class _LessonCard2State extends State<LessonCard2>
       curve: Curves.easeInOut,
       child: Container(
         width: width,
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        padding: const EdgeInsets.all(14),
+        constraints: const BoxConstraints(minHeight: 130),
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 12 , horizontal: 22),
         decoration: BoxDecoration(
           color: AppColors.primary1,
           borderRadius: BorderRadius.circular(25),
@@ -72,91 +74,86 @@ class _LessonCard2State extends State<LessonCard2>
                     textAlign: TextAlign.right,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.heading5.copyWith(
+                    style: AppTextStyles.heading4.copyWith(
                       color: AppColors.text_2,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 3),
             Directionality(
               textDirection: TextDirection.rtl,
+              child: Align(alignment: AlignmentGeometry.centerRight,
               child: SeeMoreWidget(
                 widget.course.description,
                 trimLength: widget.trimLength,
-                seeMoreText: 'المزيد',
+                seeMoreText: '...المزيد',
                 seeLessText: 'أقل',
-                textStyle: const TextStyle(
-                  fontFamily: 'Tajawal_R',
-                  fontSize: 12,
-                  color: AppColors.text_2,
+                textStyle: AppTextStyles.body.copyWith(
+                 color: AppColors.text_2,
                 ),
-                seeMoreStyle: const TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'Tajawal_R',
-                  color: AppColors.primary2,
+                seeMoreStyle: AppTextStyles.smallText.copyWith(
+                  color: AppColors.text_6,
                 ),
-                seeLessStyle: const TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'Tajawal_R',
-                  color: AppColors.primary2,
+                seeLessStyle: AppTextStyles.smallText.copyWith(
+                  color: AppColors.text_6,
                 ),
               ),
+              )
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height:2),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary2,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 13,
-                      vertical: 3,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
+                  MaterialButton(
+                  color: AppColors.primary2,
+                  minWidth: 0,
+                  height: 24,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 2,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
                   ),
                   onPressed: () {
                     setState(() => _isEnrolled = true);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text("تم التسجيل بنجاح"),
+                        content:  Directionality(textDirection: TextDirection.rtl, child: Text(
+                          "تم التسجيل بنجاح", style:  AppTextStyles.heading5.copyWith(color:AppColors.primary),
+                        )),
                         backgroundColor: AppColors.backGroundSuccess,
-                        duration: const Duration(seconds: 2),
+                        duration: const Duration(seconds: 3),
                         shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(16),
+                            top: Radius.circular(18),
                           ),
                         ),
                       ),
                     );
                   },
-                  child: const Text(
+                  child: Text(
                     "تسجيل",
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
+                    style:AppTextStyles.boldSmallText.copyWith(
+                     color: AppColors.text_5,
+                    )
                   ),
-                ),
+              
+                )
               ],
-            ),
-          ],
+            )
+            ],),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildBadge(String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal:11 , vertical:2 ),
       decoration: BoxDecoration(
         color: AppColors.accent_2,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(9),
       ),
       child: Text(
         text,

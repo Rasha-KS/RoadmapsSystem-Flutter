@@ -11,6 +11,11 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+/android/gradle/wrapper/gradle-*-all.zip
+
+# Ignore large Gradle distributions
+/android/gradle/wrapper/gradle-*-all.zip
+
 
 # IntelliJ related
 *.iml

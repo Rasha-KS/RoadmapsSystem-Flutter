@@ -15,7 +15,7 @@ class LessonCard1 extends StatelessWidget {
     super.key,
     required this.course,
     required this.widthMultiplier,
-    this.trimLength = 50,
+    required this.trimLength,
     required this.onDelete,
     required this.onRefresh,
     required this.onTap,
@@ -27,6 +27,7 @@ class LessonCard1 extends StatelessWidget {
 
     return Container(
       width: width,
+      constraints: BoxConstraints(minHeight: 167 ),
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -42,24 +43,19 @@ class LessonCard1 extends StatelessWidget {
                 icon: const Icon(
                   Icons.delete_outline_sharp,
                   color: AppColors.text_2,
-                  size: 20,
+                  size: 22,
                 ),
                 onPressed: onDelete,
-                constraints: const BoxConstraints(),
-                padding: EdgeInsets.zero,
               ),
-              const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(
                   Icons.refresh_outlined,
                   color: AppColors.text_2,
-                  size: 20,
+                  size: 22,
                 ),
                 onPressed: onRefresh,
-                constraints: const BoxConstraints(),
-                padding: EdgeInsets.zero,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width:12),
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -70,17 +66,17 @@ class LessonCard1 extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.smallText.copyWith(
-                        color: AppColors.primary2,
+                        color: AppColors.text_6,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 20),
                     Flexible(
                       child: Text(
                         course.title,
                         textAlign: TextAlign.right,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.heading5.copyWith(
+                        style: AppTextStyles.heading4.copyWith(
                           color: AppColors.text_2,
                         ),
                       ),
@@ -118,21 +114,15 @@ class LessonCard1 extends StatelessWidget {
                   trimLength: trimLength,
                   seeMoreText: 'المزيد',
                   seeLessText: 'أقل',
-                    textStyle: const TextStyle(
-                      fontFamily: 'Tajawal_R',
-                      fontSize: 12,
+                  textStyle: AppTextStyles.body.copyWith(
                       color: AppColors.text_2,
-                    ),
-                    seeMoreStyle: const TextStyle(
-                      fontSize: 12,
-                      fontFamily: 'Tajawal_R',
-                      color: AppColors.primary2,
-                    ),
-                    seeLessStyle: const TextStyle(
-                      fontSize: 12,
-                      fontFamily: 'Tajawal_R',
-                      color: AppColors.primary2,
-                    ),
+                  ),
+                  seeMoreStyle: AppTextStyles.smallText.copyWith(
+                      color: AppColors.text_6,
+                  ),
+                  seeLessStyle: AppTextStyles.smallText.copyWith(
+                      color: AppColors.text_6,
+                  ),
                   ),
                 ),
               ),

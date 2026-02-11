@@ -27,8 +27,9 @@ class HomeScreen extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
+        final announcementsProvider = context.read<AnnouncementsProvider>();
         await homeProvider.loadHome();
-        await context.read<AnnouncementsProvider>().loadAnnouncements();
+        await announcementsProvider.loadAnnouncements();
       },
       color: AppColors.primary2,
       child: SingleChildScrollView(
@@ -72,11 +73,6 @@ class HomeScreen extends StatelessWidget {
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-
-    final buttonHorizontalPadding = screenWidth * 0.04;
-    final buttonVerticalPadding = screenHeight * 0.003;
-    final buttonFontSize = screenHeight * 0.016;
-    final titleFontSize = screenHeight * 0.03;
     final spaceBetween = screenWidth * 0.10;
 
     return Padding(
@@ -89,24 +85,16 @@ class HomeScreen extends StatelessWidget {
           if (onButtonPressed != null)
             FittedBox(
               fit: BoxFit.scaleDown,
-              child: TextButton(
+              child: MaterialButton(
                 onPressed: onButtonPressed,
-                style: TextButton.styleFrom(
-                  backgroundColor: AppColors.accent_1,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: buttonHorizontalPadding,
-                    vertical: buttonVerticalPadding,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(17),
-                  ),
-                  elevation: 0,
-                ),
+                elevation:0,
+                height: 27,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                color: AppColors.accent_1,
                 child: Text(
                   "عرض الكل",
                   style: AppTextStyles.boldSmallText.copyWith(
                     color: AppColors.text_4,
-                    fontSize: buttonFontSize,
                   ),
                 ),
               ),
@@ -119,9 +107,8 @@ class HomeScreen extends StatelessWidget {
               child: Text(
                 title,
                 textAlign: TextAlign.right,
-                style: AppTextStyles.boldHeading5.copyWith(
+                style: AppTextStyles.heading4.copyWith(
                   color: AppColors.text_3,
-                  fontSize: titleFontSize,
                 ),
               ),
             ),
@@ -139,7 +126,7 @@ class HomeScreen extends StatelessWidget {
       child: Row(
         children: [
           for (final course in courses)
-            LessonCard2(course: course, widthMultiplier: 0.75),
+            LessonCard2(course: course, widthMultiplier: 0.65, trimLength:40),
         ],
       ),
     );
@@ -155,7 +142,8 @@ class HomeScreen extends StatelessWidget {
           for (final course in courses)
             LessonCard1(
               course: course,
-              widthMultiplier: 0.85,
+              widthMultiplier: 0.80,
+              trimLength: 70,
               onDelete: () => print("حذف من القائمة الرئيسية"),
               onRefresh: () => print("تحديث القائمة الرئيسية"),
               onTap: () => print("فتح المسار"),
@@ -165,40 +153,65 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState(Size size) {
-    return Padding(padding: EdgeInsets.all(15),
+ Widget _buildEmptyState(Size size) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
     child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Icon(
-          Icons.polyline_rounded,
-          size: size.width * 0.2,
-          color: AppColors.text_1,
-        ),
-        RichText(
-          textAlign: TextAlign.center,
-          text: TextSpan(
-            text: "هل انت مستعد لأن تسلك ",
-            style: AppTextStyles.heading4.copyWith(
-              color: AppColors.text_1
-              
+        // الصورة
+        Padding(
+          padding: const EdgeInsets.only(left: 40),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Image.asset(
+              "assets/images/roadmap_empty_homepage.png",
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
             ),
-            children: [
-              TextSpan(
-                text: "مسارك",
-                style:AppTextStyles.heading4.copyWith(
-                  color:AppColors.primary2, // البرتقالي
-                )
-              ),
-              TextSpan(
-                text: " الاول؟",
-                style: AppTextStyles.heading4.copyWith(
-                  color:AppColors.text_1
-                ),
-              ),
-            ],
           ),
         ),
+
+        const SizedBox(height: 5),
+
+        // السطر الأول من النص
+        Padding(
+          padding: const EdgeInsets.only(right: 32),
+          child: Text(
+            "هل انت مستعد",
+            textAlign: TextAlign.right,
+            style: AppTextStyles.heading2_2.copyWith(
+              color: AppColors.text_1,
+            ),
+          ),
+        ),
+        // السطر الثاني (RichText)
+      Padding(
+  padding: const EdgeInsets.only(right: 35),
+  child: Align(
+    alignment: Alignment.centerRight,
+    child: RichText(
+      textAlign: TextAlign.right,
+      text: TextSpan(
+        style: AppTextStyles.heading2_2.copyWith(
+          color: AppColors.text_1,
+        ),
+        children: [
+          const TextSpan(text: "لأن تسلك "),
+          TextSpan(
+            text: "مسارك ",
+            style: TextStyle(color: AppColors.primary2),
+          ),
+          const TextSpan(text: "الاول؟"),
+        ],
+      ),
+    ),
+  ),
+)
+
       ],
-    ),) ;
-  }
+    ),
+  );
+}
 }

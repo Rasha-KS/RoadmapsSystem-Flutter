@@ -89,7 +89,7 @@ class HomeScreen extends StatelessWidget {
                 onPressed: onButtonPressed,
                 elevation:0,
                 height: 27,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(23))),
                 color: AppColors.accent_1,
                 child: Text(
                   "عرض الكل",

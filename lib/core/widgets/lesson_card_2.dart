@@ -58,7 +58,7 @@ class _LessonCard2State extends State<LessonCard2>
         padding: const EdgeInsets.symmetric(vertical: 12 , horizontal: 22),
         decoration: BoxDecoration(
           color: AppColors.primary1,
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -114,7 +114,7 @@ class _LessonCard2State extends State<LessonCard2>
                     vertical: 2,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(30),
                   ),
                   onPressed: () {
                     setState(() => _isEnrolled = true);
@@ -153,7 +153,7 @@ class _LessonCard2State extends State<LessonCard2>
       padding: const EdgeInsets.symmetric(horizontal:11 , vertical:2 ),
       decoration: BoxDecoration(
         color: AppColors.accent_2,
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,

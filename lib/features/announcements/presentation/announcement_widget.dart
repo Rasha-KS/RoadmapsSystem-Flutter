@@ -136,7 +136,7 @@ class _AnnouncementWidgetState extends State<AnnouncementWidget> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.secondary2,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(23),
           boxShadow: [
             BoxShadow(
               color: AppColors.primary1.withValues(alpha:0.7),
@@ -221,7 +221,7 @@ class _AnnouncementWidgetState extends State<AnnouncementWidget> {
               AppColors.secondary2.withValues(alpha: 0.85),
             ],
           ),
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(23),
           border: Border.all(
             color: AppColors.primary2.withValues(alpha: 0.25),
             width: 1,
@@ -321,7 +321,7 @@ class _ArrowButtonState extends State<_ArrowButton> {
                       AppColors.primary2,
                     )
                   : AppColors.primary2,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.primary1.withValues(alpha:_isHovered ? 0.9 : 0.7),

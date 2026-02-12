@@ -39,7 +39,7 @@ Widget buildAppBottomNav({
         decoration: BoxDecoration(
           color: AppColors.background,
           borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(20),
+            top: Radius.circular(27),
           ),
           border: Border(
             top: BorderSide(

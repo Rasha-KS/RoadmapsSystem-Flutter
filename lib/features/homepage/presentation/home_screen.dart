@@ -1,12 +1,10 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// التنسيقات والألوان
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
+import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/lesson_card_1.dart';
 import 'package:roadmaps/core/widgets/lesson_card_2.dart';
-
-// Providers
 import 'home_provider.dart';
 import '../../announcements/presentation/announcements_provider.dart';
 import '../../announcements/presentation/announcement_widget.dart';
@@ -41,24 +39,20 @@ class HomeScreen extends StatelessWidget {
             Divider(color: AppColors.secondary2, thickness: 1, height: 2),
             const SizedBox(height: 12),
             _sectionHeader(
-              "المسارات المقترحة",
+              'المسارات المقترحة',
               context,
-              onButtonPressed: () => print("ضغطت على عرض المزيد"),
+              onButtonPressed: () => debugPrint('عرض الكل'),
             ),
             const SizedBox(height: 3),
-            // تمرير العرض هنا لضمان تناسق الكاردات
-            _buildRecommendedSection(homeProvider.recommended),
-
+            _buildRecommendedSection(homeProvider),
             const SizedBox(height: 12),
             Divider(color: AppColors.secondary2, thickness: 1, height: 2),
             const SizedBox(height: 12),
-
-           
-
             homeProvider.myCourses.isEmpty
                 ? _buildEmptyState(size)
-                : _sectionHeader("مساراتي", context),
-            const SizedBox(height: 3), _buildMyCoursesList(homeProvider.myCourses),
+                : _sectionHeader('مساراتي', context),
+            const SizedBox(height: 3),
+            _buildMyCoursesList(context, homeProvider),
             const SizedBox(height: 50),
           ],
         ),
@@ -87,12 +81,14 @@ class HomeScreen extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: MaterialButton(
                 onPressed: onButtonPressed,
-                elevation:0,
+                elevation: 0,
                 height: 27,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(23))),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(23)),
+                ),
                 color: AppColors.accent_1,
                 child: Text(
-                  "عرض الكل",
+                  'عرض الكل',
                   style: AppTextStyles.boldSmallText.copyWith(
                     color: AppColors.text_4,
                   ),
@@ -118,100 +114,119 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecommendedSection(List courses) {
+  Widget _buildRecommendedSection(HomeProvider homeProvider) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       reverse: true,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         children: [
-          for (final course in courses)
-            LessonCard2(course: course, widthMultiplier: 0.65, trimLength:40),
+          for (final course in homeProvider.recommended)
+            LessonCard2(
+              course: course,
+              widthMultiplier: 0.65,
+              trimLength: 40,
+              onEnroll: () {
+                homeProvider.enrollCourse(course.id);
+              },
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildMyCoursesList(List courses) {
+  Widget _buildMyCoursesList(BuildContext context, HomeProvider homeProvider) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       reverse: true,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         children: [
-          for (final course in courses)
+          for (final course in homeProvider.myCourses)
             LessonCard1(
               course: course,
               widthMultiplier: 0.80,
               trimLength: 70,
-              onDelete: () => print("حذف من القائمة الرئيسية"),
-              onRefresh: () => print("تحديث القائمة الرئيسية"),
-              onTap: () => print("فتح المسار"),
+              onDelete: () {
+                showConfirmActionDialog(
+                  context: context,
+                  title: 'هل أنت متأكد من حذف المسار؟',
+                  message: 'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
+                  onConfirm: () async {
+                    await homeProvider.deleteCourse(course.id);
+                  },
+                );
+              },
+              onRefresh: () {
+                showConfirmActionDialog(
+                 context: context,
+                 title:'هل أنت متأكد من إعادة المسار؟',
+                 message:'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
+                 onConfirm: () async {
+                    await homeProvider.resetCourse(course.id);
+                  },
+                );
+              },
+              onTap: () => debugPrint('فتح المسار ${course.id}'),
             ),
         ],
       ),
     );
   }
 
- Widget _buildEmptyState(Size size) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // الصورة
-        Padding(
-          padding: const EdgeInsets.only(left: 40),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Image.asset(
-              "assets/images/roadmap_empty_homepage.png",
-              width: 100,
-              height: 100,
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 5),
-
-        // السطر الأول من النص
-        Padding(
-          padding: const EdgeInsets.only(right: 32),
-          child: Text(
-            "هل انت مستعد",
-            textAlign: TextAlign.right,
-            style: AppTextStyles.heading2_2.copyWith(
-              color: AppColors.text_1,
-            ),
-          ),
-        ),
-        // السطر الثاني (RichText)
-      Padding(
-  padding: const EdgeInsets.only(right: 35),
-  child: Align(
-    alignment: Alignment.centerRight,
-    child: RichText(
-      textAlign: TextAlign.right,
-      text: TextSpan(
-        style: AppTextStyles.heading2_2.copyWith(
-          color: AppColors.text_1,
-        ),
+  Widget _buildEmptyState(Size size) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const TextSpan(text: "لأن تسلك "),
-          TextSpan(
-            text: "مسارك ",
-            style: TextStyle(color: AppColors.primary2),
+          Padding(
+            padding: const EdgeInsets.only(left: 40),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Image.asset(
+                'assets/images/roadmap_empty_homepage.png',
+                width: 100,
+                height: 100,
+                fit: BoxFit.cover,
+              ),
+            ),
           ),
-          const TextSpan(text: "الاول؟"),
+          const SizedBox(height: 5),
+          Padding(
+            padding: const EdgeInsets.only(right: 32),
+            child: Text(
+              'هل انت مستعد',
+              textAlign: TextAlign.right,
+              style: AppTextStyles.heading2_2.copyWith(
+                color: AppColors.text_1,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 35),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: RichText(
+                textAlign: TextAlign.right,
+                text: TextSpan(
+                  style: AppTextStyles.heading2_2.copyWith(
+                    color: AppColors.text_1,
+                  ),
+                  children: [
+                    const TextSpan(text: 'لأن تسلك '),
+                    TextSpan(
+                      text: 'مسارك ',
+                      style: TextStyle(color: AppColors.primary2),
+                    ),
+                    const TextSpan(text: 'الاول؟'),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
-    ),
-  ),
-)
-
-      ],
-    ),
-  );
-}
+    );
+  }
 }

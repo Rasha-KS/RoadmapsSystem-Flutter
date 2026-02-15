@@ -33,6 +33,15 @@ class LessonCard1 extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primary1,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+          color: const Color.fromARGB(255, 160, 159, 159) ,//.withValues(alpha: 0.5), // رمادي غامق أفتح من الأسود
+          blurRadius:3,
+          spreadRadius: 0.5, // يخليه ينتشر من الجناب
+          offset: Offset(0,3), // لتحت
+        ),
+      ],
+
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

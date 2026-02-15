@@ -6,7 +6,7 @@ import 'package:roadmaps/core/widgets/auth_custom_text_field.dart';
 import 'package:roadmaps/features/auth/presentation/forget_password_screen.dart';
 import 'package:roadmaps/features/auth/presentation/register_screen.dart';
 import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
-import 'package:roadmaps/features/main_Screen.dart';
+import 'package:roadmaps/features/main_screen.dart';
 
 // LoginScreen - User Login Page
 //

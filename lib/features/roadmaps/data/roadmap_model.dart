@@ -6,6 +6,7 @@ class RoadmapModel extends RoadmapEntity {
     required super.title,
     required super.level,
     required super.description,
+    super.status
  
   });
 
@@ -15,7 +16,7 @@ class RoadmapModel extends RoadmapEntity {
       title: json['title'],
       level: json['level'],
       description: json['description'],
-    
+    status: json['status']
     );
   }
 
@@ -24,6 +25,6 @@ class RoadmapModel extends RoadmapEntity {
         'title': title,
         'level': level,
         'description': description,
-      
+      'status':status
       };
 }

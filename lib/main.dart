@@ -65,7 +65,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
+import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
 import 'package:roadmaps/features/main_Screen.dart';
+import 'package:roadmaps/features/roadmaps/presentation/roadmaps_screen.dart';
 import 'package:roadmaps/injection.dart'; // هنا نستدعي MainScreen
 
 void main() {
@@ -78,6 +80,9 @@ void main() {
         // نقوم بإنشاء الـ Provider فقط بدون استدعاء دوال التحميل
         ChangeNotifierProvider(
           create: (_) => Injection.provideHomeProvider(),
+        ),
+         ChangeNotifierProvider(
+          create: (_) => Injection.provideRoadmapsProvider(),
         ),
         ChangeNotifierProvider(
           create: (_) => Injection.provideAnnouncementsProvider(),
@@ -102,7 +107,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Tajawal_R', 
         scaffoldBackgroundColor: AppColors.background// مثال للون الخلفية
       ),
-      home: const MainScreen(), // أول شاشة بعد اللوجين
+      home: const SplashScreen(), // أول شاشة بعد اللوجين
     );
   }
 }

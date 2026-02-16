@@ -5,6 +5,7 @@ import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/widgets/lesson_card_1.dart';
 import 'package:roadmaps/core/widgets/lesson_card_2.dart';
+import 'package:roadmaps/features/roadmaps/presentation/roadmaps_screen.dart';
 
 // Providers
 import 'home_provider.dart';
@@ -36,6 +37,7 @@ class HomeScreen extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         child: Column(
           children: [
+              const SizedBox(height: 15),
             const AnnouncementWidget(),
             const SizedBox(height: 12),
             Divider(color: AppColors.secondary2, thickness: 1, height: 2),
@@ -43,7 +45,12 @@ class HomeScreen extends StatelessWidget {
             _sectionHeader(
               "المسارات المقترحة",
               context,
-              onButtonPressed: () => print("ضغطت على عرض المزيد"),
+              onButtonPressed: () =>   Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RoadmapsScreen(),
+                          ),
+                        ),
             ),
             const SizedBox(height: 3),
             // تمرير العرض هنا لضمان تناسق الكاردات

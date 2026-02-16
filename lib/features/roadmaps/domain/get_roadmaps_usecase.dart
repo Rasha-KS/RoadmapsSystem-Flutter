@@ -9,4 +9,7 @@ class GetRoadmapsUseCase {
   Future<List<RoadmapEntity>> call() {
     return repository.getRoadmaps();
   }
+   Future<List<RoadmapEntity>> callMyCourses() {
+    return repository.getMyCourses();
+  }
 }

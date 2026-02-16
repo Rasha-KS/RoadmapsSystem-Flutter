@@ -8,6 +8,8 @@ class LessonCard2 extends StatefulWidget {
   final dynamic course;
   final double widthMultiplier;
   final int trimLength;
+  final bool? isEnrolled;
+  final ValueChanged<bool>? onEnrollmentChanged;
   final VoidCallback? onDelete;
   final VoidCallback? onRefresh;
   final VoidCallback? onTap;
@@ -17,6 +19,8 @@ class LessonCard2 extends StatefulWidget {
     required this.course,
     required this.widthMultiplier,
     required this.trimLength,
+    this.isEnrolled,
+    this.onEnrollmentChanged,
     this.onDelete,
     this.onRefresh,
     this.onTap,
@@ -32,13 +36,19 @@ class _LessonCard2State extends State<LessonCard2>
 
   @override
   Widget build(BuildContext context) {
-    if (_isEnrolled) {
+    final isEnrolled = widget.isEnrolled ?? _isEnrolled;
+
+    if (isEnrolled) {
       return LessonCard1(
         trimLength:70 ,
         course: widget.course,
         widthMultiplier: 0.80,
         onDelete: () {
-          setState(() => _isEnrolled = false);
+          if (widget.onEnrollmentChanged != null) {
+            widget.onEnrollmentChanged!(false);
+          } else {
+            setState(() => _isEnrolled = false);
+          }
           widget.onDelete?.call();
         },
         onRefresh: widget.onRefresh ?? () {},
@@ -59,6 +69,13 @@ class _LessonCard2State extends State<LessonCard2>
         decoration: BoxDecoration(
           color: AppColors.primary1,
           borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(
+              color: Color.fromRGBO(12, 32, 49, 0.25),
+              blurRadius: 4,
+              offset: Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -81,7 +98,7 @@ class _LessonCard2State extends State<LessonCard2>
                 ),
               ],
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 8),
             Directionality(
               textDirection: TextDirection.rtl,
               child: Align(alignment: AlignmentGeometry.centerRight,
@@ -90,7 +107,7 @@ class _LessonCard2State extends State<LessonCard2>
                 trimLength: widget.trimLength,
                 seeMoreText: '...المزيد',
                 seeLessText: 'أقل',
-                textStyle: AppTextStyles.body.copyWith(
+                textStyle: AppTextStyles.body.copyWith(fontSize: 16,
                  color: AppColors.text_2,
                 ),
                 seeMoreStyle: AppTextStyles.smallText.copyWith(
@@ -107,8 +124,8 @@ class _LessonCard2State extends State<LessonCard2>
               children: [
                   MaterialButton(
                   color: AppColors.primary2,
-                  minWidth: 0,
-                  height: 24,
+                  minWidth: 70,
+                  height: 25,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 2,
@@ -117,7 +134,11 @@ class _LessonCard2State extends State<LessonCard2>
                     borderRadius: BorderRadius.circular(30),
                   ),
                   onPressed: () {
-                    setState(() => _isEnrolled = true);
+                    if (widget.onEnrollmentChanged != null) {
+                      widget.onEnrollmentChanged!(true);
+                    } else {
+                      setState(() => _isEnrolled = true);
+                    }
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content:  Directionality(textDirection: TextDirection.rtl, child: Text(

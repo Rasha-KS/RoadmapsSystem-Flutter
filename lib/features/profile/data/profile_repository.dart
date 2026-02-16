@@ -1,4 +1,4 @@
-﻿import '../domain/profile_user_entity.dart';
+import 'package:roadmaps/core/entities/user_entity.dart';
 import '../domain/user_roadmap_entity.dart';
 import 'profile_user_model.dart';
 import 'user_roadmap_model.dart';
@@ -9,45 +9,46 @@ final List<Map<String, dynamic>> _roadmapsTable = [
     'id': 1,
     'title': 'Flutter',
     'level': 'متوسط',
-    'description': 'تعلّم بناء تطبيقات موبايل متعددة المنصات باستخدام Flutter.',
+    'description': 'تعلم بناء تطبيقات موبايل متقدمة من الصفر باستخدام Flutter.',
     'is_active': true,
   },
   {
     'id': 2,
     'title': 'Python',
     'level': 'مبتدئ',
-    'description': 'تعلّم أساسيات لغة Python والبرمجة العملية.',
+    'description': 'تعلم أساسيات لغة Python والبرمجة العامة.',
     'is_active': true,
   },
   {
     'id': 3,
     'title': 'C++',
-    'level': 'محترف',
-    'description': 'التعمّق في البرمجة الكائنية، مكتبة STL، وأساسيات الأداء.',
+    'level': 'متقدم',
+    'description': 'التعمق في البرمجة الكائنية، مكتبة STL، وأساسيات الذاكرة.',
     'is_active': true,
   },
   {
     'id': 4,
     'title': 'JavaScript',
     'level': 'مبتدئ',
-    'description': 'تعلّم أساسيات لغة JavaScript لتطوير الويب.',
+    'description': 'تعلم أساسيات لغة JavaScript لتطوير الويب.',
     'is_active': true,
   },
   {
     'id': 5,
     'title': 'Dart',
     'level': 'متوسط',
-    'description': 'تعلم لغة Dart لاستخدامها مع Flutter أو البرامج العامة.',
+    'description': 'تعلم لغة Dart لاستخدامها مع Flutter أو البرمجة العامة.',
     'is_active': true,
   },
   {
     'id': 6,
     'title': 'React',
-    'level': 'محترف',
-    'description': 'تعلّم بناء واجهات مستخدم ديناميكية باستخدام React.',
+    'level': 'متقدم',
+    'description': 'تعلم بناء واجهات مستخدم ديناميكية باستخدام React.',
     'is_active': true,
   },
 ];
+
 
 final List<Map<String, dynamic>> _usersTable = [
   {
@@ -71,7 +72,7 @@ final List<Map<String, dynamic>> _roadmapEnrollmentsTable = [
     'completed_at': null,
     'xp_points': 50,
     'progress_percentage': 90,
-    'status': 'قيد التقدم',
+    'status': 'في تقدم',
   },
   {
     'id': 102,
@@ -81,7 +82,7 @@ final List<Map<String, dynamic>> _roadmapEnrollmentsTable = [
     'completed_at': null,
     'xp_points': 50,
     'progress_percentage': 70,
-    'status': 'قيد التقدم',
+    'status': 'في تقدم',
   },
   {
     'id': 103,
@@ -91,7 +92,7 @@ final List<Map<String, dynamic>> _roadmapEnrollmentsTable = [
     'completed_at': null,
     'xp_points': 20,
     'progress_percentage': 40,
-    'status': 'قيد التقدم',
+    'status': 'في تقدم',
   },
   {
     'id': 104,
@@ -101,7 +102,7 @@ final List<Map<String, dynamic>> _roadmapEnrollmentsTable = [
     'completed_at': null,
     'xp_points': 10,
     'progress_percentage': 15,
-    'status': 'قيد التقدم',
+    'status': 'في تقدم',
   },
   {
     'id': 105,
@@ -121,12 +122,13 @@ final List<Map<String, dynamic>> _roadmapEnrollmentsTable = [
     'completed_at': null,
     'xp_points': 5,
     'progress_percentage': 5,
-    'status': 'قيد التقدم',
+    'status': 'في تقدم',
   },
 ];
 
 
-  Future<ProfileUserEntity> getUserProfile() async {
+
+  Future<UserEntity> getUserProfile() async {
     await Future.delayed(const Duration(milliseconds: 250));
     final user = _usersTable.first;
     return ProfileUserModel.fromJson(user);
@@ -178,9 +180,10 @@ final List<Map<String, dynamic>> _roadmapEnrollmentsTable = [
       ..._roadmapEnrollmentsTable[index],
       'xp_points': 0,
       'progress_percentage': 0,
-      'status': 'قيد التقدم',
+      'status': 'في تقدم',
       'completed_at': null,
       'started_at': DateTime.now(),
     };
   }
 }
+

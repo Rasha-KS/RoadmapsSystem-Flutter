@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../domain/delete_user_roadmap_usecase.dart';
 import '../domain/get_user_profile_usecase.dart';
 import '../domain/get_user_roadmaps_usecase.dart';
-import '../domain/profile_user_entity.dart';
+import 'package:roadmaps/core/entities/user_entity.dart';
 import '../domain/reset_user_roadmap_usecase.dart';
 import '../domain/user_roadmap_entity.dart';
 
@@ -19,7 +19,7 @@ class ProfileProvider extends ChangeNotifier {
     required this.resetUserRoadmapUseCase,
   });
 
-  ProfileUserEntity? user;
+  UserEntity? user;
   List<UserRoadmapEntity> roadmaps = [];
   bool loading = false;
   String? error;
@@ -33,7 +33,7 @@ class ProfileProvider extends ChangeNotifier {
       user = await getUserProfileUseCase();
       roadmaps = await getUserRoadmapsUseCase();
     } catch (_) {
-      error = 'حدث خطأ أثناء تحميل بيانات الملف الشخصي';
+      error = 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ ØªØ­Ù…ÙŠÙ„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ù„Ù Ø§Ù„Ø´Ø®ØµÙŠ';
     }
 
     loading = false;
@@ -54,3 +54,4 @@ class ProfileProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
+

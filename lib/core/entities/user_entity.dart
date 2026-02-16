@@ -1,4 +1,4 @@
-class ProfileUserEntity {
+class UserEntity {
   final int id;
   final String username;
   final String email;
@@ -7,8 +7,7 @@ class ProfileUserEntity {
   final DateTime lastActivityAt;
   final String? profileImageUrl;
 
-
-  ProfileUserEntity({
+  const UserEntity({
     required this.id,
     required this.username,
     required this.email,

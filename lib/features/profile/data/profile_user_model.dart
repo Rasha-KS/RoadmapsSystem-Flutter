@@ -1,6 +1,6 @@
-﻿import '../domain/profile_user_entity.dart';
+import 'package:roadmaps/core/entities/user_entity.dart';
 
-class ProfileUserModel extends ProfileUserEntity {
+class ProfileUserModel extends UserEntity {
   ProfileUserModel({
     required super.id,
     required super.username,
@@ -24,3 +24,4 @@ class ProfileUserModel extends ProfileUserEntity {
     );
   }
 }
+

@@ -69,7 +69,7 @@ final List<HomeCourseEntity> _myCourses = [
       title: course.title,
       level: course.level,
       description: course.description,
-      status: 'تمت إعادة الضبط',
+      status: 'في تقدم',
     );
   }
 

@@ -45,14 +45,14 @@ class _LessonCard2State extends State<LessonCard2>
         trimLength:70 ,
         course: widget.course,
         widthMultiplier: 0.80,
-        onDelete: () {
-          if (widget.onEnrollmentChanged != null) {
-            widget.onEnrollmentChanged!(false);
-          } else {
-            setState(() => _isEnrolled = false);
-          }
-          widget.onDelete?.call();
-        },
+        onDelete: widget.onDelete ??
+            () {
+              if (widget.onEnrollmentChanged != null) {
+                widget.onEnrollmentChanged!(false);
+              } else {
+                setState(() => _isEnrolled = false);
+              }
+            },
         onRefresh: widget.onRefresh ?? () {},
         onTap: widget.onTap ?? () {},
       );

@@ -13,10 +13,16 @@ import 'package:roadmaps/features/profile/domain/get_user_profile_usecase.dart';
 import 'package:roadmaps/features/profile/domain/get_user_roadmaps_usecase.dart';
 import 'package:roadmaps/features/profile/domain/reset_user_roadmap_usecase.dart';
 import 'package:roadmaps/features/profile/presentation/profile_provider.dart';
-
 import 'package:roadmaps/features/roadmaps/data/roadmap_repository.dart';
 import 'package:roadmaps/features/roadmaps/domain/get_roadmaps_usecase.dart';
 import 'package:roadmaps/features/roadmaps/presentation/roadmaps_provider.dart';
+import 'package:roadmaps/features/settings/data/settings_repository.dart';
+import 'package:roadmaps/features/settings/domain/delete_account_usecase.dart';
+import 'package:roadmaps/features/settings/domain/get_settings_data_usecase.dart';
+import 'package:roadmaps/features/settings/domain/logout_usecase.dart';
+import 'package:roadmaps/features/settings/domain/toggle_notifications_usecase.dart';
+import 'package:roadmaps/features/settings/domain/update_account_usecase.dart';
+import 'package:roadmaps/features/settings/presentation/settings_provider.dart';
 
 class Injection {
   static HomeProvider provideHomeProvider() {
@@ -44,19 +50,26 @@ class Injection {
     );
   }
 
-  // دالة لتجهيز الـ HomeProvider
   static RoadmapsProvider provideRoadmapsProvider() {
-    final roadmapsRepositoru = RoadmapRepository();
-    final useCase = GetRoadmapsUseCase(roadmapsRepositoru);
+    final roadmapsRepository = RoadmapRepository();
+    final useCase = GetRoadmapsUseCase(roadmapsRepository);
     return RoadmapsProvider(useCase);
   }
 
-  // دالة لتجهيز الـ AnnouncementsProvider
   static AnnouncementsProvider provideAnnouncementsProvider() {
-    final announcementsrepository = AnnouncementsRepository();
-    final useCase = GetActiveAnnouncementsUseCase(
-      announcementsrepository,
-    ); // إضافة الـ UseCase هنا
+    final announcementsRepository = AnnouncementsRepository();
+    final useCase = GetActiveAnnouncementsUseCase(announcementsRepository);
     return AnnouncementsProvider(useCase);
+  }
+
+  static SettingsProvider provideSettingsProvider() {
+    final repository = SettingsRepository();
+    return SettingsProvider(
+      getSettingsDataUseCase: GetSettingsDataUseCase(repository),
+      toggleNotificationsUseCase: ToggleNotificationsUseCase(repository),
+      updateAccountUseCase: UpdateAccountUseCase(repository),
+      deleteAccountUseCase: DeleteAccountUseCase(repository),
+      logoutUseCase: LogoutUseCase(repository),
+    );
   }
 }

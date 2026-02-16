@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
+import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/lesson_card_2.dart';
-import 'package:roadmaps/features/main_Screen.dart';
+import 'package:roadmaps/features/main_screen.dart';
 
 import '../domain/roadmap_entity.dart';
 import 'roadmaps_provider.dart';
@@ -130,6 +131,27 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
                           isEnrolled: roadmapsProvider.isCourseEnrolled(
                             course.id,
                           ),
+                          onDelete: () {
+                            showConfirmActionDialog(
+                              context: context,
+                              title: 'هل أنت متأكد من حذف المسار؟',
+                              message: 'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
+                              onConfirm: () async {
+                                context
+                                    .read<RoadmapsProvider>()
+                                    .setCourseEnrollment(course.id, false);
+                              },
+                            );
+                          },
+                          onRefresh: () {
+                            showConfirmActionDialog(
+                              context: context,
+                              title: 'هل أنت متأكد من إعادة المسار؟',
+                              message:
+                                  'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
+                              onConfirm: () async {},
+                            );
+                          },
                           onEnrollmentChanged: (enrolled) {
                             context
                                 .read<RoadmapsProvider>()
@@ -288,6 +310,28 @@ class SearchRoadmapsDelegate extends SearchDelegate {
                         isEnrolled: roadmapsProvider.isCourseEnrolled(
                           course.id,
                         ),
+                        onDelete: () {
+                          showConfirmActionDialog(
+                            context: context,
+                            title: 'هل أنت متأكد من حذف المسار؟',
+                            message: 'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
+                            onConfirm: () async {
+                              context.read<RoadmapsProvider>().setCourseEnrollment(
+                                course.id,
+                                false,
+                              );
+                              setState(() {});
+                            },
+                          );
+                        },
+                        onRefresh: () {
+                          showConfirmActionDialog(
+                            context: context,
+                            title: 'هل أنت متأكد من إعادة المسار؟',
+                            message: 'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
+                            onConfirm: () async {},
+                          );
+                        },
                         onEnrollmentChanged: (enrolled) {
                           context.read<RoadmapsProvider>().setCourseEnrollment(
                             course.id,
@@ -322,3 +366,4 @@ class SearchRoadmapsDelegate extends SearchDelegate {
     );
   }
 }
+

@@ -131,7 +131,7 @@ class _AnnouncementWidgetState extends State<AnnouncementWidget> {
 
     return Center(
       child: Container(
-        width: screenWidth * 0.75,
+        width: screenWidth * 0.77,
         margin: const EdgeInsets.symmetric(vertical:5),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(

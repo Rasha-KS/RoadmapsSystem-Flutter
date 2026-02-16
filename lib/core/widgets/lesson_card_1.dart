@@ -24,6 +24,9 @@ class LessonCard1 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width * widthMultiplier;
+    final String statusText = (course.status ?? '').toString();
+    final String titleText = (course.title ?? '').toString();
+    final String descriptionText = (course.description ?? '').toString();
 
     return Container(
       width: width,
@@ -33,15 +36,13 @@ class LessonCard1 extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primary1,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-          color: const Color.fromARGB(255, 160, 159, 159) ,//.withValues(alpha: 0.5), // رمادي غامق أفتح من الأسود
-          blurRadius:3,
-          spreadRadius: 0.5, // يخليه ينتشر من الجناب
-          offset: Offset(0,3), // لتحت
-        ),
-      ],
-
+        boxShadow: const [
+        BoxShadow(
+              color: Color.fromRGBO(12, 32, 49, 0.25),
+              blurRadius: 4,
+              offset: Offset(0, 4),
+            ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -70,7 +71,7 @@ class LessonCard1 extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                     course.status,
+                     statusText,
                       textAlign: TextAlign.right,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -81,7 +82,7 @@ class LessonCard1 extends StatelessWidget {
                     const SizedBox(width: 20),
                     Flexible(
                       child: Text(
-                        course.title,
+                        titleText,
                         textAlign: TextAlign.right,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -97,9 +98,11 @@ class LessonCard1 extends StatelessWidget {
           ),
           const SizedBox(height: 15),
           Row(
-            children: [
-              IconButton(
-                icon: Container(
+              children: [
+                IconButton(
+                  icon: Container(
+                  height: 39,
+                  width: 39,
                   padding: const EdgeInsets.all(8),
                   decoration: const BoxDecoration(
                     color: AppColors.primary2,
@@ -108,7 +111,7 @@ class LessonCard1 extends StatelessWidget {
                   child: const Icon(
                     Icons.arrow_back,
                     color: AppColors.primary,
-                    size: 18,
+                    size: 20,
                   ),
                 ),
                 onPressed: onTap,
@@ -119,11 +122,11 @@ class LessonCard1 extends StatelessWidget {
                 child: Directionality(
                   textDirection: TextDirection.rtl,
                 child: SeeMoreWidget(
-                  course.description,
+                  descriptionText,
                   trimLength: trimLength,
                   seeMoreText: 'المزيد',
                   seeLessText: 'أقل',
-                  textStyle: AppTextStyles.body.copyWith(
+                  textStyle: AppTextStyles.body.copyWith(fontSize: 16,
                       color: AppColors.text_2,
                   ),
                   seeMoreStyle: AppTextStyles.smallText.copyWith(

@@ -6,7 +6,6 @@ import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/lesson_card_1.dart';
 import 'package:roadmaps/core/widgets/lesson_card_2.dart';
 import 'package:roadmaps/features/roadmaps/presentation/roadmaps_screen.dart';
-
 // Providers
 import 'home_provider.dart';
 import '../../announcements/presentation/announcements_provider.dart';
@@ -45,6 +44,7 @@ class HomeScreen extends StatelessWidget {
             _sectionHeader(
               'المسارات المقترحة',
               context,
+
               onButtonPressed: () =>   Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -135,9 +135,9 @@ class HomeScreen extends StatelessWidget {
               course: course,
               widthMultiplier: 0.65,
               trimLength: 40,
-              onEnroll: () {
-                homeProvider.enrollCourse(course.id);
-              },
+              // onEnroll: () {
+              //   homeProvider.enrollCourse(course.id);
+              // },
             ),
         ],
       ),

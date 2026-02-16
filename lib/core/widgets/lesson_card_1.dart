@@ -36,6 +36,10 @@ class LessonCard1 extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primary1,
         borderRadius: BorderRadius.circular(20),
+
+      
+
+
         boxShadow: const [
         BoxShadow(
               color: Color.fromRGBO(12, 32, 49, 0.25),

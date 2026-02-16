@@ -5,7 +5,8 @@ import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
 import 'package:roadmaps/features/main_Screen.dart';
 import 'package:roadmaps/features/roadmaps/presentation/roadmaps_screen.dart';
-import 'package:roadmaps/injection.dart'; // هنا نستدعي MainScreen// هنا نستدعي MainScreen
+import 'package:roadmaps/injection.dart'; // هنا نستدعي MainScreen
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

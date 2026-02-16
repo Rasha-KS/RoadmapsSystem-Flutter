@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
+
 import 'package:roadmaps/core/widgets/app_appbar.dart';
 import 'package:roadmaps/core/widgets/app_bottom_nav.dart';
-
+import 'package:roadmaps/features/announcements/presentation/announcements_provider.dart';
+import 'package:roadmaps/features/homepage/presentation/home_provider.dart';
+import 'package:roadmaps/features/homepage/presentation/home_screen.dart';
 import 'package:roadmaps/features/profile/presentation/profile_provider.dart';
 import 'package:roadmaps/features/profile/presentation/profile_screen.dart';
+
 import 'package:roadmaps/features/roadmaps/presentation/roadmaps_provider.dart';
 import '../features/homepage/presentation/home_screen.dart'; // الصفحة الرئيسية بعد اللوجين
 import '../features/homepage/presentation/home_provider.dart';
@@ -15,7 +19,6 @@ import '../features/announcements/presentation/announcements_provider.dart';
 //import 'roadmaps_screen.dart'; // صفحة الكورسات
 //import 'profile_screen.dart'; // صفحة البروفايل
 //import 'settings_screen.dart'; // صفحة الإعدادات
-
 
 
 class MainScreen extends StatefulWidget {
@@ -47,8 +50,7 @@ class _MainScreenState extends State<MainScreen> {
       }
     });
   }
-
-  @override
+ @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(

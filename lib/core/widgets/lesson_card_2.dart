@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:see_more/see_more.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
@@ -10,6 +10,7 @@ class LessonCard2 extends StatefulWidget {
   final int trimLength;
   final bool? isEnrolled;
   final ValueChanged<bool>? onEnrollmentChanged;
+   final VoidCallback? onEnroll;
   final VoidCallback? onDelete;
   final VoidCallback? onRefresh;
   final VoidCallback? onTap;
@@ -21,6 +22,7 @@ class LessonCard2 extends StatefulWidget {
     required this.trimLength,
     this.isEnrolled,
     this.onEnrollmentChanged,
+     this.onEnroll,
     this.onDelete,
     this.onRefresh,
     this.onTap,
@@ -134,9 +136,11 @@ class _LessonCard2State extends State<LessonCard2>
                     borderRadius: BorderRadius.circular(30),
                   ),
                   onPressed: () {
+                    
                     if (widget.onEnrollmentChanged != null) {
                       widget.onEnrollmentChanged!(true);
                     } else {
+                      
                       setState(() => _isEnrolled = true);
                     }
                     ScaffoldMessenger.of(context).showSnackBar(

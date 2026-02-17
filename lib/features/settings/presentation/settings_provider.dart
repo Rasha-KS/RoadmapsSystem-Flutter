@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:roadmaps/core/entities/user_entity.dart';
+import 'package:roadmaps/core/providers/current_user_provider.dart';
 import '../domain/delete_account_usecase.dart';
 import '../domain/get_settings_data_usecase.dart';
 import '../domain/logout_usecase.dart';
@@ -14,6 +15,7 @@ class SettingsProvider extends ChangeNotifier {
   final UploadProfileImageUseCase uploadProfileImageUseCase;
   final DeleteAccountUseCase deleteAccountUseCase;
   final LogoutUseCase logoutUseCase;
+  final CurrentUserProvider currentUserProvider;
 
   SettingsProvider({
     required this.getSettingsDataUseCase,
@@ -22,9 +24,12 @@ class SettingsProvider extends ChangeNotifier {
     required this.uploadProfileImageUseCase,
     required this.deleteAccountUseCase,
     required this.logoutUseCase,
-  });
+    required this.currentUserProvider,
+  }) {
+    currentUserProvider.addListener(_onCurrentUserChanged);
+  }
 
-  UserEntity? user;
+  UserEntity? get user => currentUserProvider.user;
   bool loading = false;
   String? error;
 
@@ -34,7 +39,8 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      user = await getSettingsDataUseCase();
+      final current = await getSettingsDataUseCase();
+      currentUserProvider.setUser(current);
     } catch (_) {
       error = 'حدث خطأ أثناء تحميل بيانات الإعدادات';
     }
@@ -47,7 +53,8 @@ class SettingsProvider extends ChangeNotifier {
     if (user == null) return;
 
     try {
-      user = await toggleNotificationsUseCase(enabled);
+      final updated = await toggleNotificationsUseCase(enabled);
+      currentUserProvider.setUser(updated);
       notifyListeners();
     } catch (_) {
       error = 'تعذر تحديث حالة الإشعارات';
@@ -64,12 +71,13 @@ class SettingsProvider extends ChangeNotifier {
     if (user == null) return;
 
     try {
-      user = await updateAccountUseCase(
+      final updated = await updateAccountUseCase(
         username: username,
         email: email,
         password: password,
         profileImageUrl: profileImageUrl,
       );
+      currentUserProvider.setUser(updated);
       error = null;
       notifyListeners();
     } catch (_) {
@@ -84,7 +92,8 @@ class SettingsProvider extends ChangeNotifier {
     try {
       final uploadedUrl =
           await uploadProfileImageUseCase(localFilePath: localFilePath);
-      user = await updateAccountUseCase(profileImageUrl: uploadedUrl);
+      final updated = await updateAccountUseCase(profileImageUrl: uploadedUrl);
+      currentUserProvider.setUser(updated);
       error = null;
       notifyListeners();
     } catch (_) {
@@ -96,7 +105,7 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> deleteAccount() async {
     try {
       await deleteAccountUseCase();
-      user = null;
+      await currentUserProvider.deleteUser();
       error = null;
       notifyListeners();
     } catch (_) {
@@ -114,5 +123,15 @@ class SettingsProvider extends ChangeNotifier {
       error = 'تعذر تسجيل الخروج';
       notifyListeners();
     }
+  }
+
+  void _onCurrentUserChanged() {
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    currentUserProvider.removeListener(_onCurrentUserChanged);
+    super.dispose();
   }
 }

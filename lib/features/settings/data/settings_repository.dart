@@ -1,36 +1,29 @@
 import 'package:roadmaps/core/entities/user_entity.dart';
+import 'package:roadmaps/core/domain/repositories/user_repository.dart';
 import 'settings_model.dart';
 
 class SettingsRepository {
-  final List<Map<String, dynamic>> _usersTable = [
-    {
-      'id': 1,
-      'username': 'RASHA_KS',
-      'email': 'iris@example.com',
-      'password': '111',
-      'created_at': DateTime(2025, 7, 20),
-      'updated_at': DateTime(2026, 1, 18),
-      'last_activity_at': DateTime(2026, 2, 14),
-      'is_notifications_enabled': true,
-      'profile_image': 'https://i.pravatar.cc/150?img=1',
-    },
-  ];
+  SettingsRepository({required UserRepository userRepository})
+      : _userRepository = userRepository;
+
+  final UserRepository _userRepository;
 
   Future<UserEntity> getSettingsData() async {
-    await Future.delayed(const Duration(milliseconds: 250));
-    return SettingsModel.fromJson(_usersTable.first);
+    final user = await _userRepository.getCurrentUser();
+    return SettingsModel(
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      lastActivityAt: user.lastActivityAt,
+      isNotificationsEnabled: user.isNotificationsEnabled,
+      profileImageUrl: user.profileImageUrl,
+    );
   }
 
   Future<UserEntity> toggleNotifications(bool enabled) async {
-    await Future.delayed(const Duration(milliseconds: 150));
-    final current = _usersTable.first;
-    _usersTable[0] = {
-      ...current,
-      'is_notifications_enabled': enabled,
-      'updated_at': DateTime.now(),
-    };
-
-    return SettingsModel.fromJson(_usersTable.first);
+    return _userRepository.updateCurrentUser(isNotificationsEnabled: enabled);
   }
 
   Future<UserEntity> updateAccount({
@@ -39,19 +32,12 @@ class SettingsRepository {
     String? password,
     String? profileImageUrl,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 220));
-
-    final current = _usersTable.first;
-    _usersTable[0] = {
-      ...current,
-      'username': username ?? current['username'],
-      'email': email ?? current['email'],
-      'password': password ?? current['password'],
-      'profile_image': profileImageUrl ?? current['profile_image'],
-      'updated_at': DateTime.now(),
-    };
-
-    return SettingsModel.fromJson(_usersTable.first);
+    return _userRepository.updateCurrentUser(
+      username: username,
+      email: email,
+      password: password,
+      profileImageUrl: profileImageUrl,
+    );
   }
 
   Future<String> uploadProfileImage({required String localFilePath}) async {
@@ -63,10 +49,7 @@ class SettingsRepository {
   }
 
   Future<void> deleteAccount() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    if (_usersTable.isNotEmpty) {
-      _usersTable.removeAt(0);
-    }
+    await _userRepository.deleteCurrentUser();
   }
 
   Future<void> logout() async {

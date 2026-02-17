@@ -7,9 +7,13 @@ import 'package:roadmaps/injection.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  final currentUserProvider = Injection.provideCurrentUserProvider();
+  await currentUserProvider.loadCurrentUser();
+
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: currentUserProvider),
         ChangeNotifierProvider(
           create: (_) => Injection.provideHomeProvider(),
         ),
@@ -24,6 +28,9 @@ void main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => Injection.provideSettingsProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => Injection.provideCommunityProvider(),
         ),
       ],
       child: const MyApp(),

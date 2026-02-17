@@ -6,8 +6,8 @@ class GetUserRoadmapsUseCase {
 
   GetUserRoadmapsUseCase(this.repository);
 
-  Future<List<UserRoadmapEntity>> call() {
-    return repository.getUserRoadmaps();
+  Future<List<UserRoadmapEntity>> call(int userId) {
+    return repository.getUserRoadmaps(userId);
   }
 }
 

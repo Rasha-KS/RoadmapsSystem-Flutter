@@ -1,6 +1,15 @@
+import 'package:roadmaps/core/data/user/mock_user_repository.dart';
+import 'package:roadmaps/core/domain/repositories/user_repository.dart';
+import 'package:roadmaps/core/providers/current_user_provider.dart';
 import 'package:roadmaps/features/announcements/data/announcements_repository.dart';
 import 'package:roadmaps/features/announcements/domain/get_active_announcements_usecase.dart';
 import 'package:roadmaps/features/announcements/presentation/announcements_provider.dart';
+import 'package:roadmaps/features/community/data/mock_community_repository.dart';
+import 'package:roadmaps/features/community/domain/get_messages_by_room_usecase.dart';
+import 'package:roadmaps/features/community/domain/get_user_community_rooms_usecase.dart';
+import 'package:roadmaps/features/community/domain/send_image_message_usecase.dart';
+import 'package:roadmaps/features/community/domain/send_message_usecase.dart';
+import 'package:roadmaps/features/community/presentation/community_provider.dart';
 import 'package:roadmaps/features/homepage/data/home_repository.dart';
 import 'package:roadmaps/features/homepage/domain/delete_my_roadmap_usecase.dart';
 import 'package:roadmaps/features/homepage/domain/enroll_roadmap_usecase.dart';
@@ -9,7 +18,6 @@ import 'package:roadmaps/features/homepage/domain/reset_my_roadmap_usecase.dart'
 import 'package:roadmaps/features/homepage/presentation/home_provider.dart';
 import 'package:roadmaps/features/profile/data/profile_repository.dart';
 import 'package:roadmaps/features/profile/domain/delete_user_roadmap_usecase.dart';
-import 'package:roadmaps/features/profile/domain/get_user_profile_usecase.dart';
 import 'package:roadmaps/features/profile/domain/get_user_roadmaps_usecase.dart';
 import 'package:roadmaps/features/profile/domain/reset_user_roadmap_usecase.dart';
 import 'package:roadmaps/features/profile/presentation/profile_provider.dart';
@@ -26,6 +34,14 @@ import 'package:roadmaps/features/settings/domain/update_account_usecase.dart';
 import 'package:roadmaps/features/settings/presentation/settings_provider.dart';
 
 class Injection {
+  static final UserRepository _userRepository = MockUserRepository();
+  static final CurrentUserProvider _currentUserProvider =
+      CurrentUserProvider(userRepository: _userRepository);
+
+  static CurrentUserProvider provideCurrentUserProvider() {
+    return _currentUserProvider;
+  }
+
   static HomeProvider provideHomeProvider() {
     final repository = HomeRepository();
     final getHomeDataUseCase = GetHomeDataUseCase(repository);
@@ -42,12 +58,12 @@ class Injection {
   }
 
   static ProfileProvider provideProfileProvider() {
-    final repository = ProfileRepository();
+    final repository = ProfileRepository(userRepository: _userRepository);
     return ProfileProvider(
-      getUserProfileUseCase: GetUserProfileUseCase(repository),
       getUserRoadmapsUseCase: GetUserRoadmapsUseCase(repository),
       deleteUserRoadmapUseCase: DeleteUserRoadmapUseCase(repository),
       resetUserRoadmapUseCase: ResetUserRoadmapUseCase(repository),
+      currentUserProvider: _currentUserProvider,
     );
   }
 
@@ -64,7 +80,7 @@ class Injection {
   }
 
   static SettingsProvider provideSettingsProvider() {
-    final repository = SettingsRepository();
+    final repository = SettingsRepository(userRepository: _userRepository);
     return SettingsProvider(
       getSettingsDataUseCase: GetSettingsDataUseCase(repository),
       toggleNotificationsUseCase: ToggleNotificationsUseCase(repository),
@@ -72,6 +88,28 @@ class Injection {
       uploadProfileImageUseCase: UploadProfileImageUseCase(repository),
       deleteAccountUseCase: DeleteAccountUseCase(repository),
       logoutUseCase: LogoutUseCase(repository),
+      currentUserProvider: _currentUserProvider,
+    );
+  }
+
+  static CommunityProvider provideCommunityProvider() {
+    final repository = MockCommunityRepository();
+
+    return CommunityProvider(
+      getUserCommunityRoomsUseCase: GetUserCommunityRoomsUseCase(
+        communityRepository: repository,
+        userRepository: _userRepository,
+      ),
+      getMessagesByRoomUseCase: GetMessagesByRoomUseCase(repository),
+      sendMessageUseCase: SendMessageUseCase(
+        repository: repository,
+        userRepository: _userRepository,
+      ),
+      sendImageMessageUseCase: SendImageMessageUseCase(
+        repository: repository,
+        userRepository: _userRepository,
+      ),
+      currentUserProvider: _currentUserProvider,
     );
   }
 }

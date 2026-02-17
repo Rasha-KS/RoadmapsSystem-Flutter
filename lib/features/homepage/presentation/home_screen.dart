@@ -1,11 +1,13 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/lesson_card_1.dart';
 import 'package:roadmaps/core/widgets/lesson_card_2.dart';
+import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
 import 'package:roadmaps/features/roadmaps/presentation/roadmaps_screen.dart';
+import 'package:roadmaps/features/learning_path/presentation/learning_path_screen.dart';
 // Providers
 import 'home_provider.dart';
 import '../../announcements/presentation/announcements_provider.dart';
@@ -36,7 +38,7 @@ class HomeScreen extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         child: Column(
           children: [
-              const SizedBox(height: 15),
+            const SizedBox(height: 15),
             const AnnouncementWidget(),
             const SizedBox(height: 12),
             Divider(color: AppColors.secondary2, thickness: 1, height: 2),
@@ -45,15 +47,13 @@ class HomeScreen extends StatelessWidget {
               'المسارات المقترحة',
               context,
 
-              onButtonPressed: () =>   Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RoadmapsScreen(),
-                          ),
-                        ),
+              onButtonPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const RoadmapsScreen()),
+              ),
             ),
             const SizedBox(height: 3),
-            _buildRecommendedSection(homeProvider),
+            _buildRecommendedSection(context, homeProvider),
             const SizedBox(height: 12),
             Divider(color: AppColors.secondary2, thickness: 1, height: 2),
             const SizedBox(height: 12),
@@ -109,9 +109,7 @@ class HomeScreen extends StatelessWidget {
               textAlign: TextAlign.right,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.heading4.copyWith(
-                color: AppColors.text_3,
-              ),
+              style: AppTextStyles.heading4.copyWith(color: AppColors.text_3),
             ),
           ),
         ],
@@ -119,7 +117,10 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecommendedSection(HomeProvider homeProvider) {
+  Widget _buildRecommendedSection(
+    BuildContext context,
+    HomeProvider homeProvider,
+  ) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       reverse: true,
@@ -131,6 +132,16 @@ class HomeScreen extends StatelessWidget {
               course: course,
               widthMultiplier: 0.65,
               trimLength: 40,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => LearningPathScreen(
+                      roadmapId: course.id,
+                      roadmapTitle: course.title,
+                    ),
+                  ),
+                );
+              },
               // onEnroll: () {
               //   homeProvider.enrollCourse(course.id);
               // },
@@ -158,21 +169,40 @@ class HomeScreen extends StatelessWidget {
                   title: 'هل أنت متأكد من حذف المسار؟',
                   message: 'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
                   onConfirm: () async {
+                    final learningPathProvider = context
+                        .read<LearningPathProvider>();
                     await homeProvider.deleteCourse(course.id);
+                    await learningPathProvider.resetProgress(
+                      roadmapId: course.id,
+                    );
                   },
                 );
               },
               onRefresh: () {
                 showConfirmActionDialog(
-                 context: context,
-                 title:'هل أنت متأكد من إعادة المسار؟',
-                 message:'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
-                 onConfirm: () async {
+                  context: context,
+                  title: 'هل أنت متأكد من إعادة المسار؟',
+                  message: 'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
+                  onConfirm: () async {
+                    final learningPathProvider = context
+                        .read<LearningPathProvider>();
                     await homeProvider.resetCourse(course.id);
+                    await learningPathProvider.resetProgress(
+                      roadmapId: course.id,
+                    );
                   },
                 );
               },
-              onTap: () => debugPrint('فتح المسار ${course.id}'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => LearningPathScreen(
+                      roadmapId: course.id,
+                      roadmapTitle: course.title,
+                    ),
+                  ),
+                );
+              },
             ),
         ],
       ),
@@ -203,9 +233,7 @@ class HomeScreen extends StatelessWidget {
             child: Text(
               'هل انت مستعد',
               textAlign: TextAlign.right,
-              style: AppTextStyles.heading2_2.copyWith(
-                color: AppColors.text_1,
-              ),
+              style: AppTextStyles.heading2_2.copyWith(color: AppColors.text_1),
             ),
           ),
           Padding(

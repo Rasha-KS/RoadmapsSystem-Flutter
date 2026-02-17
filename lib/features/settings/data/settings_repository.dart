@@ -37,6 +37,7 @@ class SettingsRepository {
     String? username,
     String? email,
     String? password,
+    String? profileImageUrl,
   }) async {
     await Future.delayed(const Duration(milliseconds: 220));
 
@@ -46,10 +47,19 @@ class SettingsRepository {
       'username': username ?? current['username'],
       'email': email ?? current['email'],
       'password': password ?? current['password'],
+      'profile_image': profileImageUrl ?? current['profile_image'],
       'updated_at': DateTime.now(),
     };
 
     return SettingsModel.fromJson(_usersTable.first);
+  }
+
+  Future<String> uploadProfileImage({required String localFilePath}) async {
+    await Future.delayed(const Duration(milliseconds: 450));
+
+    // Temporary mock until backend API is ready.
+    final avatarId = (DateTime.now().millisecondsSinceEpoch % 70) + 1;
+    return 'https://i.pravatar.cc/150?img=$avatarId';
   }
 
   Future<void> deleteAccount() async {

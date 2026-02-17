@@ -4,12 +4,14 @@ import '../domain/delete_account_usecase.dart';
 import '../domain/get_settings_data_usecase.dart';
 import '../domain/logout_usecase.dart';
 import '../domain/toggle_notifications_usecase.dart';
+import '../domain/upload_profile_image_usecase.dart';
 import '../domain/update_account_usecase.dart';
 
 class SettingsProvider extends ChangeNotifier {
   final GetSettingsDataUseCase getSettingsDataUseCase;
   final ToggleNotificationsUseCase toggleNotificationsUseCase;
   final UpdateAccountUseCase updateAccountUseCase;
+  final UploadProfileImageUseCase uploadProfileImageUseCase;
   final DeleteAccountUseCase deleteAccountUseCase;
   final LogoutUseCase logoutUseCase;
 
@@ -17,6 +19,7 @@ class SettingsProvider extends ChangeNotifier {
     required this.getSettingsDataUseCase,
     required this.toggleNotificationsUseCase,
     required this.updateAccountUseCase,
+    required this.uploadProfileImageUseCase,
     required this.deleteAccountUseCase,
     required this.logoutUseCase,
   });
@@ -56,6 +59,7 @@ class SettingsProvider extends ChangeNotifier {
     String? username,
     String? email,
     String? password,
+    String? profileImageUrl,
   }) async {
     if (user == null) return;
 
@@ -64,11 +68,27 @@ class SettingsProvider extends ChangeNotifier {
         username: username,
         email: email,
         password: password,
+        profileImageUrl: profileImageUrl,
       );
       error = null;
       notifyListeners();
     } catch (_) {
       error = 'تعذر تحديث بيانات الحساب';
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateProfileImage({required String localFilePath}) async {
+    if (user == null) return;
+
+    try {
+      final uploadedUrl =
+          await uploadProfileImageUseCase(localFilePath: localFilePath);
+      user = await updateAccountUseCase(profileImageUrl: uploadedUrl);
+      error = null;
+      notifyListeners();
+    } catch (_) {
+      error = 'تعذر تحديث الصورة الشخصية';
       notifyListeners();
     }
   }

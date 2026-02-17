@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 
@@ -6,6 +6,7 @@ Future<void> showSettingsConfirmActionDialog({
   required BuildContext context,
   required String title,
   required Future<void> Function() onConfirm,
+  VoidCallback? onCancel,
   String cancelText = 'إلغاء',
   String confirmText = 'تأكيد',
 }) async {
@@ -56,8 +57,7 @@ Future<void> showSettingsConfirmActionDialog({
                       cancelText,
                       style: AppTextStyles.boldSmallText.copyWith(
                         fontWeight: FontWeight.w800,
-
-                      )
+                      ),
                     ),
                   ),
                   MaterialButton(
@@ -75,8 +75,7 @@ Future<void> showSettingsConfirmActionDialog({
                       confirmText,
                       style: AppTextStyles.boldSmallText.copyWith(
                         fontWeight: FontWeight.w800,
-
-                      )
+                      ),
                     ),
                   ),
                 ],
@@ -90,5 +89,7 @@ Future<void> showSettingsConfirmActionDialog({
 
   if (confirm == true) {
     await onConfirm();
+  } else {
+    onCancel?.call();
   }
 }

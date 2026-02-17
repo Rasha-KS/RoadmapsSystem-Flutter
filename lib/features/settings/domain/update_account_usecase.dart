@@ -10,11 +10,13 @@ class UpdateAccountUseCase {
     String? username,
     String? email,
     String? password,
+    String? profileImageUrl,
   }) {
     return repository.updateAccount(
       username: username,
       email: email,
       password: password,
+      profileImageUrl: profileImageUrl,
     );
   }
 }

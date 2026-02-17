@@ -30,7 +30,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: provider.loading && provider.settings == null
+        child: provider.loading && provider.user == null
             ? const Center(
                 child: CircularProgressIndicator(color: AppColors.primary2),
               )
@@ -42,7 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _buildHeader(context),
                     const SizedBox(height: 22),
                     _buildSectionTitle('الحساب'),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 18),
                     _ActionCard(
                       text: 'تعديل الحساب',
                       icon: Icons.arrow_back_ios_new,
@@ -55,10 +55,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                     ),
                     const SizedBox(height: 24),
+                    Divider(color: AppColors.secondary1, thickness: 1),
+                    const SizedBox(height: 24),
                     _buildSectionTitle('الإشعارات'),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 10),
                     _NotificationRow(
-                      value: provider.settings?.isNotificationsEnabled ?? false,
+                      value: provider.user?.isNotificationsEnabled ?? false,
                       onChanged: (value) {
                         provider.toggleNotifications(value);
                       },
@@ -67,7 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Divider(color: AppColors.secondary1, thickness: 1),
                     const SizedBox(height: 20),
                     _buildSectionTitle('إدارة الحساب'),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 18),
                     _ActionCard(
                       text: 'حذف حساب',
                       icon: Icons.delete_outline,
@@ -80,15 +82,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             await provider.deleteAccount();
                             if (!mounted) return;
                             messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('تم حذف الحساب (تجريبي)'),
-                              ),
+                              SnackBar(
+                        content:  Directionality(textDirection: TextDirection.rtl, child: Text(
+                          "تم حذف الحساب بنجاح (تجريبي)", style:  AppTextStyles.heading5.copyWith(color:AppColors.primary),
+                        )),
+                        backgroundColor: AppColors.backGroundSuccess,
+                        duration: const Duration(seconds: 3),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(18),
+                          ),
+                        ),
+                      ),
                             );
                           },
                         );
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 15),
                     _ActionCard(
                       text: 'تسجيل خروج',
                       icon: Icons.logout,
@@ -96,14 +107,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         final messenger = ScaffoldMessenger.of(context);
                         showSettingsConfirmActionDialog(
                           context: context,
-                          title: 'تأكيد تسجيل الخروج',
+                          title: 'هل أنت متأكد من رغبتك بتسجيل الخروج؟',
                           onConfirm: () async {
                             await provider.logout();
                             if (!mounted) return;
                             messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('تم تسجيل الخروج (تجريبي)'),
-                              ),
+                                SnackBar(
+                                  content:  Directionality(textDirection: TextDirection.rtl, child: Text(
+                                    "تم تسجيل الخروج بنجاح (تجريبي)", style:  AppTextStyles.heading5.copyWith(color:AppColors.primary),
+                                  )),
+                                  backgroundColor: AppColors.backGroundSuccess,
+                                  duration: const Duration(seconds: 3),
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(18),
+                                    ),
+                                  ),
+                                ),
                             );
                           },
                         );
@@ -126,8 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Column(
-      children: [
+    return 
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -135,7 +154,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'الإعدادات',
               style: AppTextStyles.heading5.copyWith(
                 color: AppColors.text_3,
-                fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.right,
             ),
@@ -153,20 +171,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ],
-        ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Text(
-            'الإعدادات',
-            style: AppTextStyles.heading5.copyWith(
-              color: AppColors.text_3,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.right,
-          ),
-        ),
-      ],
-    );
+        );
   }
 
   Widget _buildSectionTitle(String title) {
@@ -174,10 +179,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       alignment: Alignment.centerRight,
       child: Text(
         title,
-        style: AppTextStyles.body.copyWith(
-          color: AppColors.primary2,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
+        style: AppTextStyles.boldHeading5.copyWith(
+          color: AppColors.text_4,
         ),
         textAlign: TextAlign.right,
       ),
@@ -195,21 +198,28 @@ class _NotificationRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Switch(
+        Transform.scale(
+          scaleX: 1.2,
+          scaleY: 1.1,
+          child: Switch(
+          padding: EdgeInsetsGeometry.symmetric(horizontal: 15),
           value: value,
           activeThumbColor: AppColors.primary2,
-          activeTrackColor: AppColors.accent_1,
+          activeTrackColor: AppColors.secondary3,
+          trackOutlineColor: const WidgetStatePropertyAll(AppColors.secondary1),
+          trackOutlineWidth: const WidgetStatePropertyAll(0.9),
           onChanged: onChanged,
         ),
+        ),
         const Spacer(),
-        Text(
+        Padding(padding: EdgeInsetsGeometry.symmetric(horizontal: 15),
+        child:  Text(
           'الإشعارات',
           style: AppTextStyles.body.copyWith(
-            color: AppColors.text_1,
-            fontWeight: FontWeight.w500,
+            color: AppColors.text_3,
           ),
           textAlign: TextAlign.right,
-        ),
+        ),)
       ],
     );
   }
@@ -234,10 +244,10 @@ class _ActionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
           decoration: BoxDecoration(
-            color: AppColors.accent_3,
-            borderRadius: BorderRadius.circular(24),
+            color: AppColors.secondary2,
+            borderRadius: BorderRadius.circular(50),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.08),
@@ -252,20 +262,20 @@ class _ActionCard extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: AppColors.accent_2,
+                  color: AppColors.primary1,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
-                  color: AppColors.primary,
-                  size: 20,
+                  color: AppColors.primary2,
+                  size: 22,
                 ),
               ),
               const Spacer(),
               Text(
                 text,
                 style: AppTextStyles.body.copyWith(
-                  color: AppColors.text_1,
+                  color: AppColors.text_3,
                   fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.right,

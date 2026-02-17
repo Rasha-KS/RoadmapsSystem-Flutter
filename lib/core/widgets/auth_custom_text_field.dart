@@ -34,6 +34,7 @@ class CustomTextFormField extends StatelessWidget {
   final bool obscureText;
   final TextEditingController? controller;
   final String? Function(String?)? validator;
+  final ValueChanged<String>? onChanged;
   final FocusNode? fieldFocuse;
   final Widget? suffixIcon;
   final VoidCallback? onTap;
@@ -44,6 +45,7 @@ class CustomTextFormField extends StatelessWidget {
     this.obscureText = false,
     this.controller,
     this.validator,
+    this.onChanged,
     this.fieldFocuse,
     this.suffixIcon,
     this.onTap,
@@ -57,6 +59,7 @@ class CustomTextFormField extends StatelessWidget {
       padding: EdgeInsets.all(screenWidth * 0.02),
       child: TextFormField(
         onTap: onTap,
+        onChanged: onChanged,
         focusNode: fieldFocuse,
         controller: controller,
         obscureText: obscureText,

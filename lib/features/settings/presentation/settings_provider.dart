@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:roadmaps/core/entities/user_entity.dart';
 import '../domain/delete_account_usecase.dart';
 import '../domain/get_settings_data_usecase.dart';
 import '../domain/logout_usecase.dart';
-import '../domain/settings_entity.dart';
 import '../domain/toggle_notifications_usecase.dart';
 import '../domain/update_account_usecase.dart';
 
@@ -21,7 +21,7 @@ class SettingsProvider extends ChangeNotifier {
     required this.logoutUseCase,
   });
 
-  SettingsEntity? settings;
+  UserEntity? user;
   bool loading = false;
   String? error;
 
@@ -31,7 +31,7 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      settings = await getSettingsDataUseCase();
+      user = await getSettingsDataUseCase();
     } catch (_) {
       error = 'حدث خطأ أثناء تحميل بيانات الإعدادات';
     }
@@ -41,10 +41,10 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> toggleNotifications(bool enabled) async {
-    if (settings == null) return;
+    if (user == null) return;
 
     try {
-      settings = await toggleNotificationsUseCase(enabled);
+      user = await toggleNotificationsUseCase(enabled);
       notifyListeners();
     } catch (_) {
       error = 'تعذر تحديث حالة الإشعارات';
@@ -57,10 +57,10 @@ class SettingsProvider extends ChangeNotifier {
     String? email,
     String? password,
   }) async {
-    if (settings == null) return;
+    if (user == null) return;
 
     try {
-      settings = await updateAccountUseCase(
+      user = await updateAccountUseCase(
         username: username,
         email: email,
         password: password,
@@ -76,7 +76,7 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> deleteAccount() async {
     try {
       await deleteAccountUseCase();
-      settings = null;
+      user = null;
       error = null;
       notifyListeners();
     } catch (_) {

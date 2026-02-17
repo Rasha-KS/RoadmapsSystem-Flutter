@@ -1,12 +1,12 @@
+import 'package:roadmaps/core/entities/user_entity.dart';
 import '../data/settings_repository.dart';
-import 'settings_entity.dart';
 
 class GetSettingsDataUseCase {
   final SettingsRepository repository;
 
   GetSettingsDataUseCase(this.repository);
 
-  Future<SettingsEntity> call() {
+  Future<UserEntity> call() {
     return repository.getSettingsData();
   }
 }

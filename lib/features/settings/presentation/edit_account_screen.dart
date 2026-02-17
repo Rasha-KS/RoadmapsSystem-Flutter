@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
@@ -13,6 +13,10 @@ class EditAccountScreen extends StatefulWidget {
 }
 
 class _EditAccountScreenState extends State<EditAccountScreen> {
+  static const Color _cardColor = Color(0xFFC9D7E3);
+  static const Color _avatarBgColor = Color(0xFFDCE6EF);
+  static const Color _avatarIconColor = Color(0xFF9FB3C8);
+
   final _usernameController = TextEditingController();
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
@@ -21,10 +25,14 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
   bool _updatingPassword = false;
   bool _updatingPicture = false;
 
+  String? _usernameError;
+  String? _currentPasswordError;
+  String? _newPasswordError;
+
   @override
   void initState() {
     super.initState();
-    final user = context.read<SettingsProvider>().settings?.user;
+    final user = context.read<SettingsProvider>().user;
     if (user != null) {
       _usernameController.text = user.username;
     }
@@ -40,115 +48,113 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<SettingsProvider>().settings?.user;
+    final user = context.watch<SettingsProvider>().user;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildTopBar(context),
-              const SizedBox(height: 8),
-              Text(
-                'الإعدادات',
-                textAlign: TextAlign.right,
-                style: AppTextStyles.heading5.copyWith(
-                  color: AppColors.text_3,
-                  fontWeight: FontWeight.w600,
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.only(right: 4, bottom: 12),
+                child: Text(
+                  'تعديل الحساب',
+                  style: AppTextStyles.heading5.copyWith(color: AppColors.text_3),
+                  textAlign: TextAlign.right,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'تعديل الحساب',
-                textAlign: TextAlign.right,
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.primary2,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 15),
               _SettingsCard(
                 title: 'تغيير اسم المستخدم',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    TextField(
+                    _buildInputField(
                       controller: _usernameController,
-                      textAlign: TextAlign.right,
-                      decoration: InputDecoration(
-                        hintText: 'أدخل اسم مستخدم جديد',
-                        hintStyle: AppTextStyles.body.copyWith(color: AppColors.text_4),
-                        filled: true,
-                        fillColor: AppColors.secondary4,
-                        suffixIcon: const Icon(
-                          Icons.edit_outlined,
-                          color: AppColors.primary,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
+                      hintText: 'اسم مستخدم جديد',
+                      icon: Icons.edit_outlined,
+                      onChanged: (_) {
+                        if (_usernameError != null) {
+                          setState(() => _usernameError = null);
+                        }
+                      },
+                      errorText: _usernameError,
                     ),
                     const SizedBox(height: 12),
-                    _buildChangeButton(
-                      loading: _updatingUsername,
-                      onPressed: _onChangeUsernamePressed,
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _buildChangeButton(
+                        width: 90,
+                        height: 36,
+                        radius: 30,
+                        loading: _updatingUsername,
+                        onPressed: _onChangeUsernamePressed,
+                        textStyle: AppTextStyles.body,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
               _SettingsCard(
-                title: 'تغيير صورة الملف الشخصي',
+                title: 'تغيير الصورة الشخصية',
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: _buildChangeButton(
-                        loading: _updatingPicture,
-                        onPressed: _onChangePicturePressed,
-                      ),
+                    _buildChangeButton(
+                      width: 90,
+                      height: 36,
+                      radius: 18,
+                      loading: _updatingPicture,
+                      onPressed: _onChangePicturePressed,
+                      textStyle: AppTextStyles.body,
                     ),
-                    const SizedBox(width: 14),
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        CircleAvatar(
-                          radius: 32,
-                          backgroundColor: AppColors.secondary2,
-                          backgroundImage: user?.profileImageUrl != null
-                              ? NetworkImage(user!.profileImageUrl!)
-                              : null,
-                          child: user?.profileImageUrl == null
-                              ? const Icon(
-                                  Icons.person_outline,
-                                  color: AppColors.primary,
-                                  size: 28,
-                                )
-                              : null,
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            color: _avatarBgColor,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.primary1,
+                              width: 3,
+                            ),
+                          ),
+                          child: ClipOval(
+                            child: user?.profileImageUrl != null
+                                ? Image.network(
+                                    user!.profileImageUrl!,
+                                    fit: BoxFit.cover,
+                                  )
+                                : const Icon(
+                                    Icons.image_outlined,
+                                    size: 28,
+                                    color: _avatarIconColor,
+                                  ),
+                          ),
                         ),
                         Positioned(
-                          right: -4,
-                          bottom: -4,
+                          right: -2,
+                          bottom: -2,
                           child: Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary2,
+                            width: 18,
+                            height: 18,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF4B183),
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.background,
-                                width: 2,
-                              ),
                             ),
                             child: const Icon(
                               Icons.add,
-                              size: 14,
-                              color: AppColors.text_2,
+                              size: 12,
+                              color: Colors.white,
                             ),
                           ),
                         ),
@@ -157,55 +163,47 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
               _SettingsCard(
                 title: 'تغيير كلمة المرور',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    TextField(
+                    _buildInputField(
                       controller: _currentPasswordController,
+                      hintText: 'كلمة مرور قديمة',
+                      icon: Icons.lock_outline,
                       obscureText: true,
-                      textAlign: TextAlign.right,
-                      decoration: InputDecoration(
-                        hintText: 'كلمة المرور الحالية',
-                        hintStyle: AppTextStyles.body.copyWith(color: AppColors.text_4),
-                        filled: true,
-                        fillColor: AppColors.secondary4,
-                        suffixIcon: const Icon(
-                          Icons.lock_outline,
-                          color: AppColors.primary,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
+                      onChanged: (_) {
+                        if (_currentPasswordError != null) {
+                          setState(() => _currentPasswordError = null);
+                        }
+                      },
+                      errorText: _currentPasswordError,
                     ),
                     const SizedBox(height: 10),
-                    TextField(
+                    _buildInputField(
                       controller: _newPasswordController,
+                      hintText: 'كلمة مرور جديدة',
+                      icon: Icons.lock_outline,
                       obscureText: true,
-                      textAlign: TextAlign.right,
-                      decoration: InputDecoration(
-                        hintText: 'كلمة المرور الجديدة',
-                        hintStyle: AppTextStyles.body.copyWith(color: AppColors.text_4),
-                        filled: true,
-                        fillColor: AppColors.secondary4,
-                        suffixIcon: const Icon(
-                          Icons.enhanced_encryption_outlined,
-                          color: AppColors.primary,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
+                      onChanged: (_) {
+                        if (_newPasswordError != null) {
+                          setState(() => _newPasswordError = null);
+                        }
+                      },
+                      errorText: _newPasswordError,
                     ),
-                    const SizedBox(height: 12),
-                    _buildChangeButton(
-                      loading: _updatingPassword,
-                      onPressed: _onChangePasswordPressed,
+                    const SizedBox(height: 14),
+                    Align(
+                      alignment: Alignment.center,
+                      child: _buildChangeButton(
+                        width: 140,
+                        height: 40,
+                        radius: 20,
+                        loading: _updatingPassword,
+                        onPressed: _onChangePasswordPressed,
+                        textStyle: AppTextStyles.heading5,
+                      ),
                     ),
                   ],
                 ),
@@ -223,10 +221,7 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
       children: [
         Text(
           'الإعدادات',
-          style: AppTextStyles.heading5.copyWith(
-            color: AppColors.text_3,
-            fontWeight: FontWeight.w500,
-          ),
+          style: AppTextStyles.heading5.copyWith(color: AppColors.text_3),
           textAlign: TextAlign.right,
         ),
         IconButton(
@@ -246,43 +241,117 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
     );
   }
 
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData icon,
+    ValueChanged<String>? onChanged,
+    String? errorText,
+    bool obscureText = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(50),
+            border: Border.all(
+              color: errorText == null ? AppColors.primary1 : AppColors.error,
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: errorText == null ? AppColors.primary1 : AppColors.error,
+              ),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  onChanged: onChanged,
+                  obscureText: obscureText,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    isCollapsed: true,
+                    border: InputBorder.none,
+                    hintText: hintText,
+                    hintStyle: AppTextStyles.body.copyWith(color: AppColors.text_3),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (errorText != null) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Text(
+              errorText,
+              textAlign: TextAlign.right,
+              style: AppTextStyles.smallText.copyWith(color: AppColors.error),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildChangeButton({
+    required double width,
+    required double height,
+    required double radius,
     required bool loading,
     required VoidCallback onPressed,
+    required TextStyle textStyle,
   }) {
     return SizedBox(
-      height: 42,
-      child: ElevatedButton(
+      width: width,
+      height: height,
+      child: MaterialButton(
         onPressed: loading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary2,
-          foregroundColor: AppColors.text_2,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+        color: AppColors.buttonLoginSignUp,
+        disabledColor: AppColors.buttonLoginSignUp.withValues(alpha: 0.5),
+        elevation: 2,
+        height: height,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius),
+          side: BorderSide(
+            color: AppColors.primary2,
+            width: 0.9,
           ),
         ),
         child: loading
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
+            ? SizedBox(
+                width: height * 0.5,
+                height: height * 0.5,
+                child: const CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: AppColors.primary2,
                 ),
               )
-            : Text(
-                'تغيير',
-                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
-              ),
+            : Text('تغيير', style: textStyle.copyWith(color: AppColors.text_3)),
       ),
     );
   }
 
   Future<void> _onChangeUsernamePressed() async {
     final username = _usernameController.text.trim();
+
+    setState(() {
+      _usernameError = null;
+    });
+
     if (username.isEmpty) {
-      _showSnack('يرجى إدخال اسم مستخدم');
+      setState(() {
+        _usernameError = 'يرجى إدخال اسم مستخدم';
+      });
       return;
     }
 
@@ -294,13 +363,16 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
         final provider = context.read<SettingsProvider>();
         await provider.updateAccount(username: username);
         if (!mounted) return;
-        setState(() => _updatingUsername = false);
+
+        setState(() {
+          _updatingUsername = false;
+        });
 
         if (provider.error != null) {
-          _showSnack(provider.error!);
+          _showStatusSnack(provider.error!, isError: true);
           return;
         }
-        _showSnack('تم تغيير اسم المستخدم بنجاح');
+        _showStatusSnack('تم تغيير اسم المستخدم بنجاح', isError: false);
       },
     );
   }
@@ -309,16 +381,29 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
     final currentPassword = _currentPasswordController.text.trim();
     final newPassword = _newPasswordController.text.trim();
 
+    setState(() {
+      _currentPasswordError = null;
+      _newPasswordError = null;
+    });
+
     if (currentPassword.isEmpty) {
-      _showSnack('يرجى إدخال كلمة المرور الحالية');
+      setState(() {
+        _currentPasswordError = 'يرجى إدخال كلمة المرور الحالية';
+      });
       return;
     }
+
     if (newPassword.isEmpty) {
-      _showSnack('يرجى إدخال كلمة المرور الجديدة');
+      setState(() {
+        _newPasswordError = 'يرجى إدخال كلمة المرور الجديدة';
+      });
       return;
     }
+
     if (newPassword.length < 6) {
-      _showSnack('كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل');
+      setState(() {
+        _newPasswordError = 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل';
+      });
       return;
     }
 
@@ -330,16 +415,18 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
         final provider = context.read<SettingsProvider>();
         await provider.updateAccount(password: newPassword);
         if (!mounted) return;
-        setState(() => _updatingPassword = false);
+
+        setState(() {
+          _updatingPassword = false;
+        });
 
         if (provider.error != null) {
-          _showSnack(provider.error!);
+          _showStatusSnack(provider.error!, isError: true);
           return;
         }
-
         _currentPasswordController.clear();
         _newPasswordController.clear();
-        _showSnack('تم تغيير كلمة المرور بنجاح');
+        _showStatusSnack('تم تغيير كلمة المرور بنجاح', isError: false);
       },
     );
   }
@@ -352,15 +439,34 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
         setState(() => _updatingPicture = true);
         await Future<void>.delayed(const Duration(milliseconds: 400));
         if (!mounted) return;
-        setState(() => _updatingPicture = false);
-        _showSnack('تغيير الصورة غير مرتبط بمصدر بيانات بعد');
+
+        setState(() {
+          _updatingPicture = false;
+        });
+        _showStatusSnack('تغيير الصورة غير مرتبط بمصدر بيانات بعد', isError: true);
       },
     );
   }
 
-  void _showSnack(String message) {
+  void _showStatusSnack(String message, {required bool isError}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message, textAlign: TextAlign.right)),
+      SnackBar(
+        content: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Text(
+            message,
+            style: AppTextStyles.heading5.copyWith(
+              color: isError ? AppColors.text_2 : AppColors.primary,
+            ),
+          ),
+        ),
+        backgroundColor:
+            isError ? AppColors.error.withValues(alpha: 0.9) : AppColors.backGroundSuccess,
+        duration: const Duration(seconds: 3),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        ),
+      ),
     );
   }
 }
@@ -369,23 +475,21 @@ class _SettingsCard extends StatelessWidget {
   final String title;
   final Widget child;
 
-  const _SettingsCard({
-    required this.title,
-    required this.child,
-  });
+  const _SettingsCard({required this.title, required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.accent_3,
-        borderRadius: BorderRadius.circular(20),
+        color: _EditAccountScreenState._cardColor,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -395,15 +499,17 @@ class _SettingsCard extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.right,
-            style: AppTextStyles.body.copyWith(
-              color: AppColors.text_1,
-              fontWeight: FontWeight.w700,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF2D3A4A),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           child,
         ],
       ),
     );
   }
 }
+

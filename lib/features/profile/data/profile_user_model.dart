@@ -8,6 +8,7 @@ class ProfileUserModel extends UserEntity {
     required super.createdAt,
     required super.updatedAt,
     required super.lastActivityAt,
+    super.isNotificationsEnabled = false,
     super.profileImageUrl,
   });
 
@@ -19,6 +20,8 @@ class ProfileUserModel extends UserEntity {
       createdAt: json['created_at'] as DateTime,
       updatedAt: json['updated_at'] as DateTime,
       lastActivityAt: json['last_activity_at'] as DateTime,
+      isNotificationsEnabled:
+          (json['is_notifications_enabled'] as bool?) ?? false,
       profileImageUrl:
           (json['profile_image_url'] ?? json['profile_image']) as String?,
     );

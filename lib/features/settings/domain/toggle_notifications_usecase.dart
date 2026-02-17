@@ -1,12 +1,12 @@
+import 'package:roadmaps/core/entities/user_entity.dart';
 import '../data/settings_repository.dart';
-import 'settings_entity.dart';
 
 class ToggleNotificationsUseCase {
   final SettingsRepository repository;
 
   ToggleNotificationsUseCase(this.repository);
 
-  Future<SettingsEntity> call(bool enabled) {
+  Future<UserEntity> call(bool enabled) {
     return repository.toggleNotifications(enabled);
   }
 }

@@ -5,6 +5,7 @@ class UserEntity {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime lastActivityAt;
+  final bool isNotificationsEnabled;
   final String? profileImageUrl;
 
   const UserEntity({
@@ -14,6 +15,7 @@ class UserEntity {
     required this.createdAt,
     required this.updatedAt,
     required this.lastActivityAt,
+    this.isNotificationsEnabled = false,
     this.profileImageUrl,
   });
 }

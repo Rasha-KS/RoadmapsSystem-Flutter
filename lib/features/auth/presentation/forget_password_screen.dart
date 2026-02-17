@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/widgets/auth_custom_button.dart';
@@ -44,6 +44,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
   GlobalKey<FormState> formStateKey = GlobalKey();
   final TextEditingController emailController = TextEditingController();
   final emailFocus = FocusNode();
+  bool _suppressEmailError = false;
 
   @override
   void dispose() {
@@ -88,19 +89,26 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
             ],
           ),
           backgroundColor: AppColors.background,
-          body: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Container(
-                width: screenWidth * 0.9,
-                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
-                child: Column(
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: Container(
+                      width: screenWidth * 0.9,
+                      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
+                      child: Column(
                   children: [
                     SizedBox(height: screenHeight * 0.01),
 
-                    // العنوان
+                    // Ø§Ù„Ø¹Ù†ÙˆØ§Ù†
                     Text(
-                      "ادخل البريد الالكتروني هنا",
+                      "Ø§Ø¯Ø®Ù„ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø§Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ù‡Ù†Ø§",
                       style: AppTextStyles.heading3.copyWith(
                         color: AppColors.text_1,
                       ),
@@ -108,9 +116,9 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                     ),
                     SizedBox(height: screenHeight * 0.01),
 
-                    // الوصف
+                    // Ø§Ù„ÙˆØµÙ
                     Text(
-                      "سنرسل لك رسالة عبر البريد الالكتروني",
+                      "Ø³Ù†Ø±Ø³Ù„ Ù„Ùƒ Ø±Ø³Ø§Ù„Ø© Ø¹Ø¨Ø± Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø§Ù„ÙƒØªØ±ÙˆÙ†ÙŠ",
                       style: AppTextStyles.body.copyWith(
                         color: AppColors.text_4,
                       ),
@@ -126,15 +134,21 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                         child: Padding(
                           padding: EdgeInsets.all(screenWidth * 0.02),
                           child: CustomTextFormField(
-                            label: "البريد الالكتروني",
+                            label: "Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø§Ù„ÙƒØªØ±ÙˆÙ†ÙŠ",
                             controller: emailController,
                             fieldFocuse: emailFocus,
+                            onChanged: (_) {
+                              if (!_suppressEmailError) {
+                                setState(() => _suppressEmailError = true);
+                              }
+                            },
                             validator: (value) {
+                              if (_suppressEmailError) return null;
                               if (value == null || value.isEmpty) {
-                                return 'الرجاء إدخال البريد الإلكتروني';
+                                return 'Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ';
                               }
                               if (!value.contains('@')) {
-                                return 'البريد الإلكتروني غير صحيح';
+                                return 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ ØºÙŠØ± ØµØ­ÙŠØ­';
                               }
                               return null;
                             },
@@ -145,11 +159,12 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
 
                     SizedBox(height: screenHeight * 0.03),
 
-                    // متابعة button
+                    // Ù…ØªØ§Ø¨Ø¹Ø© button
                     CustomButton(
                       height: 45,
                       width: 187,
                       onPressed: () {
+                        setState(() => _suppressEmailError = false);
                         if (formStateKey.currentState?.validate() ?? false) {
                           FocusScope.of(context).unfocus();
                           final email = emailController.text.trim();
@@ -168,14 +183,17 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                       },
                       // height: screenHeight * 0.07,
                       // width: screenWidth * 0.6,
-                      text: "متابعة",
+                      text: "Ù…ØªØ§Ø¨Ø¹Ø©",
                       fontsize: 17,
                     ),
                     SizedBox(height: screenHeight * 0.05),
                   ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -188,3 +206,4 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
     FocusManager.instance.primaryFocus?.unfocus();
   }
 }
+

@@ -1,12 +1,12 @@
+import 'package:roadmaps/core/entities/user_entity.dart';
 import '../data/settings_repository.dart';
-import 'settings_entity.dart';
 
 class UpdateAccountUseCase {
   final SettingsRepository repository;
 
   UpdateAccountUseCase(this.repository);
 
-  Future<SettingsEntity> call({
+  Future<UserEntity> call({
     String? username,
     String? email,
     String? password,

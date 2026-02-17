@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/widgets/auth_custom_button.dart';
@@ -53,6 +53,8 @@ class _MyAppState extends State<LoginScreen> {
   final passwordFocus = FocusNode();
   bool isPasswordHidden = true;
   bool isPasswordHiddenVisibile = false;
+  bool _suppressEmailError = false;
+  bool _suppressPasswordError = false;
 
   @override
   void dispose() {
@@ -100,17 +102,24 @@ class _MyAppState extends State<LoginScreen> {
             ],
           ),
           backgroundColor: AppColors.background,
-          body: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Container(
-                width: screenWidth * 0.9,
-                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
-                child: Column(
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: Container(
+                      width: screenWidth * 0.9,
+                      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
+                      child: Column(
                   children: [
                     SizedBox(height: screenHeight * 0.05),
                     Text(
-                      "تسجيل دخول",
+                      "ØªØ³Ø¬ÙŠÙ„ Ø¯Ø®ÙˆÙ„",
                       textAlign: TextAlign.center,
                       style: AppTextStyles.heading3.copyWith(
                         color: AppColors.primary,
@@ -134,14 +143,20 @@ class _MyAppState extends State<LoginScreen> {
                                   });
                                 },
                                 fieldFocuse: emailFocus,
-                                label: "البريد الالكتروني",
+                                label: "Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø§Ù„ÙƒØªØ±ÙˆÙ†ÙŠ",
                                 controller: emailController,
+                                onChanged: (_) {
+                                  if (!_suppressEmailError) {
+                                    setState(() => _suppressEmailError = true);
+                                  }
+                                },
                                 validator: (value) {
+                                  if (_suppressEmailError) return null;
                                   if (value == null || value.isEmpty) {
-                                    return 'الرجاء إدخال البريد الإلكتروني';
+                                    return 'Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ';
                                   }
                                   if (!value.contains('@')) {
-                                    return 'البريد الإلكتروني غير صحيح';
+                                    return 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ ØºÙŠØ± ØµØ­ÙŠØ­';
                                   }
                                   return null;
                                 },
@@ -159,12 +174,18 @@ class _MyAppState extends State<LoginScreen> {
                                   });
                                 },
                                 fieldFocuse: passwordFocus,
-                                label: "كلمة المرور",
+                                label: "ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±",
                                 controller: passwordController,
                                 obscureText: isPasswordHidden,
+                                onChanged: (_) {
+                                  if (!_suppressPasswordError) {
+                                    setState(() => _suppressPasswordError = true);
+                                  }
+                                },
                                 validator: (value) {
+                                  if (_suppressPasswordError) return null;
                                   if (value == null || value.isEmpty) {
-                                    return 'الرجاء إدخال كلمة المرور';
+                                    return 'Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±';
                                   }
                                   return null;
                                 },
@@ -206,7 +227,7 @@ class _MyAppState extends State<LoginScreen> {
                                 );
                               },
                               child: Text(
-                                "هل نسيت كلمة المرور؟",
+                                "Ù‡Ù„ Ù†Ø³ÙŠØª ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±ØŸ",
                                 style: AppTextStyles.smallText.copyWith(
                                   color: AppColors.text_4,
                                 ),
@@ -224,6 +245,10 @@ class _MyAppState extends State<LoginScreen> {
                       height: 45,
                       width: 187,
                       onPressed: () {
+                        setState(() {
+                          _suppressEmailError = false;
+                          _suppressPasswordError = false;
+                        });
                         if (formStateKey.currentState?.validate() ?? false) {
                           FocusScope.of(context).unfocus();
                           clearFieldsAndFocusLogin();
@@ -239,7 +264,7 @@ class _MyAppState extends State<LoginScreen> {
                       },
                       // height: screenHeight * 0.07,
                       // width: screenWidth * 0.6,
-                      text: "تسجيل",
+                      text: "ØªØ³Ø¬ÙŠÙ„",
                       fontsize: 17,
                     ),
                     SizedBox(height: screenHeight * 0.02),
@@ -255,7 +280,7 @@ class _MyAppState extends State<LoginScreen> {
                         );
                       },
                       child: Text(
-                        "إنشاء حساب جديد",
+                        "Ø¥Ù†Ø´Ø§Ø¡ Ø­Ø³Ø§Ø¨ Ø¬Ø¯ÙŠØ¯",
                         style: AppTextStyles.smallText.copyWith(
                           color: AppColors.text_4,
                         ),
@@ -271,7 +296,7 @@ class _MyAppState extends State<LoginScreen> {
                             horizontal: screenWidth * 0.02,
                           ),
                           child: Text(
-                            "او تسجيل دخول بـ",
+                            "Ø§Ùˆ ØªØ³Ø¬ÙŠÙ„ Ø¯Ø®ÙˆÙ„ Ø¨Ù€",
                             style: AppTextStyles.smallText.copyWith(
                               color: AppColors.text_1,
                             ),
@@ -301,9 +326,12 @@ class _MyAppState extends State<LoginScreen> {
                     ),
                     SizedBox(height: screenHeight * 0.05),
                   ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -319,3 +347,4 @@ class _MyAppState extends State<LoginScreen> {
     FocusManager.instance.primaryFocus?.unfocus();
   }
 }
+

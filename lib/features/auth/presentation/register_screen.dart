@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/widgets/auth_custom_button.dart';
@@ -21,8 +21,8 @@ import 'package:roadmaps/features/main_screen.dart';
 // - Show/Hide password functionality.
 // - Clear fields and unfocus text inputs when tapping outside.
 // - Navigation buttons:
-//    • Go back to SplashScreen.
-//    • Go to LoginScreen.
+//    â€¢ Go back to SplashScreen.
+//    â€¢ Go to LoginScreen.
 // - Create account button after validation.
 // - Option to sign in using Google.
 //
@@ -67,6 +67,10 @@ class _MyAppState extends State<RegisterScreen> {
   bool isConfirmPasswordHidden = true;
   bool isPasswordHiddenVisibile = false;
   bool isconfirmPasswordHiddenVisibile = false;
+  bool _suppressUsernameError = false;
+  bool _suppressEmailError = false;
+  bool _suppressPasswordError = false;
+  bool _suppressConfirmPasswordError = false;
 
   @override
   void dispose() {
@@ -117,17 +121,24 @@ class _MyAppState extends State<RegisterScreen> {
             ],
           ),
           backgroundColor: AppColors.background,
-          body: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Container(
-                width: screenWidth * 0.9, // يملأ تقريباً 90% من عرض الشاشة
-                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
-                child: Column(
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: Container(
+                      width: screenWidth * 0.9, // ÙŠÙ…Ù„Ø£ ØªÙ‚Ø±ÙŠØ¨Ø§Ù‹ 90% Ù…Ù† Ø¹Ø±Ø¶ Ø§Ù„Ø´Ø§Ø´Ø©
+                      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
+                      child: Column(
                   children: [
                     SizedBox(height: screenHeight * 0.05),
                     Text(
-                      "إنشاء حساب",
+                      "Ø¥Ù†Ø´Ø§Ø¡ Ø­Ø³Ø§Ø¨",
                       textAlign: TextAlign.center,
                       style: AppTextStyles.heading3.copyWith(
                         color: AppColors.primary,
@@ -152,11 +163,17 @@ class _MyAppState extends State<RegisterScreen> {
                                   });
                                 },
                                 fieldFocuse: userNameFocus,
-                                label: "اسم المستخدم",
+                                label: "Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…",
                                 controller: userNameController,
+                                onChanged: (_) {
+                                  if (!_suppressUsernameError) {
+                                    setState(() => _suppressUsernameError = true);
+                                  }
+                                },
                                 validator: (value) {
+                                  if (_suppressUsernameError) return null;
                                   if (value == null || value.isEmpty) {
-                                    return 'الرجاء إدخال اسم المستخدم';
+                                    return 'Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…';
                                   }
                                   return null;
                                 },
@@ -175,14 +192,20 @@ class _MyAppState extends State<RegisterScreen> {
                                   });
                                 },
                                 fieldFocuse: emailFocus,
-                                label: "البريد الالكتروني",
+                                label: "Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø§Ù„ÙƒØªØ±ÙˆÙ†ÙŠ",
                                 controller: emailController,
+                                onChanged: (_) {
+                                  if (!_suppressEmailError) {
+                                    setState(() => _suppressEmailError = true);
+                                  }
+                                },
                                 validator: (value) {
+                                  if (_suppressEmailError) return null;
                                   if (value == null || value.isEmpty) {
-                                    return 'الرجاء إدخال البريد الإلكتروني';
+                                    return 'Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ';
                                   }
                                   if (!value.contains('@')) {
-                                    return 'البريد الإلكتروني غير صحيح';
+                                    return 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ ØºÙŠØ± ØµØ­ÙŠØ­';
                                   }
                                   return null;
                                 },
@@ -201,12 +224,18 @@ class _MyAppState extends State<RegisterScreen> {
                                   });
                                 },
                                 fieldFocuse: passwordFocus,
-                                label: "كلمة المرور",
+                                label: "ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±",
                                 controller: passwordController,
                                 obscureText: isPasswordHidden,
+                                onChanged: (_) {
+                                  if (!_suppressPasswordError) {
+                                    setState(() => _suppressPasswordError = true);
+                                  }
+                                },
                                 validator: (value) {
+                                  if (_suppressPasswordError) return null;
                                   if (value == null || value.isEmpty) {
-                                    return 'الرجاء إدخال كلمة المرور';
+                                    return 'Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±';
                                   }
                                   return null;
                                 },
@@ -245,15 +274,21 @@ class _MyAppState extends State<RegisterScreen> {
                                   });
                                 },
                                 fieldFocuse: confirmPasswordFocus,
-                                label: "تأكيد كلمة المرور",
+                                label: "ØªØ£ÙƒÙŠØ¯ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±",
                                 controller: confirmPasswordController,
                                 obscureText: isConfirmPasswordHidden,
+                                onChanged: (_) {
+                                  if (!_suppressConfirmPasswordError) {
+                                    setState(() => _suppressConfirmPasswordError = true);
+                                  }
+                                },
                                 validator: (value) {
+                                  if (_suppressConfirmPasswordError) return null;
                                   if (value == null || value.isEmpty) {
-                                    return 'الرجاء إدخال كلمة المرور';
+                                    return 'Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±';
                                   }
                                   if (value != passwordController.text) {
-                                    return 'كلمة المرور غير متطابقة';
+                                    return 'ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± Ù…ØªØ·Ø§Ø¨Ù‚Ø©';
                                   }
                                   return null;
                                 },
@@ -291,6 +326,12 @@ class _MyAppState extends State<RegisterScreen> {
                       height: 45,
                       width: 187,
                       onPressed: () {
+                        setState(() {
+                          _suppressUsernameError = false;
+                          _suppressEmailError = false;
+                          _suppressPasswordError = false;
+                          _suppressConfirmPasswordError = false;
+                        });
                         if (formStateKey.currentState?.validate() ?? false) {
                           FocusScope.of(context).unfocus();
                           clearFieldsAndFocusSignUp();
@@ -308,8 +349,8 @@ class _MyAppState extends State<RegisterScreen> {
                       },
                       //    height: screenHeight * 0.07,
                       //    width: screenWidth * 0.6,
-                      text: "إنشاء حساب",
-                      fontsize: 17, // الخط ثابت
+                      text: "Ø¥Ù†Ø´Ø§Ø¡ Ø­Ø³Ø§Ø¨",
+                      fontsize: 17, // Ø§Ù„Ø®Ø· Ø«Ø§Ø¨Øª
                     ),
                     SizedBox(height: screenHeight * 0.02),
                     TextButton(
@@ -324,7 +365,7 @@ class _MyAppState extends State<RegisterScreen> {
                         clearFieldsAndFocusSignUp();
                       },
                       child: Text(
-                        " تسجيل الدخول ",
+                        " ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ ",
                         style: AppTextStyles.smallText.copyWith(
                           color: AppColors.text_4,
                         ),
@@ -340,7 +381,7 @@ class _MyAppState extends State<RegisterScreen> {
                             horizontal: screenWidth * 0.02,
                           ),
                           child: Text(
-                            "او إنشاء حساب بـ",
+                            "Ø§Ùˆ Ø¥Ù†Ø´Ø§Ø¡ Ø­Ø³Ø§Ø¨ Ø¨Ù€",
                             style: AppTextStyles.smallText.copyWith(
                               color: AppColors.text_1,
                             ),
@@ -370,9 +411,12 @@ class _MyAppState extends State<RegisterScreen> {
                     ),
                     SizedBox(height: screenHeight * 0.05),
                   ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -391,3 +435,4 @@ class _MyAppState extends State<RegisterScreen> {
     FocusManager.instance.primaryFocus?.unfocus();
   }
 }
+

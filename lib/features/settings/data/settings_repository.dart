@@ -1,4 +1,4 @@
-import '../domain/settings_entity.dart';
+import 'package:roadmaps/core/entities/user_entity.dart';
 import 'settings_model.dart';
 
 class SettingsRepository {
@@ -16,12 +16,12 @@ class SettingsRepository {
     },
   ];
 
-  Future<SettingsEntity> getSettingsData() async {
+  Future<UserEntity> getSettingsData() async {
     await Future.delayed(const Duration(milliseconds: 250));
     return SettingsModel.fromJson(_usersTable.first);
   }
 
-  Future<SettingsEntity> toggleNotifications(bool enabled) async {
+  Future<UserEntity> toggleNotifications(bool enabled) async {
     await Future.delayed(const Duration(milliseconds: 150));
     final current = _usersTable.first;
     _usersTable[0] = {
@@ -33,7 +33,7 @@ class SettingsRepository {
     return SettingsModel.fromJson(_usersTable.first);
   }
 
-  Future<SettingsEntity> updateAccount({
+  Future<UserEntity> updateAccount({
     String? username,
     String? email,
     String? password,

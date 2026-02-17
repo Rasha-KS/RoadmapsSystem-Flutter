@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/widgets/auth_custom_button.dart';
@@ -20,8 +20,8 @@ import 'package:roadmaps/features/main_screen.dart';
 // - Show/Hide password functionality.
 // - Clear fields and unfocus text inputs when tapping outside.
 // - Navigation buttons:
-//    • Go back to SplashScreen.
-//    • Go to LoginScreen.
+//    â€¢ Go back to SplashScreen.
+//    â€¢ Go to LoginScreen.
 // - Create account button after validation.
 // - Option to sign in using Google.
 //
@@ -65,6 +65,8 @@ class _MyAppState extends State<ConfirmNewPasswordScreen> {
   bool isConfirmPasswordHidden = true;
   bool isPasswordHiddenVisibile = false;
   bool isconfirmPasswordHiddenVisibile = false;
+  bool _suppressPasswordError = false;
+  bool _suppressConfirmPasswordError = false;
 
   @override
   void dispose() {
@@ -112,17 +114,24 @@ class _MyAppState extends State<ConfirmNewPasswordScreen> {
             ],
           ),
           backgroundColor: AppColors.background,
-          body: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Container(
-                width: screenWidth * 0.9, // يملأ تقريباً 90% من عرض الشاشة
-                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
-                child: Column(
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: Container(
+                      width: screenWidth * 0.9, // ÙŠÙ…Ù„Ø£ ØªÙ‚Ø±ÙŠØ¨Ø§Ù‹ 90% Ù…Ù† Ø¹Ø±Ø¶ Ø§Ù„Ø´Ø§Ø´Ø©
+                      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
+                      child: Column(
                   children: [
                     SizedBox(height: screenHeight * 0.05),
                     Text(
-                      "تغيير كلمة المرور",
+                      "ØªØºÙŠÙŠØ± ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±",
                       textAlign: TextAlign.center,
                       style: AppTextStyles.heading3.copyWith(
                         color: AppColors.primary,
@@ -130,7 +139,7 @@ class _MyAppState extends State<ConfirmNewPasswordScreen> {
                     ),
                     SizedBox(height: screenHeight * 0.03),
                     Text(
-                      "سيتم استبدال كلمة المرور القديمة بالجديدة",
+                      "Ø³ÙŠØªÙ… Ø§Ø³ØªØ¨Ø¯Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ù‚Ø¯ÙŠÙ…Ø© Ø¨Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©",
                       textAlign: TextAlign.center,
                       style: AppTextStyles.body.copyWith(
                         fontSize: 17,
@@ -155,12 +164,18 @@ class _MyAppState extends State<ConfirmNewPasswordScreen> {
                                   });
                                 },
                                 fieldFocuse: newPasswordFocus,
-                                label: "كلمة المرور",
+                                label: "ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±",
                                 controller: newPasswordController,
                                 obscureText: isPasswordHidden,
+                                onChanged: (_) {
+                                  if (!_suppressPasswordError) {
+                                    setState(() => _suppressPasswordError = true);
+                                  }
+                                },
                                 validator: (value) {
+                                  if (_suppressPasswordError) return null;
                                   if (value == null || value.isEmpty) {
-                                    return 'الرجاء إدخال كلمة المرور';
+                                    return 'Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±';
                                   }
                                   return null;
                                 },
@@ -199,15 +214,21 @@ class _MyAppState extends State<ConfirmNewPasswordScreen> {
                                   });
                                 },
                                 fieldFocuse: confirmNewPasswordFocus,
-                                label: "تأكيد كلمة المرور",
+                                label: "ØªØ£ÙƒÙŠØ¯ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±",
                                 controller: confirmNewPasswordController,
                                 obscureText: isConfirmPasswordHidden,
+                                onChanged: (_) {
+                                  if (!_suppressConfirmPasswordError) {
+                                    setState(() => _suppressConfirmPasswordError = true);
+                                  }
+                                },
                                 validator: (value) {
+                                  if (_suppressConfirmPasswordError) return null;
                                   if (value == null || value.isEmpty) {
-                                    return 'الرجاء إدخال كلمة المرور';
+                                    return 'Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±';
                                   }
                                   if (value != newPasswordController.text) {
-                                    return 'كلمة المرور غير متطابقة';
+                                    return 'ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± Ù…ØªØ·Ø§Ø¨Ù‚Ø©';
                                   }
                                   return null;
                                 },
@@ -245,6 +266,10 @@ class _MyAppState extends State<ConfirmNewPasswordScreen> {
                       height: 45,
                       width: 187,
                       onPressed: () {
+                        setState(() {
+                          _suppressPasswordError = false;
+                          _suppressConfirmPasswordError = false;
+                        });
                         if (formStateKey.currentState?.validate() ?? false) {
                           FocusScope.of(context).unfocus();
                           clearFieldsAndFocusConfirmPass();
@@ -262,13 +287,16 @@ class _MyAppState extends State<ConfirmNewPasswordScreen> {
                       },
                       //    height: screenHeight * 0.07,
                       //    width: screenWidth * 0.6,
-                      text: "تأكيد ",
-                      fontsize: 17, // الخط ثابت
+                      text: "ØªØ£ÙƒÙŠØ¯ ",
+                      fontsize: 17, // Ø§Ù„Ø®Ø· Ø«Ø§Ø¨Øª
                     ),
                   ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -284,3 +312,4 @@ class _MyAppState extends State<ConfirmNewPasswordScreen> {
     FocusManager.instance.primaryFocus?.unfocus();
   }
 }
+

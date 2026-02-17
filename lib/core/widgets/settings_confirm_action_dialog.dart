@@ -15,7 +15,7 @@ Future<void> showSettingsConfirmActionDialog({
     builder: (dialogContext) {
       return Dialog(
         alignment: Alignment.topCenter,
-        backgroundColor: AppColors.accent_2.withValues(alpha: 0.92),
+        backgroundColor: AppColors.primary1.withValues(alpha: 0.82),
         elevation: 10,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
@@ -26,19 +26,18 @@ Future<void> showSettingsConfirmActionDialog({
           top: 250,
         ),
         child: Padding(
-          padding: const EdgeInsets.all(28),
+          padding: const EdgeInsets.all(30),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: AppTextStyles.heading5.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
+                style: AppTextStyles.heading4.copyWith(
+                  color: AppColors.text_2,
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 30),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -55,14 +54,15 @@ Future<void> showSettingsConfirmActionDialog({
                     onPressed: () => Navigator.of(dialogContext).pop(false),
                     child: Text(
                       cancelText,
-                      style: AppTextStyles.smallText.copyWith(
-                        color: AppColors.text_1,
-                      ),
+                      style: AppTextStyles.boldSmallText.copyWith(
+                        fontWeight: FontWeight.w800,
+
+                      )
                     ),
                   ),
                   MaterialButton(
-                    color: AppColors.primary,
-                    textColor: AppColors.text_2,
+                    color: AppColors.secondary4,
+                    textColor: AppColors.text_3,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
@@ -73,9 +73,10 @@ Future<void> showSettingsConfirmActionDialog({
                     onPressed: () => Navigator.of(dialogContext).pop(true),
                     child: Text(
                       confirmText,
-                      style: AppTextStyles.smallText.copyWith(
-                        color: AppColors.text_2,
-                      ),
+                      style: AppTextStyles.boldSmallText.copyWith(
+                        fontWeight: FontWeight.w800,
+
+                      )
                     ),
                   ),
                 ],

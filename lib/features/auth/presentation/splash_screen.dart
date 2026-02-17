@@ -41,77 +41,88 @@ class _SplashScreenState extends State<SplashScreen> {
     return SafeArea(
       child: Scaffold(
         backgroundColor: AppColors.background,
-        body: SingleChildScrollView(
-          child: SizedBox(
-            height: screenHeight, 
-            width: screenWidth,
-            child:  FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Column(
-                  children: [
-                    Text(
-                      "مرحبا بك في",
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.heading1.copyWith(
-                        color: AppColors.text_3,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              keyboardDismissBehavior:
+                  ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: SizedBox(
+                      width: screenWidth,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Column(
+                            children: [
+                              Text(
+                                "مرحبا بك في",
+                                textAlign: TextAlign.center,
+                                style: AppTextStyles.heading1.copyWith(
+                                  color: AppColors.text_3,
+                                ),
+                              ),
+                              Text(
+                                "أفق",
+                                textAlign: TextAlign.center,
+                                style: AppTextStyles.heading1.copyWith(
+                                  color: AppColors.primary2,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: screenHeight * 0.20),
+                          Column(
+                            children: [
+                              CustomButton(
+                                width:
+                                    screenWidth > 420 ? 280 : screenWidth * 0.7,
+                                height: 50,
+                                text: "تسجيل دخول",
+                                fontsize: 20,
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const LoginScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              SizedBox(height: screenHeight * 0.05),
+                              CustomButton(
+                                width:
+                                    screenWidth > 420 ? 280 : screenWidth * 0.7,
+                                height: 50,
+                                text: "إنشاء حساب",
+                                fontsize: 20,
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const RegisterScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      "أفق",
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.heading1.copyWith(
-                        color: AppColors.primary2,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-
-                SizedBox(height: screenHeight * 0.20), 
-
-                Column(
-                  children: [
-                    CustomButton(
-                      width:241,
-                      height:50,
-                      // height: screenHeight * 0.07,
-                      // width: screenWidth * 0.6,
-                      text: "تسجيل دخول",
-                      fontsize: 20, 
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    SizedBox(height: screenHeight * 0.05),
-                    CustomButton(
-                      width:241,
-                      height:50,
-                      // height: screenHeight * 0.07,
-                      // width: screenWidth * 0.6,
-                      text: "إنشاء حساب",
-                      fontsize: 20, 
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RegisterScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

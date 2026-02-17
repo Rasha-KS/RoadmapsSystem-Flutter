@@ -86,35 +86,31 @@ class HomeScreen extends StatelessWidget {
       child: Row(
         children: [
           if (onButtonPressed != null)
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: MaterialButton(
-                onPressed: onButtonPressed,
-                elevation: 0,
-                height: 27,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(23)),
-                ),
-                color: AppColors.accent_1,
-                child: Text(
-                  'عرض الكل',
-                  style: AppTextStyles.boldSmallText.copyWith(
-                    color: AppColors.text_4,
-                  ),
+            MaterialButton(
+              onPressed: onButtonPressed,
+              elevation: 0,
+              height: 30,
+              minWidth: 88,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(23)),
+              ),
+              color: AppColors.accent_1,
+              child: Text(
+                'عرض الكل',
+                style: AppTextStyles.boldSmallText.copyWith(
+                  color: AppColors.text_4,
                 ),
               ),
             ),
           if (onButtonPressed != null) SizedBox(width: spaceBetween),
           Expanded(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Text(
-                title,
-                textAlign: TextAlign.right,
-                style: AppTextStyles.heading4.copyWith(
-                  color: AppColors.text_3,
-                ),
+            child: Text(
+              title,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.heading4.copyWith(
+                color: AppColors.text_3,
               ),
             ),
           ),

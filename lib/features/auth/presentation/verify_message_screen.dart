@@ -1,6 +1,4 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
-
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/widgets/auth_custom_button.dart';
@@ -33,6 +31,7 @@ import 'package:roadmaps/features/auth/presentation/forget_password_screen.dart'
 //   the user to the next step after verifying the email.
 
 
+
 class VerifyMessageScreen extends StatelessWidget {
   final String? email;
 
@@ -50,7 +49,7 @@ class VerifyMessageScreen extends StatelessWidget {
       child: SafeArea(
         child: Scaffold(
           appBar: AppBar(
-            actionsPadding: EdgeInsets.all(8),
+            actionsPadding: const EdgeInsets.all(8),
             automaticallyImplyLeading: false,
             backgroundColor: AppColors.background,
             actions: [
@@ -64,7 +63,7 @@ class VerifyMessageScreen extends StatelessWidget {
                     ),
                   );
                 },
-                icon: Icon(
+                icon: const Icon(
                   Icons.arrow_right_alt_rounded,
                   size: 35,
                   color: AppColors.text_3,
@@ -73,82 +72,94 @@ class VerifyMessageScreen extends StatelessWidget {
             ],
           ),
           backgroundColor: AppColors.background,
-          body: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Container(
-                width: screenWidth * 0.9,
-                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
-                child: Column(
-                  children: [
-                    SizedBox(height: screenHeight * 0.01),
-
-                    Text(
-                      "تحقق من الرسالة",
-                      style: AppTextStyles.heading3.copyWith(
-                        color: AppColors.text_1,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: screenHeight * 0.01),
-
-                    Padding(
-                      padding: EdgeInsets.all(screenWidth * 0.02),
-                      child: Text(
-                        "لقد أرسلنا رسالة إلى بريدك الالكتروني لإعادة تعيين كلمة المرور",
-                        style: AppTextStyles.body.copyWith(
-                          color: AppColors.text_3,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    SizedBox(height: screenHeight * 0.05),
-
-                    Padding(
-                      padding: EdgeInsets.all(screenWidth * 0.02),
-                      child: TextField(
-                        canRequestFocus: false,
-                        readOnly: true,
-                        textAlign: TextAlign.center,
-                        decoration: InputDecoration(
-                          alignLabelWithHint: true,
-                          filled: true,
-                          fillColor: AppColors.accent_3,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          hintText: email!,
-                          hintStyle: AppTextStyles.heading5.copyWith(
-                            color: AppColors.text_1,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: screenHeight * 0.05),
-
-                    Padding(
-                      padding: EdgeInsets.all(screenWidth * 0.05),
-                      child: CustomButton(
-                        height: 45,
-                        width: 187,
-                        onPressed: () {
-                           Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ConfirmNewPasswordScreen(),
-                    ),
-                  );
-                        },
-                        // height: screenHeight * 0.07,
-                        // width: screenWidth * 0.6,
-                        text: "متابعة",
-                        fontsize: 17,
-                      ),
-                    ),
-                  ],
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
                 ),
-              ),
-            ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 560),
+                      child: Container(
+                        width: screenWidth * 0.9,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.02,
+                        ),
+                        child: Column(
+                          children: [
+                            SizedBox(height: screenHeight * 0.01),
+                            Text(
+                              "تحقق من الرسالة",
+                              style: AppTextStyles.heading3.copyWith(
+                                color: AppColors.text_1,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: screenHeight * 0.01),
+                            Padding(
+                              padding: EdgeInsets.all(screenWidth * 0.02),
+                              child: Text(
+                                "لقد أرسلنا رسالة إلى بريدك الإلكتروني لإعادة تعيين كلمة المرور",
+                                style: AppTextStyles.body.copyWith(
+                                  color: AppColors.text_3,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            SizedBox(height: screenHeight * 0.05),
+                            Padding(
+                              padding: EdgeInsets.all(screenWidth * 0.02),
+                              child: TextField(
+                                canRequestFocus: false,
+                                readOnly: true,
+                                textAlign: TextAlign.center,
+                                decoration: InputDecoration(
+                                  alignLabelWithHint: true,
+                                  filled: true,
+                                  fillColor: AppColors.accent_3,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  hintText: email ?? '',
+                                  hintStyle: AppTextStyles.heading5.copyWith(
+                                    color: AppColors.text_1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: screenHeight * 0.05),
+                            Padding(
+                              padding: EdgeInsets.all(screenWidth * 0.05),
+                              child: CustomButton(
+                                height: 45,
+                                width:
+                                    screenWidth > 420 ? 240 : screenWidth * 0.6,
+                                onPressed: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const ConfirmNewPasswordScreen(),
+                                    ),
+                                  );
+                                },
+                                text: "متابعة",
+                                fontsize: 17,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),

@@ -28,9 +28,12 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
       child: Scaffold(
         key: scaffoldkey,
         backgroundColor: AppColors.background,
-        body: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Column(
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 700),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -81,7 +84,7 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
                 padding: const EdgeInsets.all(10),
                 child: SizedBox(
                   height: 50,
-                  width: 353,
+                  width: double.infinity,
                   child: TextField(
                     readOnly: true,
                     onTap: () {
@@ -120,7 +123,7 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
               ),
               Expanded(
                 child: Padding(
-                  padding: EdgeInsets.only(right: 10, left: 10),
+                  padding: const EdgeInsets.only(right: 10, left: 10),
                   child: ListView(
                     children: [
                       ...roadmaps.map(
@@ -164,6 +167,8 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
                 ),
               ),
             ],
+              ),
+            ),
           ),
         ),
       ),

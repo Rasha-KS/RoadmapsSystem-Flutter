@@ -7,6 +7,9 @@ import 'package:roadmaps/features/homepage/domain/enroll_roadmap_usecase.dart';
 import 'package:roadmaps/features/homepage/domain/get_home_data_usecase.dart';
 import 'package:roadmaps/features/homepage/domain/reset_my_roadmap_usecase.dart';
 import 'package:roadmaps/features/homepage/presentation/home_provider.dart';
+import 'package:roadmaps/features/learning_path/data/learning_path_repository.dart';
+import 'package:roadmaps/features/learning_path/domain/get_learning_path_usecase.dart';
+import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
 import 'package:roadmaps/features/profile/data/profile_repository.dart';
 import 'package:roadmaps/features/profile/domain/delete_user_roadmap_usecase.dart';
 import 'package:roadmaps/features/profile/domain/get_user_profile_usecase.dart';
@@ -73,5 +76,10 @@ class Injection {
       deleteAccountUseCase: DeleteAccountUseCase(repository),
       logoutUseCase: LogoutUseCase(repository),
     );
+  }
+
+  static LearningPathProvider provideLearningPathProvider() {
+    final repository = LearningPathRepository();
+    return LearningPathProvider(GetLearningPathUseCase(repository));
   }
 }

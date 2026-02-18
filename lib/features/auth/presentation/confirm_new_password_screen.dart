@@ -48,9 +48,8 @@ class _ConfirmNewPasswordScreenState extends State<ConfirmNewPasswordScreen> {
         isPasswordHiddenVisibile = false;
         FocusScope.of(context).unfocus();
       },
-      child: SafeArea(
-        child: Scaffold(
-          appBar: AppBar(
+      child: Scaffold(
+        appBar: AppBar(
             actionsPadding: const EdgeInsets.all(8),
             automaticallyImplyLeading: false,
             backgroundColor: AppColors.background,
@@ -74,8 +73,9 @@ class _ConfirmNewPasswordScreenState extends State<ConfirmNewPasswordScreen> {
               ),
             ],
           ),
-          backgroundColor: AppColors.background,
-          body: LayoutBuilder(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
                 keyboardDismissBehavior:

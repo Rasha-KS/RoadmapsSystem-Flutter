@@ -27,11 +27,11 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
     final roadmapsProvider = context.watch<RoadmapsProvider>();
     final roadmaps = roadmapsProvider.roadmaps;
 
-    return SafeArea(
-      child: Scaffold(
-        key: scaffoldkey,
-        backgroundColor: AppColors.background,
-        body: Center(
+    return Scaffold(
+      key: scaffoldkey,
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 700),
             child: Padding(

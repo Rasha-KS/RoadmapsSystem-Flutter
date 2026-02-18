@@ -37,10 +37,10 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<LearningPathProvider>();
 
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 700),
             child: Padding(

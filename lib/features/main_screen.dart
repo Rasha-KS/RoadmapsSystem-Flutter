@@ -48,45 +48,45 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: buildAppBar(
-          context: context,
-          onNotificationsTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const NotificationsScreen(),
-              ),
-            );
-          },
-          onSettingsTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const SettingsScreen(),
-              ),
-            );
-          },
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: buildAppBar(
+        context: context,
+        onNotificationsTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const NotificationsScreen(),
+            ),
+          );
+        },
+        onSettingsTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const SettingsScreen(),
+            ),
+          );
+        },
+      ),
+      body: SafeArea(
+        child: IndexedStack(index: currentIndex, children: pages),
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 10,
+              spreadRadius: 2,
+            ),
+          ],
         ),
-        body: IndexedStack(index: currentIndex, children: pages),
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 10,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: buildAppBottomNav(
-            currentIndex: currentIndex,
-            onTap: (index) {
-              setState(() {
-                currentIndex = index;
-              });
-            },
-          ),
+        child: buildAppBottomNav(
+          currentIndex: currentIndex,
+          onTap: (index) {
+            setState(() {
+              currentIndex = index;
+            });
+          },
         ),
       ),
     );

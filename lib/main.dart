@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
+import 'package:roadmaps/features/notifications/presentation/notifications_provider.dart';
 import 'package:roadmaps/injection.dart';
 
 void main() async {
@@ -26,6 +27,9 @@ void main() async {
         ),
         ChangeNotifierProvider<LearningPathProvider>(
           create: (_) => Injection.provideLearningPathProvider(),
+        ),
+        ChangeNotifierProvider<NotificationsProvider>(
+          create: (_) => Injection.provideNotificationsProvider(),
         ),
       ],
       child: const MyApp(),

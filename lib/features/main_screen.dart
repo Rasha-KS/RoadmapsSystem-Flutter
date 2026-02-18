@@ -7,6 +7,8 @@ import 'package:roadmaps/core/widgets/app_bottom_nav.dart';
 import 'package:roadmaps/features/announcements/presentation/announcements_provider.dart';
 import 'package:roadmaps/features/homepage/presentation/home_provider.dart';
 import 'package:roadmaps/features/homepage/presentation/home_screen.dart';
+import 'package:roadmaps/features/notifications/presentation/notifications_provider.dart';
+import 'package:roadmaps/features/notifications/presentation/notifications_screen.dart';
 import 'package:roadmaps/features/profile/presentation/profile_provider.dart';
 import 'package:roadmaps/features/profile/presentation/profile_screen.dart';
 import 'package:roadmaps/features/roadmaps/presentation/roadmaps_provider.dart';
@@ -38,6 +40,7 @@ class _MainScreenState extends State<MainScreen> {
       context.read<ProfileProvider>().loadProfileData();
       context.read<HomeProvider>().loadHome();
       context.read<AnnouncementsProvider>().loadAnnouncements();
+      context.read<NotificationsProvider>().loadNotifications();
     });
   }
 
@@ -48,7 +51,13 @@ class _MainScreenState extends State<MainScreen> {
         backgroundColor: AppColors.background,
         appBar: buildAppBar(
           context: context,
-          onNotificationsTap: () => 0,
+          onNotificationsTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const NotificationsScreen(),
+              ),
+            );
+          },
           onSettingsTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(

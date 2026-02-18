@@ -7,6 +7,7 @@ import 'package:roadmaps/core/widgets/lesson_card_2.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_screen.dart';
 import 'package:roadmaps/features/main_screen.dart';
+import 'package:roadmaps/features/notifications/presentation/notifications_screen.dart';
 
 import '../domain/roadmap_entity.dart';
 import 'roadmaps_provider.dart';
@@ -42,7 +43,13 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
                     children: [
                       IconButton(
                         padding: const EdgeInsets.all(15),
-                        onPressed: () {},
+                        onPressed: () {
+                            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const NotificationsScreen(),
+              ),
+            );
+                        },
                         icon: const Icon(
                           Icons.notifications_none,
                           color: AppColors.text_5,

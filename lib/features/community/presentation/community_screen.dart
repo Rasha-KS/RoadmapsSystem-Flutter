@@ -28,12 +28,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
     final provider = context.watch<CommunityProvider>();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 10),
-            margin: const EdgeInsets.only(top: 10, bottom: 14),
+            margin: const EdgeInsets.only(top: 10, bottom: 16),
             decoration: BoxDecoration(
               color: AppColors.accent_1,
               borderRadius: BorderRadius.circular(40),
@@ -44,52 +44,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
               textAlign: TextAlign.center,
             ),
           ),
-          TextField(
-            textDirection: TextDirection.rtl,
-            onChanged: provider.setSearchQuery,
-            decoration: InputDecoration(
-              hintText: 'البحث',
-              hintStyle: AppTextStyles.body.copyWith(color: AppColors.text_4),
-              prefixIcon: const Icon(Icons.search, color: AppColors.text_1),
-              filled: true,
-              fillColor: AppColors.secondary4,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Expanded(
-            child: _buildContent(provider),
-          ),
+          Expanded(child: _buildContent(provider)),
         ],
       ),
     );
   }
 
   Widget _buildContent(CommunityProvider provider) {
-    if (provider.query.trim().isNotEmpty && provider.filteredRooms.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.search_off_outlined,
-              size: 64,
-              color: AppColors.primary2,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'لم يتم العثور على أي نتيجة',
-              style: AppTextStyles.body.copyWith(color: AppColors.text_3),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
-
     if (provider.loadingRooms && provider.rooms.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary2),
@@ -108,7 +69,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
             const SizedBox(height: 14),
             Text(
-              'لا يوجد اي مجتمع',
+              'لا يوجد أي مجتمع',
               style: AppTextStyles.body.copyWith(color: AppColors.text_3),
               textAlign: TextAlign.center,
             ),
@@ -118,11 +79,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
     }
 
     return ListView.separated(
-      itemCount: provider.filteredRooms.length,
+      itemCount: provider.rooms.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final room = provider.filteredRooms[index];
-
+        final room = provider.rooms[index];
         return CommunityRoomTile(
           roomName: room.name,
           onTap: () {

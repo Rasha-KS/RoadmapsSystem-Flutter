@@ -47,11 +47,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final provider = context.watch<CommunityProvider>();
     final currentUser = context.watch<CurrentUserProvider>().user;
     final messages = provider.messagesForRoom(widget.chatRoomId);
+
     _autoScrollOnMessageChange(messages.length);
 
-    return SafeArea(
-      child: ColoredBox(
-        color: AppColors.background,
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             _ChatRoomHeader(roomName: widget.roomName),
@@ -65,8 +67,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       controller: _scrollController,
                       reverse: true,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                        horizontal: 14,
+                        vertical: 6,
                       ),
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
@@ -78,22 +80,22 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                           isCurrentUser: isCurrentUser,
                           currentUserName: currentUser?.username,
                           currentUserAvatarUrl: currentUser?.profileImageUrl,
-                          otherUserName: 'مستخدم',
+                          otherUserName: 'Abdo_A',
                         );
                       },
                     ),
             ),
-            AnimatedPadding(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              padding: EdgeInsets.only(
-                left: 12,
-                right: 12,
-                top: 8,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 8,
-              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
               child: ChatInputBar(
                 hasPendingAttachment: _pendingAttachmentPath != null,
+                pendingAttachmentName:
+                    _pendingAttachmentPath?.split(RegExp(r'[\\/]')).last,
+                onClearAttachment: () {
+                  setState(() {
+                    _pendingAttachmentPath = null;
+                  });
+                },
                 onPickAttachment: _onPickAttachment,
                 onSendPressed: _onSendPressed,
               ),
@@ -126,10 +128,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     final provider = context.read<CommunityProvider>();
 
     if (text.trim().isNotEmpty) {
-      await provider.sendTextMessage(
-        roomId: widget.chatRoomId,
-        text: text,
-      );
+      await provider.sendTextMessage(roomId: widget.chatRoomId, text: text);
     }
 
     final pendingPath = _pendingAttachmentPath;
@@ -165,23 +164,23 @@ class _ChatRoomHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(
-              Icons.arrow_back_ios_new,
-              color: AppColors.text_5,
+          Text(
+            roomName,
+            style: AppTextStyles.body.copyWith(
+              color: AppColors.text_3,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const Spacer(),
-          Text(
-            roomName,
-            textDirection: TextDirection.rtl,
-            style: AppTextStyles.heading5.copyWith(
-              color: AppColors.text_1,
-              fontWeight: FontWeight.w700,
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(
+              Icons.arrow_forward,
+              color: AppColors.text_3,
+              size: 20,
             ),
           ),
         ],

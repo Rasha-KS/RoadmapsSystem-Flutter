@@ -24,14 +24,14 @@ class MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maxBubbleWidth = MediaQuery.sizeOf(context).width * 0.7;
-    final bubbleColor = isCurrentUser ? AppColors.accent_1 : AppColors.secondary2;
+    final bubbleColor = isCurrentUser ? const Color(0xFFEAD7CA) : AppColors.secondary4;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         mainAxisAlignment:
             isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isCurrentUser) _buildAvatar(),
           if (!isCurrentUser) const SizedBox(width: 8),
@@ -41,25 +41,17 @@ class MessageBubble extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: bubbleColor,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.secondary1),
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isCurrentUser
-                        ? (currentUserName ?? 'أنت')
-                        : otherUserName,
-                    textDirection: TextDirection.rtl,
+                    isCurrentUser ? (currentUserName ?? 'أنت') : otherUserName,
                     style: AppTextStyles.smallText.copyWith(
-                      color: AppColors.text_4,
+                      color: AppColors.primary1,
+                      fontSize: 12,
                     ),
                   ),
                   if (message.content != null && message.content!.trim().isNotEmpty)
@@ -67,7 +59,6 @@ class MessageBubble extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
                         message.content!,
-                        textDirection: TextDirection.rtl,
                         style: AppTextStyles.body.copyWith(color: AppColors.text_3),
                       ),
                     ),
@@ -93,48 +84,51 @@ class MessageBubble extends StatelessWidget {
         currentUserAvatarUrl != null &&
         currentUserAvatarUrl!.isNotEmpty) {
       return CircleAvatar(
-        radius: 15,
+        radius: 12,
         backgroundImage: NetworkImage(currentUserAvatarUrl!),
       );
     }
 
     return const CircleAvatar(
-      radius: 15,
-      backgroundColor: AppColors.secondary1,
-      child: Icon(Icons.person, size: 16, color: AppColors.primary),
+      radius: 12,
+      backgroundColor: AppColors.secondary2,
+      child: Icon(Icons.person, size: 13, color: AppColors.primary),
     );
   }
 
   Widget _buildAttachmentPreview(double width) {
     final path = message.attachmentPath;
-    if (path == null || path.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (path == null || path.isEmpty) return const SizedBox.shrink();
 
     final file = File(path);
-    if (file.existsSync()) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: SizedBox(
           width: width,
           child: AspectRatio(
             aspectRatio: 4 / 3,
-            child: Image.file(file, fit: BoxFit.cover),
+            child: Image.network(path, fit: BoxFit.cover),
           ),
         ),
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.secondary4,
+    {
+      return ClipRRect(
         borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        path,
-        style: AppTextStyles.smallText.copyWith(color: AppColors.text_3),
-      ),
-    );
+        child: SizedBox(
+          width: width,
+          child: AspectRatio(
+            aspectRatio: 4 / 3,
+            child: Image.file(
+              file,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
+          ),
+        ),
+      );
+    }
   }
 }

@@ -1,5 +1,5 @@
 import 'package:roadmaps/features/community/domain/chat_message_entity.dart';
-import 'package:roadmaps/features/community/domain/community_repository.dart';
+import 'package:roadmaps/features/community/data/community_repository.dart';
 
 class GetMessagesByRoomUseCase {
   final CommunityRepository repository;

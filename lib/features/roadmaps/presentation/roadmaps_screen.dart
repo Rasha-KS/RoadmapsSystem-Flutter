@@ -220,7 +220,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
     return theme.copyWith(
       scaffoldBackgroundColor: AppColors.background,
       appBarTheme: theme.appBarTheme.copyWith(
-        actionsPadding: EdgeInsets.all(10),
+        actionsPadding: const EdgeInsets.all(10),
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -240,8 +240,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
         onPressed: () {
           close(context, null);
         },
-
-        icon: Icon(
+        icon: const Icon(
           Icons.arrow_right_alt_outlined,
           size: 35,
           color: AppColors.text_1,
@@ -262,7 +261,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
 
   @override
   Widget buildResults(BuildContext context) {
-    return const SizedBox.shrink();
+    return buildSuggestions(context);
   }
 
   List<RoadmapEntity> _allCourses() {
@@ -293,7 +292,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
       child: StatefulBuilder(
         builder: (context, setState) {
           final roadmapsProvider = context.watch<RoadmapsProvider>();
-          final levels = ["محترف", "متوسط", "مبتدئ"];
+          final levels = ['محترف', 'متوسط', 'مبتدئ'];
           final filteredCourses = _filteredCourses(selectedLevel, query);
 
           return Container(
@@ -320,76 +319,93 @@ class SearchRoadmapsDelegate extends SearchDelegate {
                         active: selectedLevel.isEmpty,
                         onPressed: () => setState(() => selectedLevel = ''),
                       ),
-                      // Text(
-                      //   'المستوى',
-                      //   textAlign: TextAlign.center,
-                      //   style: AppTextStyles.body.copyWith(color: AppColors.text_4),
-                      // ),
                     ],
                   ),
                 ),
                 Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.only(right: 10, left: 10),
-                    children: filteredCourses.map((course) {
-                      return LessonCard2(
-                        course: course,
-                        widthMultiplier: 0.92,
-                        trimLength: 70,
-                        isEnrolled: roadmapsProvider.isCourseEnrolled(
-                          course.id,
-                        ),
-                        onDelete: () {
-                          showConfirmActionDialog(
-                            context: context,
-                            title: 'هل أنت متأكد من حذف المسار؟',
-                            message: 'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
-                            onConfirm: () async {
-                              final learningPathProvider = context
-                                  .read<LearningPathProvider>();
-                              context
-                                  .read<RoadmapsProvider>()
-                                  .setCourseEnrollment(course.id, false);
-                              await learningPathProvider.resetProgress(
-                                roadmapId: course.id,
-                              );
-                              setState(() {});
-                            },
-                          );
-                        },
-                        onRefresh: () {
-                          showConfirmActionDialog(
-                            context: context,
-                            title: 'هل أنت متأكد من إعادة المسار؟',
-                            message:
-                                'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
-                            onConfirm: () async {
-                              await context
-                                  .read<LearningPathProvider>()
-                                  .resetProgress(roadmapId: course.id);
-                            },
-                          );
-                        },
-                        onEnrollmentChanged: (enrolled) {
-                          context.read<RoadmapsProvider>().setCourseEnrollment(
-                            course.id,
-                            enrolled,
-                          );
-                          setState(() {});
-                        },
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => LearningPathScreen(
-                                roadmapId: course.id,
-                                roadmapTitle: course.title,
+                  child: query.trim().isNotEmpty && filteredCourses.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.search_off_outlined,
+                                size: 64,
+                                color: AppColors.primary2,
                               ),
-                            ),
-                          );
-                        },
-                      );
-                    }).toList(),
-                  ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'لم يتم العثور على أي نتيجة',
+                                style: AppTextStyles.body.copyWith(
+                                  color: AppColors.text_3,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView(
+                          padding: const EdgeInsets.only(right: 10, left: 10),
+                          children: filteredCourses.map((course) {
+                            return LessonCard2(
+                              course: course,
+                              widthMultiplier: 0.92,
+                              trimLength: 70,
+                              isEnrolled: roadmapsProvider.isCourseEnrolled(
+                                course.id,
+                              ),
+                              onDelete: () {
+                                showConfirmActionDialog(
+                                  context: context,
+                                  title: 'هل أنت متأكد من حذف المسار؟',
+                                  message:
+                                      'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
+                                  onConfirm: () async {
+                                    final learningPathProvider = context
+                                        .read<LearningPathProvider>();
+                                    context
+                                        .read<RoadmapsProvider>()
+                                        .setCourseEnrollment(course.id, false);
+                                    await learningPathProvider.resetProgress(
+                                      roadmapId: course.id,
+                                    );
+                                    setState(() {});
+                                  },
+                                );
+                              },
+                              onRefresh: () {
+                                showConfirmActionDialog(
+                                  context: context,
+                                  title: 'هل أنت متأكد من إعادة المسار؟',
+                                  message:
+                                      'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
+                                  onConfirm: () async {
+                                    await context
+                                        .read<LearningPathProvider>()
+                                        .resetProgress(roadmapId: course.id);
+                                  },
+                                );
+                              },
+                              onEnrollmentChanged: (enrolled) {
+                                context.read<RoadmapsProvider>().setCourseEnrollment(
+                                  course.id,
+                                  enrolled,
+                                );
+                                setState(() {});
+                              },
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => LearningPathScreen(
+                                      roadmapId: course.id,
+                                      roadmapTitle: course.title,
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          }).toList(),
+                        ),
                 ),
               ],
             ),

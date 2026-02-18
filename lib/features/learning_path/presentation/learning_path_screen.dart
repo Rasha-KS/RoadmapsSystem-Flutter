@@ -44,7 +44,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 700),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+              padding: const EdgeInsets.fromLTRB(35, 40, 35, 40),
               child: Column(
                 children: [
                   _HeaderCard(
@@ -52,7 +52,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                     units: provider.units,
                     userXp: provider.userXp,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
                   Expanded(
                     child: provider.isLoading && provider.units.isEmpty
                         ? const Center(
@@ -134,7 +134,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(30),topRight: Radius.circular(30))),
           content: Text(textAlign:TextAlign.right ,'هدا الدرس مقفل اكمل الدرس السابق .',style: AppTextStyles.body,),
           backgroundColor: AppColors.backGroundError,
-          duration: Duration(milliseconds: 900),
+          duration: Duration(milliseconds: 1000),
         ),
       );
       return;
@@ -142,10 +142,13 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
 
     if (unit.status == LearningUnitStatus.completed) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+         SnackBar(
            shape: RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(30),topRight: Radius.circular(30))),
-          content: Text(textAlign:TextAlign.right ,'هدا الدرس مكتمل.',style: AppTextStyles.body,),
-          duration: Duration(milliseconds: 900),
+          content: Text(textAlign:TextAlign.right ,'.هدا الدرس مكتمل',style: AppTextStyles.body.copyWith(
+            color: AppColors.text_5
+          ),),
+          duration: Duration(milliseconds: 1000),
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -186,9 +189,11 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
          shape: RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(30),topRight: Radius.circular(30))),
-        content: Text(textAlign:TextAlign.right ,'${unit.title} مكتمل. +$earnedXp نقاط خبرة' ,style: AppTextStyles.body,),
+        content: Text(textAlign:TextAlign.right ,'${unit.title} مكتمل. +$earnedXp نقاط خبرة' ,style: AppTextStyles.body.copyWith(
+          color: AppColors.text_5
+        ),),
         backgroundColor: AppColors.backGroundSuccess,
-        duration: Duration(milliseconds: 900),
+        duration: Duration(milliseconds: 1500),
       ),
     );
   }

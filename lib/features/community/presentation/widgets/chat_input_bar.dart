@@ -6,11 +6,15 @@ class ChatInputBar extends StatefulWidget {
   const ChatInputBar({
     super.key,
     required this.hasPendingAttachment,
+    required this.pendingAttachmentName,
+    required this.onClearAttachment,
     required this.onPickAttachment,
     required this.onSendPressed,
   });
 
   final bool hasPendingAttachment;
+  final String? pendingAttachmentName;
+  final VoidCallback onClearAttachment;
   final Future<void> Function() onPickAttachment;
   final Future<void> Function(String text) onSendPressed;
 
@@ -33,93 +37,114 @@ class _ChatInputBarState extends State<ChatInputBar> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.secondary4,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.accent_1,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              onPressed: () async {
-                await widget.onPickAttachment();
-                if (!mounted) return;
-                setState(() {});
-              },
-              icon: const Icon(
-                Icons.image_outlined,
-                color: AppColors.primary,
-                size: 20,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (widget.hasPendingAttachment && widget.pendingAttachmentName != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.accent_1,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.primary2),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: widget.onClearAttachment,
+                    icon: const Icon(
+                      Icons.close,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'تم اختيار صورة: ${widget.pendingAttachmentName}',
+                      textAlign: TextAlign.right,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.smallText.copyWith(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              maxLines: 4,
-              minLines: 1,
-              textDirection: TextDirection.rtl,
-              textAlign: TextAlign.right,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                hintText: 'شارك أفكارك',
-                hintStyle: AppTextStyles.body.copyWith(color: AppColors.text_4),
-                border: InputBorder.none,
-                isCollapsed: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 10,
-                ),
-              ),
-            ),
+        Container(
+          height: 60,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: AppColors.secondary4,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: AppColors.secondary1),
           ),
-          const SizedBox(width: 8),
-          Opacity(
-            opacity: _canSend ? 1 : 0.5,
-            child: IgnorePointer(
-              ignoring: !_canSend,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  onPressed: () async {
-                    final text = _controller.text.trim();
-                    await widget.onSendPressed(text);
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  maxLines: 1,
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.right,
+                  onChanged: (_) => setState(() {}),
+                  onSubmitted: (value) async {
+                    if (!_canSend) return;
+                    await widget.onSendPressed(value.trim());
                     if (!mounted) return;
                     _controller.clear();
                     setState(() {});
                   },
-                  icon: const Icon(
-                    Icons.send,
-                    color: Colors.white,
-                    size: 18,
+                  decoration: InputDecoration(
+                    hintText: 'شاركنا أفكارك',
+                    hintStyle: AppTextStyles.body.copyWith(color: AppColors.text_4),
+                    border: InputBorder.none,
                   ),
                 ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: _canSend ? AppColors.primary : AppColors.background,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.secondary1),
+                ),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () async {
+                    if (_canSend) {
+                      final text = _controller.text.trim();
+                      await widget.onSendPressed(text);
+                      if (!mounted) return;
+                      _controller.clear();
+                      setState(() {});
+                      return;
+                    }
+
+                    await widget.onPickAttachment();
+                    if (!mounted) return;
+                    setState(() {});
+                  },
+                  icon: Icon(
+                    _canSend ? Icons.send : Icons.camera_alt_outlined,
+                    color: _canSend ? Colors.white : AppColors.primary,
+                    size: 21,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

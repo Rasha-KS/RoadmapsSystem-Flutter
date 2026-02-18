@@ -27,23 +27,11 @@ class CommunityProvider extends ChangeNotifier {
   List<ChatRoomEntity> _rooms = [];
   bool loadingRooms = false;
   int? activeRoomId;
-  String query = '';
-  Set<int>? _externalEnrollmentRoadmapIds;
 
   final Map<int, List<ChatMessageEntity>> _messagesByRoom = {};
   final Set<int> _loadingMessagesRooms = {};
 
   List<ChatRoomEntity> get rooms => List.unmodifiable(_rooms);
-
-  List<ChatRoomEntity> get filteredRooms {
-    final trimmed = query.trim();
-    if (trimmed.isEmpty) return rooms;
-    return rooms
-        .where(
-          (room) => room.name.toLowerCase().contains(trimmed.toLowerCase()),
-        )
-        .toList();
-  }
 
   List<ChatMessageEntity> messagesForRoom(int roomId) {
     return List.unmodifiable(_messagesByRoom[roomId] ?? []);
@@ -57,36 +45,11 @@ class CommunityProvider extends ChangeNotifier {
     loadingRooms = true;
     notifyListeners();
 
-    var loaded = await getUserCommunityRoomsUseCase();
-
-    if (_externalEnrollmentRoadmapIds != null) {
-      final allowed = _externalEnrollmentRoadmapIds!;
-      loaded = loaded
-          .where((room) => allowed.contains(room.roadmapId))
-          .toList();
-    }
-
-    _rooms = loaded;
+    _rooms = await getUserCommunityRoomsUseCase();
     _ensureActiveRoomStillValid();
 
     loadingRooms = false;
     notifyListeners();
-  }
-
-  void setSearchQuery(String value) {
-    query = value;
-    notifyListeners();
-  }
-
-  void setExternalEnrollmentRoadmapIds(Set<int> roadmapIds) {
-    if (_externalEnrollmentRoadmapIds != null &&
-        _externalEnrollmentRoadmapIds!.length == roadmapIds.length &&
-        _externalEnrollmentRoadmapIds!.containsAll(roadmapIds)) {
-      return;
-    }
-
-    _externalEnrollmentRoadmapIds = Set<int>.from(roadmapIds);
-    loadRooms();
   }
 
   Future<void> openRoom(int roomId) async {
@@ -126,7 +89,10 @@ class CommunityProvider extends ChangeNotifier {
       isLocal: true,
     );
 
-    final roomMessages = [...(_messagesByRoom[roomId] ?? []), optimistic];
+    final roomMessages = <ChatMessageEntity>[
+      ...(_messagesByRoom[roomId] ?? <ChatMessageEntity>[]),
+      optimistic,
+    ];
     _messagesByRoom[roomId] = roomMessages;
     notifyListeners();
 
@@ -151,7 +117,10 @@ class CommunityProvider extends ChangeNotifier {
       isLocal: true,
     );
 
-    final roomMessages = [...(_messagesByRoom[roomId] ?? []), optimistic];
+    final roomMessages = <ChatMessageEntity>[
+      ...(_messagesByRoom[roomId] ?? <ChatMessageEntity>[]),
+      optimistic,
+    ];
     _messagesByRoom[roomId] = roomMessages;
     notifyListeners();
 
@@ -168,12 +137,12 @@ class CommunityProvider extends ChangeNotifier {
     required int temporaryId,
     required ChatMessageEntity sent,
   }) {
-    final updated = (_messagesByRoom[roomId] ?? []).map((message) {
+    final updated = (_messagesByRoom[roomId] ?? <ChatMessageEntity>[]).map((message) {
       if (message.id == temporaryId) {
         return sent;
       }
       return message;
-    }).toList();
+    }).toList(growable: false);
 
     _messagesByRoom[roomId] = updated;
     notifyListeners();

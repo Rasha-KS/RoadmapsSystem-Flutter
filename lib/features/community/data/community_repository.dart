@@ -1,5 +1,5 @@
-import 'chat_message_entity.dart';
-import 'chat_room_entity.dart';
+import '../domain/chat_message_entity.dart';
+import '../domain/chat_room_entity.dart';
 
 abstract class CommunityRepository {
   Future<List<int>> getUserEnrolledRoadmapIds(int userId);

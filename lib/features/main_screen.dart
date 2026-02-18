@@ -45,15 +45,6 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final enrolledIds = context.watch<RoadmapsProvider>().enrolledCourseIds;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context
-          .read<CommunityProvider>()
-          .setExternalEnrollmentRoadmapIds(enrolledIds);
-    });
-
     return SafeArea(
       child: Scaffold(
         backgroundColor: AppColors.background,

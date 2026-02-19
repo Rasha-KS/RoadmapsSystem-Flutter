@@ -444,11 +444,15 @@ class MessageBubble extends StatelessWidget {
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(10),
-        child: SizedBox(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 320),
+          child: SizedBox(
           width: width,
-          child: AspectRatio(
-            aspectRatio: 4 / 3,
-            child: Image.network(path, fit: BoxFit.cover),
+            child: Image.network(
+              path,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
           ),
         ),
       );
@@ -457,13 +461,13 @@ class MessageBubble extends StatelessWidget {
     {
       return ClipRRect(
         borderRadius: BorderRadius.circular(10),
-        child: SizedBox(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 320),
+          child: SizedBox(
           width: width,
-          child: AspectRatio(
-            aspectRatio: 4 / 3,
             child: Image.file(
               file,
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
               errorBuilder: (_, _, _) => const SizedBox.shrink(),
             ),
           ),

@@ -26,7 +26,7 @@ class _MainScreenState extends State<MainScreen> {
   int currentIndex = 2;
 
   final List<Widget> pages = [
-    const Center(child: Text('صفحة الكورسات')),
+    const Center(child: Text('شات بوت')),
     const CommunityScreen(),
     const HomeScreen(),
     const ProfileScreen(),

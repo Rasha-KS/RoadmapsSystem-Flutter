@@ -36,6 +36,12 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<LearningPathProvider>();
+    final hasInitialLoading =
+        provider.state == LearningPathState.loading &&
+        provider.units.isEmpty;
+    final hasInitialError =
+        provider.state == LearningPathState.connectionError &&
+        provider.units.isEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -54,11 +60,19 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                   ),
                   const SizedBox(height: 20),
                   Expanded(
-                    child: provider.isLoading && provider.units.isEmpty
+                    child: hasInitialLoading
                         ? const Center(
                             child: CircularProgressIndicator(
                               color: AppColors.primary2,
                             ),
+                          )
+                        : hasInitialError
+                        ? _ErrorState(
+                            onRetry: () async {
+                              await context.read<LearningPathProvider>().loadPath(
+                                widget.roadmapId,
+                              );
+                            },
                           )
                         : _buildRoadmapList(provider),
                   ),
@@ -83,7 +97,13 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
 
     return RefreshIndicator(
       color: AppColors.primary2,
-      onRefresh: () => provider.loadPath(widget.roadmapId, showLoader: false),
+      onRefresh: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        await provider.loadPath(widget.roadmapId, showLoader: false);
+        if (provider.state == LearningPathState.connectionError) {
+          _showRefreshFailedSnackBar(messenger);
+        }
+      },
       child: ListView.builder(
         physics: const BouncingScrollPhysics(),
         itemCount: provider.units.length,
@@ -119,6 +139,26 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  void _showRefreshFailedSnackBar(ScaffoldMessengerState messenger) {
+    messenger.showSnackBar(
+      SnackBar(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+        ),
+        content: Text(
+          'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
+          textAlign: TextAlign.right,
+          style: AppTextStyles.body.copyWith(color: AppColors.text_2),
+        ),
+        backgroundColor: AppColors.backGroundError,
+        duration: const Duration(milliseconds: 1000),
       ),
     );
   }
@@ -218,6 +258,49 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       case LearningUnitType.challenge:
         return 50;
     }
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final Future<void> Function() onRetry;
+
+  const _ErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Directionality(
+              textDirection: TextDirection.rtl,
+              child: Text(
+                'تعذر تحميل المسار التعليمي',
+                style: AppTextStyles.heading5.copyWith(color: AppColors.error),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary2,
+                foregroundColor: AppColors.text_1,
+                elevation: 0,
+              ),
+              child: Text(
+                'إعادة المحاولة',
+                style: AppTextStyles.boldSmallText.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

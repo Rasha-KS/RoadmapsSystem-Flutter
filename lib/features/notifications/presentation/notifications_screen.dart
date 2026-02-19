@@ -41,7 +41,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: Container(
           width: double.infinity,
           height: double.infinity,
-          color: Colors.white,
+          color: AppColors.background,
           child: Column(
             children: [
               _ScreenHeader(
@@ -66,13 +66,50 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               .loadNotifications();
                         },
                       )
-                    : provider.notifications.isEmpty
-                    ? const _EmptyState()
-                    : _NotificationsList(notifications: provider.notifications),
+                    : RefreshIndicator(
+                        onRefresh: () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          await context
+                              .read<NotificationsProvider>()
+                              .loadNotifications();
+                          if (provider.state ==
+                              NotificationsState.connectionError) {
+                            _showRefreshFailedSnackBar(messenger);
+                          }
+                        },
+                        color: AppColors.primary2,
+                        child: provider.notifications.isEmpty
+                            ? const _RefreshableEmptyState(
+                                child: _EmptyState(),
+                              )
+                            : _NotificationsList(
+                                notifications: provider.notifications,
+                              ),
+                      ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showRefreshFailedSnackBar(ScaffoldMessengerState messenger) {
+    messenger.showSnackBar(
+      SnackBar(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+        ),
+        content: Text(
+          'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
+          textAlign: TextAlign.right,
+          style: AppTextStyles.body.copyWith(color: AppColors.text_2),
+        ),
+        backgroundColor: AppColors.backGroundError,
+        duration: const Duration(milliseconds: 1000),
       ),
     );
   }
@@ -96,18 +133,18 @@ class _ScreenHeader extends StatelessWidget {
               child: Text(
                 'الإشعارات',
                 textAlign: TextAlign.left,
-                style: AppTextStyles.body.copyWith(color: AppColors.text_3),
+                style: AppTextStyles.heading5.copyWith(color: AppColors.text_3),
               ),
             ),
           ),
           IconButton(
             onPressed: onBackPressed,
             icon: const Icon(
-              Icons.arrow_forward,
-              color: AppColors.text_5,
-              size: 23,
-            ),
+                Icons.arrow_right_alt_outlined,
+                color: AppColors.text_5,
+                size: 35,
           ),
+         ),
         ],
       ),
     );
@@ -154,7 +191,6 @@ class _NotificationTile extends StatelessWidget {
               _formatSchedule(notification.scheduledAt),
               style: AppTextStyles.smallText.copyWith(
                 color: AppColors.text_4,
-                fontSize: 12,
               ),
             ),
           ),
@@ -167,7 +203,7 @@ class _NotificationTile extends StatelessWidget {
                 children: [
                   Text(
                     notification.title,
-                    style: AppTextStyles.body.copyWith(
+                    style: AppTextStyles.heading5.copyWith(
                       color: AppColors.text_4,
                     ),
                     textAlign: TextAlign.right,
@@ -175,7 +211,7 @@ class _NotificationTile extends StatelessWidget {
                   const SizedBox(height: 5),
                   Text(
                     notification.message,
-                    style: AppTextStyles.smallText.copyWith(
+                    style: AppTextStyles.body.copyWith(
                       color: AppColors.text_3,
                     ),
                     textAlign: TextAlign.right,
@@ -209,13 +245,32 @@ class _EmptyState extends StatelessWidget {
             textDirection: TextDirection.rtl,
             child: Text(
               'لا توجد أي إشعارات',
-              style: AppTextStyles.boldSmallText.copyWith(
+              style: AppTextStyles.heading5.copyWith(
                 color: AppColors.text_1,
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _RefreshableEmptyState extends StatelessWidget {
+  final Widget child;
+
+  const _RefreshableEmptyState({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.6,
+          child: child,
+        ),
+      ],
     );
   }
 }
@@ -237,7 +292,7 @@ class _ErrorState extends StatelessWidget {
               textDirection: TextDirection.rtl,
               child: Text(
                 'تعذر تحميل الإشعارات',
-                style: AppTextStyles.body.copyWith(color: AppColors.error),
+                style: AppTextStyles.heading5.copyWith(color: AppColors.error),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -246,10 +301,12 @@ class _ErrorState extends StatelessWidget {
               onPressed: onRetry,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary2,
-                foregroundColor: AppColors.text_5,
+                foregroundColor: AppColors.text_1,
                 elevation: 0,
               ),
-              child: const Text('إعادة المحاولة'),
+              child:  Text('إعادة المحاولة' , style: AppTextStyles.boldSmallText.copyWith(
+                fontWeight: FontWeight.w800
+              ),),
             ),
           ],
         ),

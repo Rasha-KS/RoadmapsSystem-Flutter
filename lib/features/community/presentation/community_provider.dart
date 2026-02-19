@@ -26,6 +26,7 @@ class CommunityProvider extends ChangeNotifier {
 
   List<ChatRoomEntity> _rooms = [];
   bool loadingRooms = false;
+  String? roomsError;
   int? activeRoomId;
 
   final Map<int, List<ChatMessageEntity>> _messagesByRoom = {};
@@ -43,10 +44,15 @@ class CommunityProvider extends ChangeNotifier {
 
   Future<void> loadRooms() async {
     loadingRooms = true;
+    roomsError = null;
     notifyListeners();
 
-    _rooms = await getUserCommunityRoomsUseCase();
-    _ensureActiveRoomStillValid();
+    try {
+      _rooms = await getUserCommunityRoomsUseCase();
+      _ensureActiveRoomStillValid();
+    } catch (_) {
+      roomsError = 'تعذر تحميل المجتمعات';
+    }
 
     loadingRooms = false;
     notifyListeners();

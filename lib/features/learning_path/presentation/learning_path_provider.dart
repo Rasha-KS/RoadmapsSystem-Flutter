@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../domain/learning_unit_entity.dart';
 import '../domain/get_learning_path_usecase.dart';
 
+enum LearningPathState { loading, loaded, connectionError }
+
 class LearningPathProvider extends ChangeNotifier {
   final GetLearningPathUseCase useCase;
 
@@ -9,12 +11,12 @@ class LearningPathProvider extends ChangeNotifier {
 
   int _currentRoadmapId = 0;
   List<LearningUnitEntity> _units = [];
-  bool _loading = false;
+  LearningPathState _state = LearningPathState.loading;
   final Map<int, Set<int>> _completedLessonsByRoadmap = {};
   final Map<int, int> _userXpByRoadmap = {};
 
   List<LearningUnitEntity> get units => _units;
-  bool get isLoading => _loading;
+  LearningPathState get state => _state;
   Set<int> get completedLessonIds =>
       _completedLessonsByRoadmap[_currentRoadmapId] ?? <int>{};
   int get userXp => _userXpByRoadmap[_currentRoadmapId] ?? 0;
@@ -33,20 +35,31 @@ class LearningPathProvider extends ChangeNotifier {
     _userXpByRoadmap.putIfAbsent(roadmapId, () => 0);
 
     if (showLoader) {
-      _loading = true;
+      _state = LearningPathState.loading;
       notifyListeners();
     }
 
     try {
-      _units = await useCase(
+      final fetchedUnits = await useCase(
         roadmapId: roadmapId,
         userXp: _userXpByRoadmap[roadmapId] ?? 0,
         completedLessonIds: _completedLessonsByRoadmap[roadmapId] ?? <int>{},
       );
-    } finally {
-      _loading = false;
-      notifyListeners();
+
+      if (fetchedUnits.isEmpty) {
+        _units = <LearningUnitEntity>[];
+        _state = LearningPathState.loaded;
+        notifyListeners();
+        return;
+      }
+
+      _units = fetchedUnits;
+      _state = LearningPathState.loaded;
+    } catch (_) {
+      _state = LearningPathState.connectionError;
     }
+
+    notifyListeners();
   }
 
   Future<void> completeUnit({required int unitId, int earnedXp = 0}) async {

@@ -20,18 +20,40 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final homeProvider = context.watch<HomeProvider>();
     final size = MediaQuery.of(context).size;
+    final hasInitialLoading =
+        homeProvider.state == HomeState.loading &&
+        homeProvider.recommended.isEmpty &&
+        homeProvider.myCourses.isEmpty;
+    final hasInitialError =
+        homeProvider.state == HomeState.connectionError &&
+        homeProvider.recommended.isEmpty &&
+        homeProvider.myCourses.isEmpty;
 
-    if (homeProvider.state == HomeState.loading) {
+    if (hasInitialLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary2),
       );
     }
 
+    if (hasInitialError) {
+      return _ErrorState(
+        onRetry: () async {
+          final announcementsProvider = context.read<AnnouncementsProvider>();
+          await homeProvider.loadHome();
+          await announcementsProvider.loadAnnouncements();
+        },
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: () async {
+        final messenger = ScaffoldMessenger.of(context);
         final announcementsProvider = context.read<AnnouncementsProvider>();
         await homeProvider.loadHome();
         await announcementsProvider.loadAnnouncements();
+        if (homeProvider.state == HomeState.connectionError) {
+          _showRefreshFailedSnackBar(messenger);
+        }
       },
       color: AppColors.primary2,
       child: SingleChildScrollView(
@@ -259,6 +281,69 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showRefreshFailedSnackBar(ScaffoldMessengerState messenger) {
+    messenger.showSnackBar(
+      SnackBar(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+        ),
+        content: Text(
+          'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
+          textAlign: TextAlign.right,
+          style: AppTextStyles.body.copyWith(color: AppColors.text_2),
+        ),
+        backgroundColor: AppColors.backGroundError,
+        duration: const Duration(milliseconds: 1000),
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final Future<void> Function() onRetry;
+
+  const _ErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Directionality(
+              textDirection: TextDirection.rtl,
+              child: Text(
+                'تعذر تحميل الصفحة الرئيسية',
+                style: AppTextStyles.heading5.copyWith(color: AppColors.error),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary2,
+                foregroundColor: AppColors.text_1,
+                elevation: 0,
+              ),
+              child: Text(
+                'إعادة المحاولة',
+                style: AppTextStyles.boldSmallText.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

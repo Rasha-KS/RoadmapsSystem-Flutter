@@ -8,7 +8,7 @@ class LearningPathRepository {
   }) async {
     await Future.delayed(const Duration(milliseconds: 400));
 
-    final units = [
+    final List<LearningUnitEntity> units = [
       LearningUnitEntity(
         id: 1,
         roadmapId: roadmapId,
@@ -68,6 +68,10 @@ class LearningPathRepository {
       ),
     ];
 
+    if (units.isEmpty) {
+      return <LearningUnitEntity>[];
+    }
+
     return _applyUnlockLogic(units, completedLessonIds, userXp);
   }
 
@@ -76,6 +80,8 @@ class LearningPathRepository {
     Set<int> completedLessonIds,
     int userXp,
   ) {
+    if (units.isEmpty) return <LearningUnitEntity>[];
+
     final sortedUnits = [...units]
       ..sort((a, b) => a.position.compareTo(b.position));
     final List<LearningUnitEntity> updated = [];

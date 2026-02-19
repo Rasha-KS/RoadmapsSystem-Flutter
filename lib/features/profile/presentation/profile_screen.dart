@@ -15,6 +15,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ProfileProvider>();
+    final hasInitialError = provider.error != null && provider.user == null;
 
     if (provider.loading && provider.user == null) {
       return const Center(
@@ -22,18 +23,22 @@ class ProfileScreen extends StatelessWidget {
       );
     }
 
-    if (provider.error != null) {
-      return Center(
-        child: Text(
-          provider.error!,
-          style: AppTextStyles.body.copyWith(color: AppColors.error),
-          textAlign: TextAlign.center,
-        ),
+    if (hasInitialError) {
+      return _ErrorState(
+        onRetry: () {
+          provider.loadProfileData();
+        },
       );
     }
 
     return RefreshIndicator(
-      onRefresh: provider.loadProfileData,
+      onRefresh: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        await provider.loadProfileData();
+        if (provider.error != null) {
+          _showRefreshFailedSnackBar(messenger);
+        }
+      },
       color: AppColors.primary2,
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
@@ -87,6 +92,69 @@ class ProfileScreen extends StatelessWidget {
                 : null,
           ),
         ],
+      ),
+    );
+  }
+
+  void _showRefreshFailedSnackBar(ScaffoldMessengerState messenger) {
+    messenger.showSnackBar(
+      SnackBar(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+        ),
+        content: Text(
+          'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
+          textAlign: TextAlign.right,
+          style: AppTextStyles.body.copyWith(color: AppColors.text_2),
+        ),
+        backgroundColor: AppColors.backGroundError,
+        duration: const Duration(milliseconds: 1000),
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _ErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Directionality(
+              textDirection: TextDirection.rtl,
+              child: Text(
+                'تعذر تحميل بيانات الملف الشخصي',
+                style: AppTextStyles.heading5.copyWith(color: AppColors.error),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary2,
+                foregroundColor: AppColors.text_1,
+                elevation: 0,
+              ),
+              child: Text(
+                'إعادة المحاولة',
+                style: AppTextStyles.boldSmallText.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

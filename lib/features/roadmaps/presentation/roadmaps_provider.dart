@@ -13,6 +13,7 @@ class RoadmapsProvider extends ChangeNotifier {
   List<RoadmapEntity> myCourses = [];
   List<RoadmapEntity> roadmaps = [];
   final Set<int> _enrolledCourseIds = {};
+  Set<int> get enrolledCourseIds => Set.unmodifiable(_enrolledCourseIds);
   PageState state = PageState.loading;
 
   bool isCourseEnrolled(int courseId) => _enrolledCourseIds.contains(courseId);

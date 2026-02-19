@@ -36,15 +36,21 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<LearningPathProvider>();
+    final hasInitialLoading =
+        provider.state == LearningPathState.loading &&
+        provider.units.isEmpty;
+    final hasInitialError =
+        provider.state == LearningPathState.connectionError &&
+        provider.units.isEmpty;
 
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 700),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+              padding: const EdgeInsets.fromLTRB(35, 40, 35, 40),
               child: Column(
                 children: [
                   _HeaderCard(
@@ -52,13 +58,21 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                     units: provider.units,
                     userXp: provider.userXp,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
                   Expanded(
-                    child: provider.isLoading && provider.units.isEmpty
+                    child: hasInitialLoading
                         ? const Center(
                             child: CircularProgressIndicator(
                               color: AppColors.primary2,
                             ),
+                          )
+                        : hasInitialError
+                        ? _ErrorState(
+                            onRetry: () async {
+                              await context.read<LearningPathProvider>().loadPath(
+                                widget.roadmapId,
+                              );
+                            },
                           )
                         : _buildRoadmapList(provider),
                   ),
@@ -83,7 +97,13 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
 
     return RefreshIndicator(
       color: AppColors.primary2,
-      onRefresh: () => provider.loadPath(widget.roadmapId, showLoader: false),
+      onRefresh: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        await provider.loadPath(widget.roadmapId, showLoader: false);
+        if (provider.state == LearningPathState.connectionError) {
+          _showRefreshFailedSnackBar(messenger);
+        }
+      },
       child: ListView.builder(
         physics: const BouncingScrollPhysics(),
         itemCount: provider.units.length,
@@ -123,6 +143,26 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     );
   }
 
+  void _showRefreshFailedSnackBar(ScaffoldMessengerState messenger) {
+    messenger.showSnackBar(
+      SnackBar(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+        ),
+        content: Text(
+          'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
+          textAlign: TextAlign.right,
+          style: AppTextStyles.body.copyWith(color: AppColors.text_2),
+        ),
+        backgroundColor: AppColors.backGroundError,
+        duration: const Duration(milliseconds: 1000),
+      ),
+    );
+  }
+
   Future<void> _onUnitTap(
     LearningPathProvider provider,
     LearningUnitEntity unit,
@@ -134,7 +174,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(30),topRight: Radius.circular(30))),
           content: Text(textAlign:TextAlign.right ,'هدا الدرس مقفل اكمل الدرس السابق .',style: AppTextStyles.body,),
           backgroundColor: AppColors.backGroundError,
-          duration: Duration(milliseconds: 900),
+          duration: Duration(milliseconds: 1000),
         ),
       );
       return;
@@ -142,10 +182,13 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
 
     if (unit.status == LearningUnitStatus.completed) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+         SnackBar(
            shape: RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(30),topRight: Radius.circular(30))),
-          content: Text(textAlign:TextAlign.right ,'هدا الدرس مكتمل.',style: AppTextStyles.body,),
-          duration: Duration(milliseconds: 900),
+          content: Text(textAlign:TextAlign.right ,'.هدا الدرس مكتمل',style: AppTextStyles.body.copyWith(
+            color: AppColors.text_5
+          ),),
+          duration: Duration(milliseconds: 1000),
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -186,9 +229,11 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
          shape: RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(30),topRight: Radius.circular(30))),
-        content: Text(textAlign:TextAlign.right ,'${unit.title} مكتمل. +$earnedXp نقاط خبرة' ,style: AppTextStyles.body,),
+        content: Text(textAlign:TextAlign.right ,'${unit.title} مكتمل. +$earnedXp نقاط خبرة' ,style: AppTextStyles.body.copyWith(
+          color: AppColors.text_5
+        ),),
         backgroundColor: AppColors.backGroundSuccess,
-        duration: Duration(milliseconds: 900),
+        duration: Duration(milliseconds: 1500),
       ),
     );
   }
@@ -213,6 +258,49 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       case LearningUnitType.challenge:
         return 50;
     }
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final Future<void> Function() onRetry;
+
+  const _ErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Directionality(
+              textDirection: TextDirection.rtl,
+              child: Text(
+                'تعذر تحميل المسار التعليمي',
+                style: AppTextStyles.heading5.copyWith(color: AppColors.error),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary2,
+                foregroundColor: AppColors.text_1,
+                elevation: 0,
+              ),
+              child: Text(
+                'إعادة المحاولة',
+                style: AppTextStyles.boldSmallText.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -9,10 +9,16 @@ import 'package:roadmaps/injection.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  final currentUserProvider = Injection.provideCurrentUserProvider();
+  await currentUserProvider.loadCurrentUser();
+
   runApp(
-    MultiProvider(
-      providers: [
+    MultiProvider( 
+      providers:[
+        ChangeNotifierProvider.value(value: currentUserProvider),
+
         ChangeNotifierProvider(create: (_) => Injection.provideHomeProvider()),
+        
         ChangeNotifierProvider(
           create: (_) => Injection.provideRoadmapsProvider(),
         ),
@@ -24,6 +30,9 @@ void main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => Injection.provideSettingsProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => Injection.provideCommunityProvider(),
         ),
         ChangeNotifierProvider<LearningPathProvider>(
           create: (_) => Injection.provideLearningPathProvider(),
@@ -50,7 +59,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Tajawal_R',
         scaffoldBackgroundColor: AppColors.background,
       ),
-      home: const SplashScreen(),
+      home: const  SplashScreen() //SplashScreen(),
     );
   }
 }

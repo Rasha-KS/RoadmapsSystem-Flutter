@@ -1,9 +1,14 @@
 import 'package:roadmaps/core/entities/user_entity.dart';
+import 'package:roadmaps/core/domain/repositories/user_repository.dart';
 import '../domain/user_roadmap_entity.dart';
 import 'profile_user_model.dart';
 import 'user_roadmap_model.dart';
 
 class ProfileRepository {
+ProfileRepository({required UserRepository userRepository})
+    : _userRepository = userRepository;
+
+final UserRepository _userRepository;
 final List<Map<String, dynamic>> _roadmapsTable = [
   {
     'id': 1,
@@ -46,20 +51,6 @@ final List<Map<String, dynamic>> _roadmapsTable = [
     'level': 'متقدم',
     'description': 'تعلم بناء واجهات مستخدم ديناميكية باستخدام React.',
     'is_active': true,
-  },
-];
-
-
-final List<Map<String, dynamic>> _usersTable = [
-  {
-    'id': 1,
-    'username': 'RASHA_KS',
-    'email': 'iris@example.com',
-    'password': '111',
-    'created_at': DateTime(2025, 7, 20),
-    'updated_at': DateTime(2026, 1, 18),
-    'last_activity_at': DateTime(2026, 2, 14),
-    'profile_image': 'https://i.pravatar.cc/150?img=1',
   },
 ];
 
@@ -129,17 +120,24 @@ final List<Map<String, dynamic>> _roadmapEnrollmentsTable = [
 
 
   Future<UserEntity> getUserProfile() async {
-    await Future.delayed(const Duration(milliseconds: 250));
-    final user = _usersTable.first;
-    return ProfileUserModel.fromJson(user);
+    final user = await _userRepository.getCurrentUser();
+    return ProfileUserModel(
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      lastActivityAt: user.lastActivityAt,
+      isNotificationsEnabled: user.isNotificationsEnabled,
+      profileImageUrl: user.profileImageUrl,
+    );
   }
 
-  Future<List<UserRoadmapEntity>> getUserRoadmaps() async {
+  Future<List<UserRoadmapEntity>> getUserRoadmaps(int userId) async {
     await Future.delayed(const Duration(milliseconds: 250));
 
-    final user = _usersTable.first;
     final enrollments = _roadmapEnrollmentsTable
-        .where((row) => row['user_id'] == user['id'])
+        .where((row) => row['user_id'] == userId)
         .toList();
 
     return enrollments.map((enrollment) {

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
@@ -23,15 +23,32 @@ class RoadmapsScreen extends StatefulWidget {
 
 class _RoadmapsScreenState extends State<RoadmapsScreen> {
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final provider = context.read<RoadmapsProvider>();
+      if (provider.roadmaps.isEmpty) {
+        provider.loadRoadmaps();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final roadmapsProvider = context.watch<RoadmapsProvider>();
     final roadmaps = roadmapsProvider.roadmaps;
+    final hasInitialLoading =
+        roadmapsProvider.state == PageState.loading && roadmaps.isEmpty;
+    final hasInitialError =
+        roadmapsProvider.state == PageState.connectionError &&
+        roadmaps.isEmpty;
 
-    return SafeArea(
-      child: Scaffold(
-        key: scaffoldkey,
-        backgroundColor: AppColors.background,
-        body: Center(
+    return Scaffold(
+      key: scaffoldkey,
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 700),
             child: Padding(
@@ -44,11 +61,11 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
                       IconButton(
                         padding: const EdgeInsets.all(15),
                         onPressed: () {
-                            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const NotificationsScreen(),
-              ),
-            );
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const NotificationsScreen(),
+                            ),
+                          );
                         },
                         icon: const Icon(
                           Icons.notifications_none,
@@ -135,66 +152,87 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(right: 10, left: 10),
-                      child: ListView(
-                        children: [
-                          ...roadmaps.map(
-                            (course) => LessonCard2(
-                              course: course,
-                              widthMultiplier: 0.92,
-                              trimLength: 70,
-                              isEnrolled: roadmapsProvider.isCourseEnrolled(
-                                course.id,
+                      child: hasInitialLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary2,
                               ),
-                              onDelete: () {
-                                showConfirmActionDialog(
-                                  context: context,
-                                  title: 'هل أنت متأكد من حذف المسار؟',
-                                  message:
-                                      'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
-                                  onConfirm: () async {
-                                    final learningPathProvider = context
-                                        .read<LearningPathProvider>();
-                                    context
-                                        .read<RoadmapsProvider>()
-                                        .setCourseEnrollment(course.id, false);
-                                    await learningPathProvider.resetProgress(
-                                      roadmapId: course.id,
-                                    );
-                                  },
-                                );
+                            )
+                          : hasInitialError
+                          ? _ErrorState(
+                              onRetry: () async {
+                                await context.read<RoadmapsProvider>().loadRoadmaps();
                               },
-                              onRefresh: () {
-                                showConfirmActionDialog(
-                                  context: context,
-                                  title: 'هل أنت متأكد من إعادة المسار؟',
-                                  message:
-                                      'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
-                                  onConfirm: () async {
-                                    await context
-                                        .read<LearningPathProvider>()
-                                        .resetProgress(roadmapId: course.id);
-                                  },
-                                );
+                            )
+                          : RefreshIndicator(
+                              color: AppColors.primary2,
+                              onRefresh: () async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                await context.read<RoadmapsProvider>().loadRoadmaps();
+                                if (roadmapsProvider.state == PageState.connectionError) {
+                                  _showRefreshFailedSnackBar(messenger);
+                                }
                               },
-                              onEnrollmentChanged: (enrolled) {
-                                context
-                                    .read<RoadmapsProvider>()
-                                    .setCourseEnrollment(course.id, enrolled);
-                              },
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => LearningPathScreen(
-                                      roadmapId: course.id,
-                                      roadmapTitle: course.title,
+                              child: ListView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                children: [
+                                  ...roadmaps.map(
+                                    (course) => LessonCard2(
+                                      course: course,
+                                      widthMultiplier: 0.92,
+                                      trimLength: 70,
+                                      isEnrolled: roadmapsProvider.isCourseEnrolled(course.id),
+                                      onDelete: () {
+                                        showConfirmActionDialog(
+                                          context: context,
+                                          title: 'هل أنت متأكد من حذف المسار؟',
+                                          message:
+                                              'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
+                                          onConfirm: () async {
+                                            final learningPathProvider =
+                                                context.read<LearningPathProvider>();
+                                            context
+                                                .read<RoadmapsProvider>()
+                                                .setCourseEnrollment(course.id, false);
+                                            await learningPathProvider.resetProgress(
+                                              roadmapId: course.id,
+                                            );
+                                          },
+                                        );
+                                      },
+                                      onRefresh: () {
+                                        showConfirmActionDialog(
+                                          context: context,
+                                          title: 'هل أنت متأكد من إعادة المسار؟',
+                                          message:
+                                              'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
+                                          onConfirm: () async {
+                                            await context
+                                                .read<LearningPathProvider>()
+                                                .resetProgress(roadmapId: course.id);
+                                          },
+                                        );
+                                      },
+                                      onEnrollmentChanged: (enrolled) {
+                                        context
+                                            .read<RoadmapsProvider>()
+                                            .setCourseEnrollment(course.id, enrolled);
+                                      },
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => LearningPathScreen(
+                                              roadmapId: course.id,
+                                              roadmapTitle: course.title,
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ),
-                                );
-                              },
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 ],
@@ -205,8 +243,70 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
       ),
     );
   }
+
+  void _showRefreshFailedSnackBar(ScaffoldMessengerState messenger) {
+    messenger.showSnackBar(
+      SnackBar(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+        ),
+        content: Text(
+          'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
+          textAlign: TextAlign.right,
+          style: AppTextStyles.body.copyWith(color: AppColors.text_2),
+        ),
+        backgroundColor: AppColors.backGroundError,
+        duration: const Duration(milliseconds: 1000),
+      ),
+    );
+  }
 }
 
+class _ErrorState extends StatelessWidget {
+  final Future<void> Function() onRetry;
+
+  const _ErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Directionality(
+              textDirection: TextDirection.rtl,
+              child: Text(
+                'تعذر تحميل المسارات',
+                style: AppTextStyles.heading5.copyWith(color: AppColors.error),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary2,
+                foregroundColor: AppColors.text_1,
+                elevation: 0,
+              ),
+              child: Text(
+                'إعادة المحاولة',
+                style: AppTextStyles.boldSmallText.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 class SearchRoadmapsDelegate extends SearchDelegate {
   final List<RoadmapEntity> roadmaps;
   String selectedLevel = '';
@@ -227,7 +327,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
     return theme.copyWith(
       scaffoldBackgroundColor: AppColors.background,
       appBarTheme: theme.appBarTheme.copyWith(
-        actionsPadding: EdgeInsets.all(10),
+        actionsPadding: const EdgeInsets.all(10),
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -247,8 +347,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
         onPressed: () {
           close(context, null);
         },
-
-        icon: Icon(
+        icon: const Icon(
           Icons.arrow_right_alt_outlined,
           size: 35,
           color: AppColors.text_1,
@@ -269,7 +368,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
 
   @override
   Widget buildResults(BuildContext context) {
-    return const SizedBox.shrink();
+    return buildSuggestions(context);
   }
 
   List<RoadmapEntity> _allCourses() {
@@ -300,7 +399,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
       child: StatefulBuilder(
         builder: (context, setState) {
           final roadmapsProvider = context.watch<RoadmapsProvider>();
-          final levels = ["محترف", "متوسط", "مبتدئ"];
+          final levels = ['Ù…Ø­ØªØ±Ù', 'Ù…ØªÙˆØ³Ø·', 'Ù…Ø¨ØªØ¯Ø¦'];
           final filteredCourses = _filteredCourses(selectedLevel, query);
 
           return Container(
@@ -323,80 +422,97 @@ class SearchRoadmapsDelegate extends SearchDelegate {
                         ),
                       ),
                       _levelButton(
-                        text: 'الكل',
+                        text: 'Ø§Ù„ÙƒÙ„',
                         active: selectedLevel.isEmpty,
                         onPressed: () => setState(() => selectedLevel = ''),
                       ),
-                      // Text(
-                      //   'المستوى',
-                      //   textAlign: TextAlign.center,
-                      //   style: AppTextStyles.body.copyWith(color: AppColors.text_4),
-                      // ),
                     ],
                   ),
                 ),
                 Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.only(right: 10, left: 10),
-                    children: filteredCourses.map((course) {
-                      return LessonCard2(
-                        course: course,
-                        widthMultiplier: 0.92,
-                        trimLength: 70,
-                        isEnrolled: roadmapsProvider.isCourseEnrolled(
-                          course.id,
-                        ),
-                        onDelete: () {
-                          showConfirmActionDialog(
-                            context: context,
-                            title: 'هل أنت متأكد من حذف المسار؟',
-                            message: 'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
-                            onConfirm: () async {
-                              final learningPathProvider = context
-                                  .read<LearningPathProvider>();
-                              context
-                                  .read<RoadmapsProvider>()
-                                  .setCourseEnrollment(course.id, false);
-                              await learningPathProvider.resetProgress(
-                                roadmapId: course.id,
-                              );
-                              setState(() {});
-                            },
-                          );
-                        },
-                        onRefresh: () {
-                          showConfirmActionDialog(
-                            context: context,
-                            title: 'هل أنت متأكد من إعادة المسار؟',
-                            message:
-                                'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
-                            onConfirm: () async {
-                              await context
-                                  .read<LearningPathProvider>()
-                                  .resetProgress(roadmapId: course.id);
-                            },
-                          );
-                        },
-                        onEnrollmentChanged: (enrolled) {
-                          context.read<RoadmapsProvider>().setCourseEnrollment(
-                            course.id,
-                            enrolled,
-                          );
-                          setState(() {});
-                        },
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => LearningPathScreen(
-                                roadmapId: course.id,
-                                roadmapTitle: course.title,
+                  child: query.trim().isNotEmpty && filteredCourses.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.search_off_outlined,
+                                size: 64,
+                                color: AppColors.primary2,
                               ),
-                            ),
-                          );
-                        },
-                      );
-                    }).toList(),
-                  ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø£ÙŠ Ù†ØªÙŠØ¬Ø©',
+                                style: AppTextStyles.heading5.copyWith(
+                                  color: AppColors.text_1,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView(
+                          padding: const EdgeInsets.only(right: 10, left: 10),
+                          children: filteredCourses.map((course) {
+                            return LessonCard2(
+                              course: course,
+                              widthMultiplier: 0.92,
+                              trimLength: 70,
+                              isEnrolled: roadmapsProvider.isCourseEnrolled(
+                                course.id,
+                              ),
+                              onDelete: () {
+                                showConfirmActionDialog(
+                                  context: context,
+                                  title: 'Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ù…Ù† Ø­Ø°Ù Ø§Ù„Ù…Ø³Ø§Ø±ØŸ',
+                                  message:
+                                      'Ø³ÙˆÙ ÙŠØ¤Ø¯ÙŠ Ø°Ù„Ùƒ Ø¥Ù„Ù‰ Ø¥Ù„ØºØ§Ø¡ Ø§Ø´ØªØ±Ø§ÙƒÙƒ ÙÙŠ Ø§Ù„Ù…Ø³Ø§Ø±',
+                                  onConfirm: () async {
+                                    final learningPathProvider = context
+                                        .read<LearningPathProvider>();
+                                    context
+                                        .read<RoadmapsProvider>()
+                                        .setCourseEnrollment(course.id, false);
+                                    await learningPathProvider.resetProgress(
+                                      roadmapId: course.id,
+                                    );
+                                    setState(() {});
+                                  },
+                                );
+                              },
+                              onRefresh: () {
+                                showConfirmActionDialog(
+                                  context: context,
+                                  title: 'Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ù…Ù† Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø³Ø§Ø±ØŸ',
+                                  message:
+                                      'Ø³ÙˆÙ ÙŠØ¤Ø¯ÙŠ Ø°Ù„Ùƒ Ø¥Ù„Ù‰ Ø¥Ø¹Ø§Ø¯ØªÙƒ Ù„Ù†Ù‚Ø·Ø© Ø§Ù„Ø¨Ø¯Ø§ÙŠØ© ÙÙŠ Ø§Ù„Ù…Ø³Ø§Ø±',
+                                  onConfirm: () async {
+                                    await context
+                                        .read<LearningPathProvider>()
+                                        .resetProgress(roadmapId: course.id);
+                                  },
+                                );
+                              },
+                              onEnrollmentChanged: (enrolled) {
+                                context.read<RoadmapsProvider>().setCourseEnrollment(
+                                  course.id,
+                                  enrolled,
+                                );
+                                setState(() {});
+                              },
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => LearningPathScreen(
+                                      roadmapId: course.id,
+                                      roadmapTitle: course.title,
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          }).toList(),
+                        ),
                 ),
               ],
             ),
@@ -421,3 +537,4 @@ class SearchRoadmapsDelegate extends SearchDelegate {
     );
   }
 }
+

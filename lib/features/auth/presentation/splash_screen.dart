@@ -38,10 +38,10 @@ class _SplashScreenState extends State<SplashScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: LayoutBuilder(
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
               keyboardDismissBehavior:

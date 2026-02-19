@@ -23,6 +23,7 @@ static const Color backGroundError =Color.fromRGBO(235, 96, 96, 1);
 static const Color accent_1 =Color.fromRGBO(248, 154, 100, 0.2);
 static const Color accent_2 =Color.fromRGBO(134, 204, 255, 0.8);
 static const Color accent_3 =Color.fromRGBO(134, 204, 255, 0.2);
+static const Color communityListTile =Color.fromRGBO(217, 234, 245 , 1);
 static const Color buttonLoginSignUp =Color.fromRGBO(254, 202, 172, 1);
 
 

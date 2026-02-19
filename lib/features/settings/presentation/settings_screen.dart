@@ -26,6 +26,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<SettingsProvider>();
+    final hasInitialError = provider.error != null && provider.user == null;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -34,88 +35,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ? const Center(
                 child: CircularProgressIndicator(color: AppColors.primary2),
               )
-            : SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHeader(context),
-                    const SizedBox(height: 22),
-                    _buildSectionTitle('الحساب'),
-                    const SizedBox(height: 18),
-                    _ActionCard(
-                      text: 'تعديل الحساب',
-                      icon: Icons.arrow_back_ios_new,
-                      onTap: () async {
-                        await Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const EditAccountScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    Divider(color: AppColors.secondary1, thickness: 1),
-                    const SizedBox(height: 24),
-                    _buildSectionTitle('الإشعارات'),
-                    const SizedBox(height: 10),
-                    _NotificationRow(
-                      value: provider.user?.isNotificationsEnabled ?? false,
-                      onChanged: (value) {
-                        provider.toggleNotifications(value);
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    Divider(color: AppColors.secondary1, thickness: 1),
-                    const SizedBox(height: 20),
-                    _buildSectionTitle('إدارة الحساب'),
-                    const SizedBox(height: 18),
-                    _ActionCard(
-                      text: 'حذف حساب',
-                      icon: Icons.delete_outline,
-                      onTap: () {
-                        final messenger = ScaffoldMessenger.of(context);
-                        showSettingsConfirmActionDialog(
-                          context: context,
-                          title: 'هل أنت متأكد من حذف الحساب؟',
-                          onConfirm: () async {
-                            await provider.deleteAccount();
-                            if (!mounted) return;
-                            messenger.showSnackBar(
-                              SnackBar(
-                        content:  Directionality(textDirection: TextDirection.rtl, child: Text(
-                          "تم حذف الحساب بنجاح (تجريبي)", style:  AppTextStyles.heading5.copyWith(color:AppColors.primary),
-                        )),
-                        backgroundColor: AppColors.backGroundSuccess,
-                        duration: const Duration(seconds: 3),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(18),
-                          ),
-                        ),
+            : hasInitialError
+            ? _ErrorState(
+                onRetry: () {
+                  context.read<SettingsProvider>().loadSettings();
+                },
+              )
+            : RefreshIndicator(
+                onRefresh: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  await context.read<SettingsProvider>().loadSettings();
+                  if (provider.error != null) {
+                    _showRefreshFailedSnackBar(messenger);
+                  }
+                },
+                color: AppColors.primary2,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildHeader(context),
+                      const SizedBox(height: 22),
+                      _buildSectionTitle('الحساب'),
+                      const SizedBox(height: 18),
+                      _ActionCard(
+                        text: 'تعديل الحساب',
+                        icon: Icons.arrow_back_ios_new,
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const EditAccountScreen(),
+                            ),
+                          );
+                        },
                       ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 15),
-                    _ActionCard(
-                      text: 'تسجيل خروج',
-                      icon: Icons.logout,
-                      onTap: () {
-                        final messenger = ScaffoldMessenger.of(context);
-                        showSettingsConfirmActionDialog(
-                          context: context,
-                          title: 'هل أنت متأكد من رغبتك بتسجيل الخروج؟',
-                          onConfirm: () async {
-                            await provider.logout();
-                            if (!mounted) return;
-                            messenger.showSnackBar(
+                      const SizedBox(height: 24),
+                      Divider(color: AppColors.secondary1, thickness: 1),
+                      const SizedBox(height: 24),
+                      _buildSectionTitle('الإشعارات'),
+                      const SizedBox(height: 10),
+                      _NotificationRow(
+                        value: provider.user?.isNotificationsEnabled ?? false,
+                        onChanged: provider.toggleNotifications,
+                      ),
+                      const SizedBox(height: 10),
+                      Divider(color: AppColors.secondary1, thickness: 1),
+                      const SizedBox(height: 20),
+                      _buildSectionTitle('إدارة الحساب'),
+                      const SizedBox(height: 18),
+                      _ActionCard(
+                        text: 'حذف حساب',
+                        icon: Icons.delete_outline,
+                        onTap: () {
+                          final messenger = ScaffoldMessenger.of(context);
+                          showSettingsConfirmActionDialog(
+                            context: context,
+                            title: 'هل أنت متأكد من حذف الحساب؟',
+                            onConfirm: () async {
+                              await provider.deleteAccount();
+                              if (!mounted) return;
+                              messenger.showSnackBar(
                                 SnackBar(
-                                  content:  Directionality(textDirection: TextDirection.rtl, child: Text(
-                                    "تم تسجيل الخروج بنجاح (تجريبي)", style:  AppTextStyles.heading5.copyWith(color:AppColors.primary),
-                                  )),
+                                  content: Directionality(
+                                    textDirection: TextDirection.rtl,
+                                    child: Text(
+                                      'تم حذف الحساب بنجاح (تجريبي)',
+                                      style: AppTextStyles.heading5.copyWith(
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
                                   backgroundColor: AppColors.backGroundSuccess,
                                   duration: const Duration(seconds: 3),
                                   shape: const RoundedRectangleBorder(
@@ -124,21 +115,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     ),
                                   ),
                                 ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                    if (provider.error != null) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        provider.error!,
-                        style: AppTextStyles.smallText.copyWith(color: AppColors.error),
-                        textAlign: TextAlign.right,
+                              );
+                            },
+                          );
+                        },
                       ),
+                      const SizedBox(height: 15),
+                      _ActionCard(
+                        text: 'تسجيل خروج',
+                        icon: Icons.logout,
+                        onTap: () {
+                          final messenger = ScaffoldMessenger.of(context);
+                          showSettingsConfirmActionDialog(
+                            context: context,
+                            title: 'هل أنت متأكد من رغبتك بتسجيل الخروج؟',
+                            onConfirm: () async {
+                              await provider.logout();
+                              if (!mounted) return;
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Directionality(
+                                    textDirection: TextDirection.rtl,
+                                    child: Text(
+                                      'تم تسجيل الخروج بنجاح (تجريبي)',
+                                      style: AppTextStyles.heading5.copyWith(
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                  backgroundColor: AppColors.backGroundSuccess,
+                                  duration: const Duration(seconds: 3),
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(18),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      if (provider.error != null) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          provider.error!,
+                          style: AppTextStyles.smallText.copyWith(
+                            color: AppColors.error,
+                          ),
+                          textAlign: TextAlign.right,
+                        ),
+                      ],
+                      const SizedBox(height: 12),
                     ],
-                    const SizedBox(height: 12),
-                  ],
+                  ),
                 ),
               ),
       ),
@@ -146,32 +176,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return 
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'الإعدادات',
-              style: AppTextStyles.heading5.copyWith(
-                color: AppColors.text_3,
-              ),
-              textAlign: TextAlign.right,
-            ),
-            IconButton(
-              padding: const EdgeInsets.all(15),
-              onPressed: () {
-                if (Navigator.of(context).canPop()) {
-                  Navigator.of(context).pop();
-                }
-              },
-              icon: const Icon(
-                Icons.arrow_right_alt_outlined,
-                color: AppColors.text_5,
-                size: 35,
-              ),
-            ),
-          ],
-        );
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'الإعدادات',
+          style: AppTextStyles.heading5.copyWith(
+            color: AppColors.text_3,
+          ),
+          textAlign: TextAlign.right,
+        ),
+        IconButton(
+          padding: const EdgeInsets.all(15),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+          },
+          icon: const Icon(
+            Icons.arrow_right_alt_outlined,
+            color: AppColors.text_5,
+            size: 35,
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildSectionTitle(String title) {
@@ -183,6 +212,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
           color: AppColors.text_4,
         ),
         textAlign: TextAlign.right,
+      ),
+    );
+  }
+
+  void _showRefreshFailedSnackBar(ScaffoldMessengerState messenger) {
+    messenger.showSnackBar(
+      SnackBar(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+        ),
+        content: Text(
+          'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
+          textAlign: TextAlign.right,
+          style: AppTextStyles.body.copyWith(color: AppColors.text_2),
+        ),
+        backgroundColor: AppColors.backGroundError,
+        duration: const Duration(milliseconds: 1000),
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _ErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Directionality(
+              textDirection: TextDirection.rtl,
+              child: Text(
+                'تعذر تحميل بيانات الإعدادات',
+                style: AppTextStyles.heading5.copyWith(color: AppColors.error),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary2,
+                foregroundColor: AppColors.text_1,
+                elevation: 0,
+              ),
+              child: Text(
+                'إعادة المحاولة',
+                style: AppTextStyles.boldSmallText.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -202,24 +294,27 @@ class _NotificationRow extends StatelessWidget {
           scaleX: 1.2,
           scaleY: 1.1,
           child: Switch(
-          padding: EdgeInsetsGeometry.symmetric(horizontal: 15),
-          value: value,
-          activeThumbColor: AppColors.primary2,
-          activeTrackColor: AppColors.secondary3,
-          trackOutlineColor: const WidgetStatePropertyAll(AppColors.secondary1),
-          trackOutlineWidth: const WidgetStatePropertyAll(0.9),
-          onChanged: onChanged,
-        ),
+            padding: EdgeInsetsGeometry.symmetric(horizontal: 15),
+            value: value,
+            activeThumbColor: AppColors.primary2,
+            activeTrackColor: AppColors.secondary3,
+            trackOutlineColor:
+                const WidgetStatePropertyAll(AppColors.secondary1),
+            trackOutlineWidth: const WidgetStatePropertyAll(0.9),
+            onChanged: onChanged,
+          ),
         ),
         const Spacer(),
-        Padding(padding: EdgeInsetsGeometry.symmetric(horizontal: 15),
-        child:  Text(
-          'الإشعارات',
-          style: AppTextStyles.body.copyWith(
-            color: AppColors.text_3,
+        Padding(
+          padding: EdgeInsetsGeometry.symmetric(horizontal: 15),
+          child: Text(
+            'الإشعارات',
+            style: AppTextStyles.body.copyWith(
+              color: AppColors.text_3,
+            ),
+            textAlign: TextAlign.right,
           ),
-          textAlign: TextAlign.right,
-        ),)
+        ),
       ],
     );
   }

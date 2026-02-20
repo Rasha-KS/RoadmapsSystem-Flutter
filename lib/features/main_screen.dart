@@ -14,6 +14,8 @@ import 'package:roadmaps/features/profile/presentation/profile_provider.dart';
 import 'package:roadmaps/features/profile/presentation/profile_screen.dart';
 import 'package:roadmaps/features/roadmaps/presentation/roadmaps_provider.dart';
 import 'package:roadmaps/features/settings/presentation/settings_screen.dart';
+import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_provider.dart';
+import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -26,7 +28,7 @@ class _MainScreenState extends State<MainScreen> {
   int currentIndex = 2;
 
   final List<Widget> pages = [
-    const Center(child: Text('شات بوت')),
+    const SmartInstructorScreen(),
     const CommunityScreen(),
     const HomeScreen(),
     const ProfileScreen(),
@@ -43,6 +45,7 @@ class _MainScreenState extends State<MainScreen> {
       context.read<AnnouncementsProvider>().loadAnnouncements();
       context.read<CommunityProvider>().loadRooms();
       context.read<NotificationsProvider>().loadNotifications();
+      context.read<SmartInstructorProvider>().loadIntro();
     });
   }
 
@@ -54,17 +57,13 @@ class _MainScreenState extends State<MainScreen> {
         context: context,
         onNotificationsTap: () {
           Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const NotificationsScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
           );
         },
         onSettingsTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const SettingsScreen(),
-            ),
-          );
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
         },
       ),
       body: SafeArea(

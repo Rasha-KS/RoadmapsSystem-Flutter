@@ -1,9 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
+import 'package:roadmaps/core/widgets/shared_chat_input_bar.dart';
 import 'package:roadmaps/features/community/presentation/community_provider.dart';
 import 'dart:io';
 import 'package:roadmaps/features/community/domain/chat_message_entity.dart';
@@ -58,10 +59,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           children: [
             _ChatRoomHeader(roomName: widget.roomName),
             Expanded(
-              child: provider.isRoomMessagesLoading(widget.chatRoomId) &&
+              child:
+                  provider.isRoomMessagesLoading(widget.chatRoomId) &&
                       messages.isEmpty
                   ? const Center(
-                      child: CircularProgressIndicator(color: AppColors.primary2),
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary2,
+                      ),
                     )
                   : ListView.builder(
                       controller: _scrollController,
@@ -87,10 +91,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-              child: ChatInputBar(
+              child: SharedChatInputBar.community(
                 hasPendingAttachment: _pendingAttachmentPath != null,
-                pendingAttachmentName:
-                    _pendingAttachmentPath?.split(RegExp(r'[\\/]')).last,
+                pendingAttachmentName: _pendingAttachmentPath
+                    ?.split(RegExp(r'[\\/]'))
+                    .last,
                 onClearAttachment: () {
                   setState(() {
                     _pendingAttachmentPath = null;
@@ -164,187 +169,27 @@ class _ChatRoomHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 30, 18, 10),
+      padding: const EdgeInsets.fromLTRB(20, 30, 20, 10),
       child: Row(
         children: [
           Text(
             roomName,
-            style: AppTextStyles.boldHeading5.copyWith(
-              color: AppColors.text_3,
-            ),
+            style: AppTextStyles.boldHeading5.copyWith(color: AppColors.text_3),
           ),
           const Spacer(),
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
-            icon:  const Icon(
-                Icons.arrow_right_alt_outlined,
-                color: AppColors.text_5,
-                size: 35,
-          ),
+            icon: const Icon(
+              Icons.arrow_right_alt_outlined,
+              color: AppColors.text_5,
+              size: 35,
+            ),
           ),
         ],
       ),
     );
   }
 }
-
-
-
-class ChatInputBar extends StatefulWidget {
-  const ChatInputBar({
-    super.key,
-    required this.hasPendingAttachment,
-    required this.pendingAttachmentName,
-    required this.onClearAttachment,
-    required this.onPickAttachment,
-    required this.onSendPressed,
-  });
-
-  final bool hasPendingAttachment;
-  final String? pendingAttachmentName;
-  final VoidCallback onClearAttachment;
-  final Future<void> Function() onPickAttachment;
-  final Future<void> Function(String text) onSendPressed;
-
-  @override
-  State<ChatInputBar> createState() => _ChatInputBarState();
-}
-
-class _ChatInputBarState extends State<ChatInputBar> {
-  final TextEditingController _controller = TextEditingController();
-
-  bool get _canSend {
-    return _controller.text.trim().isNotEmpty || widget.hasPendingAttachment;
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (widget.hasPendingAttachment && widget.pendingAttachmentName != null)
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.accent_1,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.primary2),
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: widget.onClearAttachment,
-                    icon: const Icon(
-                      Icons.close,
-                      size: 20,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'تم اختيار صورة: ${widget.pendingAttachmentName}',
-                      textAlign: TextAlign.right,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.smallText.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ),
-
-
-        Padding(padding: EdgeInsets.fromLTRB(8,4,8,30),
-        child:  Row(
-          children: [
-            Expanded(
-              child: Container(
-                height: 55,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.secondary4,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: AppColors.secondary1),
-                ),
-                child: TextField(
-                  controller: _controller,
-                  maxLines: 1,
-                  textDirection: TextDirection.rtl,
-                  textAlign: TextAlign.right,
-                  onChanged: (_) => setState(() {}),
-                  onSubmitted: (value) async {
-                    if (!_canSend) return;
-                    await widget.onSendPressed(value.trim());
-                    if (!mounted) return;
-                    _controller.clear();
-                    setState(() {});
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'شاركنا أفكارك',
-                    hintStyle: AppTextStyles.body.copyWith(color: AppColors.text_1 , fontWeight: FontWeight.w500),
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(
-                color: _canSend ? AppColors.primary1 : AppColors.secondary4,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.secondary2),
-              ),
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                onPressed: () async {
-                  if (_canSend) {
-                    final text = _controller.text.trim();
-                    await widget.onSendPressed(text);
-                    if (!mounted) return;
-                    _controller.clear();
-                    setState(() {});
-                    return;
-                  }
-
-                  await widget.onPickAttachment();
-                  if (!mounted) return;
-                  setState(() {});
-                },
-                icon: Icon(
-                  _canSend ? Icons.send : Icons.camera_alt_outlined,
-                  color: _canSend ? Colors.white : AppColors.primary,
-                  size: 21,
-                ),
-              ),
-            ),
-          ],
-        ),
-        )
-       
-
-
-      ],
-    );
-  }
-}
-
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
@@ -365,13 +210,16 @@ class MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maxBubbleWidth = MediaQuery.sizeOf(context).width * 0.7;
-    final bubbleColor = isCurrentUser ? AppColors.secondary3 : AppColors.secondary4;
+    final bubbleColor = isCurrentUser
+        ? AppColors.secondary3
+        : AppColors.secondary4;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
+      padding: const EdgeInsets.symmetric(vertical: 7 , horizontal: 10),
       child: Row(
-        mainAxisAlignment:
-            isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isCurrentUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isCurrentUser) _buildAvatar(),
@@ -394,12 +242,15 @@ class MessageBubble extends StatelessWidget {
                       color: AppColors.primary1,
                     ),
                   ),
-                  if (message.content != null && message.content!.trim().isNotEmpty)
+                  if (message.content != null &&
+                      message.content!.trim().isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
                         message.content!,
-                        style: AppTextStyles.body.copyWith(color: AppColors.text_3),
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.text_3,
+                        ),
                       ),
                     ),
                   if (message.attachmentPath != null &&
@@ -447,7 +298,7 @@ class MessageBubble extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 320),
           child: SizedBox(
-          width: width,
+            width: width,
             child: Image.network(
               path,
               fit: BoxFit.contain,
@@ -464,7 +315,7 @@ class MessageBubble extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 320),
           child: SizedBox(
-          width: width,
+            width: width,
             child: Image.file(
               file,
               fit: BoxFit.contain,
@@ -476,7 +327,3 @@ class MessageBubble extends StatelessWidget {
     }
   }
 }
-
-
-
-

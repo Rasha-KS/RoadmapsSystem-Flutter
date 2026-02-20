@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
+import 'package:roadmaps/features/main_screen.dart';
 import 'package:roadmaps/features/notifications/presentation/notifications_provider.dart';
+import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_provider.dart';
 import 'package:roadmaps/injection.dart';
 
 void main() async {
@@ -13,12 +15,12 @@ void main() async {
   await currentUserProvider.loadCurrentUser();
 
   runApp(
-    MultiProvider( 
-      providers:[
+    MultiProvider(
+      providers: [
         ChangeNotifierProvider.value(value: currentUserProvider),
 
         ChangeNotifierProvider(create: (_) => Injection.provideHomeProvider()),
-        
+
         ChangeNotifierProvider(
           create: (_) => Injection.provideRoadmapsProvider(),
         ),
@@ -40,6 +42,9 @@ void main() async {
         ChangeNotifierProvider<NotificationsProvider>(
           create: (_) => Injection.provideNotificationsProvider(),
         ),
+        ChangeNotifierProvider<SmartInstructorProvider>(
+          create: (_) => Injection.provideSmartInstructorProvider(),
+        ),
       ],
       child: const MyApp(),
     ),
@@ -59,7 +64,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Tajawal_R',
         scaffoldBackgroundColor: AppColors.background,
       ),
-      home: const  SplashScreen() //SplashScreen(),
+      home: const SplashScreen(), //SplashScreen(),
     );
   }
 }

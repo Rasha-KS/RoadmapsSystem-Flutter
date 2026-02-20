@@ -38,11 +38,18 @@ import 'package:roadmaps/features/settings/domain/toggle_notifications_usecase.d
 import 'package:roadmaps/features/settings/domain/upload_profile_image_usecase.dart';
 import 'package:roadmaps/features/settings/domain/update_account_usecase.dart';
 import 'package:roadmaps/features/settings/presentation/settings_provider.dart';
+import 'package:roadmaps/features/smart_instructor/data/mock_smart_instructor_repository.dart';
+import 'package:roadmaps/features/smart_instructor/domain/get_smart_instructor_intro_usecase.dart';
+import 'package:roadmaps/features/smart_instructor/domain/get_smart_instructor_messages_usecase.dart';
+import 'package:roadmaps/features/smart_instructor/domain/send_smart_instructor_image_message_usecase.dart';
+import 'package:roadmaps/features/smart_instructor/domain/send_smart_instructor_message_usecase.dart';
+import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_provider.dart';
 
 class Injection {
   static final UserRepository _userRepository = MockUserRepository();
-  static final CurrentUserProvider _currentUserProvider =
-      CurrentUserProvider(userRepository: _userRepository);
+  static final CurrentUserProvider _currentUserProvider = CurrentUserProvider(
+    userRepository: _userRepository,
+  );
 
   static CurrentUserProvider provideCurrentUserProvider() {
     return _currentUserProvider;
@@ -127,5 +134,22 @@ class Injection {
   static NotificationsProvider provideNotificationsProvider() {
     final repository = NotificationsRepository();
     return NotificationsProvider(GetNotificationsUseCase(repository));
+  }
+
+  static SmartInstructorProvider provideSmartInstructorProvider() {
+    final repository = MockSmartInstructorRepository();
+    return SmartInstructorProvider(
+      getSmartInstructorIntroUseCase: GetSmartInstructorIntroUseCase(
+        repository,
+      ),
+      getSmartInstructorMessagesUseCase: GetSmartInstructorMessagesUseCase(
+        repository,
+      ),
+      sendSmartInstructorMessageUseCase: SendSmartInstructorMessageUseCase(
+        repository,
+      ),
+      sendSmartInstructorImageMessageUseCase:
+          SendSmartInstructorImageMessageUseCase(repository),
+    );
   }
 }

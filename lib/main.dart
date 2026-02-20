@@ -64,7 +64,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Tajawal_R',
         scaffoldBackgroundColor: AppColors.background,
       ),
-      home: const MainScreen(), //SplashScreen(),
+      home: const SplashScreen(), //SplashScreen(),
     );
   }
 }

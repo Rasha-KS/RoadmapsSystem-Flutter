@@ -399,7 +399,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
       child: StatefulBuilder(
         builder: (context, setState) {
           final roadmapsProvider = context.watch<RoadmapsProvider>();
-          final levels = ['Ù…Ø­ØªØ±Ù', 'Ù…ØªÙˆØ³Ø·', 'Ù…Ø¨ØªØ¯Ø¦'];
+          final levels = ['محترف', 'متوسط', 'مبتدئ'];
           final filteredCourses = _filteredCourses(selectedLevel, query);
 
           return Container(
@@ -422,7 +422,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
                         ),
                       ),
                       _levelButton(
-                        text: 'Ø§Ù„ÙƒÙ„',
+                        text: 'الكل',
                         active: selectedLevel.isEmpty,
                         onPressed: () => setState(() => selectedLevel = ''),
                       ),

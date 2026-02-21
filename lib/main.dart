@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
-import 'package:roadmaps/features/main_screen.dart';
+import 'package:roadmaps/features/lessons/presentation/lessons_provider.dart';
 import 'package:roadmaps/features/notifications/presentation/notifications_provider.dart';
 import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_provider.dart';
 import 'package:roadmaps/injection.dart';
@@ -38,6 +38,9 @@ void main() async {
         ),
         ChangeNotifierProvider<LearningPathProvider>(
           create: (_) => Injection.provideLearningPathProvider(),
+        ),
+        ChangeNotifierProvider<LessonsProvider>(
+          create: (_) => Injection.provideLessonsProvider(),
         ),
         ChangeNotifierProvider<NotificationsProvider>(
           create: (_) => Injection.provideNotificationsProvider(),

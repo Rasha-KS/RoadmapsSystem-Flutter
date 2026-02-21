@@ -8,6 +8,7 @@ import 'package:roadmaps/core/widgets/roadmap_node.dart';
 import 'package:roadmaps/core/widgets/roadmap_progress.dart';
 import 'package:roadmaps/features/learning_path/domain/learning_unit_entity.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
+import 'package:roadmaps/features/lessons/presentation/lessons_screen.dart';
 
 class LearningPathScreen extends StatefulWidget {
   final int roadmapId;
@@ -37,8 +38,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<LearningPathProvider>();
     final hasInitialLoading =
-        provider.state == LearningPathState.loading &&
-        provider.units.isEmpty;
+        provider.state == LearningPathState.loading && provider.units.isEmpty;
     final hasInitialError =
         provider.state == LearningPathState.connectionError &&
         provider.units.isEmpty;
@@ -69,9 +69,9 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                         : hasInitialError
                         ? _ErrorState(
                             onRetry: () async {
-                              await context.read<LearningPathProvider>().loadPath(
-                                widget.roadmapId,
-                              );
+                              await context
+                                  .read<LearningPathProvider>()
+                                  .loadPath(widget.roadmapId);
                             },
                           )
                         : _buildRoadmapList(provider),
@@ -170,9 +170,17 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     if (unit.status == LearningUnitStatus.locked) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(30),topRight: Radius.circular(30))),
-          content: Text(textAlign:TextAlign.right ,'هدا الدرس مقفل اكمل الدرس السابق .',style: AppTextStyles.body,),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30),
+              topRight: Radius.circular(30),
+            ),
+          ),
+          content: Text(
+            textAlign: TextAlign.right,
+            'هدا الدرس مقفل اكمل الدرس السابق .',
+            style: AppTextStyles.body,
+          ),
           backgroundColor: AppColors.backGroundError,
           duration: Duration(milliseconds: 1000),
         ),
@@ -180,13 +188,56 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       return;
     }
 
+    if (unit.type == LearningUnitType.lesson) {
+      final bool? shouldComplete = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => LessonsScreen(
+            learningUnitId: unit.id.toString(),
+            roadmapTitle: widget.roadmapTitle,
+          ),
+        ),
+      );
+
+      if (shouldComplete != true) return;
+
+      final int earnedXp = _earnedXpForUnit(unit.type);
+      await provider.completeUnit(unitId: unit.id, earnedXp: earnedXp);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30),
+              topRight: Radius.circular(30),
+            ),
+          ),
+          content: Text(
+            '${unit.title} completed. +$earnedXp XP',
+            textAlign: TextAlign.right,
+            style: AppTextStyles.body.copyWith(color: AppColors.text_5),
+          ),
+          backgroundColor: AppColors.backGroundSuccess,
+          duration: const Duration(milliseconds: 1500),
+        ),
+      );
+      return;
+    }
+
     if (unit.status == LearningUnitStatus.completed) {
       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(
-           shape: RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(30),topRight: Radius.circular(30))),
-          content: Text(textAlign:TextAlign.right ,'.هدا الدرس مكتمل',style: AppTextStyles.body.copyWith(
-            color: AppColors.text_5
-          ),),
+        SnackBar(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30),
+              topRight: Radius.circular(30),
+            ),
+          ),
+          content: Text(
+            textAlign: TextAlign.right,
+            '.هدا الدرس مكتمل',
+            style: AppTextStyles.body.copyWith(color: AppColors.text_5),
+          ),
           duration: Duration(milliseconds: 1000),
           backgroundColor: AppColors.warning,
         ),
@@ -228,10 +279,17 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-         shape: RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(30),topRight: Radius.circular(30))),
-        content: Text(textAlign:TextAlign.right ,'${unit.title} مكتمل. +$earnedXp نقاط خبرة' ,style: AppTextStyles.body.copyWith(
-          color: AppColors.text_5
-        ),),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+        ),
+        content: Text(
+          textAlign: TextAlign.right,
+          '${unit.title} مكتمل. +$earnedXp نقاط خبرة',
+          style: AppTextStyles.body.copyWith(color: AppColors.text_5),
+        ),
         backgroundColor: AppColors.backGroundSuccess,
         duration: Duration(milliseconds: 1500),
       ),
@@ -357,6 +415,7 @@ class _HeaderCard extends StatelessWidget {
   }
 }
 
+
 class _RoadmapConnectorPainter extends CustomPainter {
   final bool fromLeft;
   final Color color;
@@ -368,7 +427,7 @@ class _RoadmapConnectorPainter extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2;
+      ..strokeWidth = 2.5;
 
     final double startX = fromLeft ? 24 : size.width - 24;
     final double endX = fromLeft ? size.width - 24 : 24;

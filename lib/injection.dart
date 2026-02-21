@@ -19,6 +19,9 @@ import 'package:roadmaps/features/homepage/presentation/home_provider.dart';
 import 'package:roadmaps/features/learning_path/data/learning_path_repository.dart';
 import 'package:roadmaps/features/learning_path/domain/get_learning_path_usecase.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
+import 'package:roadmaps/features/lessons/data/lesson_repository.dart';
+import 'package:roadmaps/features/lessons/domain/get_lesson_usecase.dart';
+import 'package:roadmaps/features/lessons/presentation/lessons_provider.dart';
 import 'package:roadmaps/features/notifications/data/notifications_repository.dart';
 import 'package:roadmaps/features/notifications/domain/get_notifications_usecase.dart';
 import 'package:roadmaps/features/notifications/presentation/notifications_provider.dart';
@@ -129,6 +132,11 @@ class Injection {
   static LearningPathProvider provideLearningPathProvider() {
     final repository = LearningPathRepository();
     return LearningPathProvider(GetLearningPathUseCase(repository));
+  }
+
+  static LessonsProvider provideLessonsProvider() {
+    final repository = LessonRepository();
+    return LessonsProvider(GetLessonUseCase(repository));
   }
 
   static NotificationsProvider provideNotificationsProvider() {

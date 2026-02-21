@@ -34,7 +34,7 @@ class AppPrimaryButton extends StatelessWidget {
           backgroundColor: backgroundColor,
           foregroundColor: foregroundColor,
           minimumSize: Size.fromHeight(height),
-          elevation: 0,
+          elevation: 3,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),

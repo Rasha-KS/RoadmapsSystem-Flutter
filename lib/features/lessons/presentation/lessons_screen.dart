@@ -36,14 +36,14 @@ class _LessonsScreenState extends State<LessonsScreen> {
     final provider = context.watch<LessonsProvider>();
     final lesson = provider.lesson;
 
-    return SafeArea(
-      child: Scaffold(
+    return  Scaffold(
         backgroundColor: AppColors.background,
         appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(62),
+          preferredSize: const Size.fromHeight(70),
           child: Directionality(
             textDirection: TextDirection.ltr,
-            child: AppBar(
+            child: Padding(padding: EdgeInsets.only(top: 30 , left: 10),
+            child:  AppBar(
               
               automaticallyImplyLeading: false,
               backgroundColor: AppColors.background,
@@ -58,13 +58,17 @@ class _LessonsScreenState extends State<LessonsScreen> {
                 IconButton(
                   onPressed: () => Navigator.of(context).maybePop(false),
                   icon: const Icon(
-                    Icons.arrow_forward_rounded,
+                    Icons.arrow_right_alt_outlined,
                     color: AppColors.text_5,
+                    size: 35,
                   ),
+
+                  padding: EdgeInsets.only(bottom: 5),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 15),
               ],
             ),
+            )
           ),
         ),
         body: SafeArea(
@@ -75,7 +79,7 @@ class _LessonsScreenState extends State<LessonsScreen> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 700),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 25),
                   child: lesson == null && provider.isLoading
                       ? const Center(
                           child: CircularProgressIndicator(
@@ -97,7 +101,7 @@ class _LessonsScreenState extends State<LessonsScreen> {
             ),
           ),
         ),
-      ),
+      
     );
   }
 }
@@ -151,7 +155,7 @@ class _Content extends StatelessWidget {
       children: [
         Container(
           width: 332,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
           decoration: BoxDecoration(
             color: AppColors.accent_3,
             borderRadius: BorderRadius.circular(20),

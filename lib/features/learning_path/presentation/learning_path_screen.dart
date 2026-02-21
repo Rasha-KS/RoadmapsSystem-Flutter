@@ -6,6 +6,10 @@ import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/widgets/roadmap_node.dart';
 import 'package:roadmaps/core/widgets/roadmap_progress.dart';
+import 'package:roadmaps/core/providers/current_user_provider.dart';
+import 'package:roadmaps/features/challenge/presentation/challenge_provider.dart';
+import 'package:roadmaps/features/challenge/presentation/challenge_screen.dart';
+import 'package:roadmaps/features/main_screen.dart';
 import 'package:roadmaps/features/learning_path/domain/learning_unit_entity.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
 import 'package:roadmaps/features/lessons/presentation/lessons_screen.dart';
@@ -178,13 +182,91 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           ),
           content: Text(
             textAlign: TextAlign.right,
-            'هدا الدرس مقفل اكمل الدرس السابق .',
+            'هدا الدرس مقفل اكمل الدرس السابق',
             style: AppTextStyles.body,
           ),
           backgroundColor: AppColors.backGroundError,
           duration: Duration(milliseconds: 1000),
         ),
       );
+      return;
+    }
+
+    if (unit.type == LearningUnitType.challenge) {
+      final challengeProvider = context.read<ChallengeProvider>();
+      final challenge = await challengeProvider.getChallengeByLearningUnitId(
+        unit.id,
+      );
+
+      if (!mounted) return;
+
+      if (challenge == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(30),
+                topRight: Radius.circular(30),
+              ),
+            ),
+            content: Text(
+              textAlign: TextAlign.right,
+              'لا يوجد تحدي مرتبط بهذه الوحدة حاليا',
+              style: AppTextStyles.body,
+            ),
+            backgroundColor: AppColors.backGroundError,
+            duration: Duration(milliseconds: 1200),
+          ),
+        );
+        return;
+      }
+
+      if (provider.userXp < challenge.minXp) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(30),
+                topRight: Radius.circular(30),
+              ),
+            ),
+            content: Directionality(textDirection: TextDirection.rtl, 
+            child: Text(
+              textAlign: TextAlign.right,
+              'XP الحالي: ${provider.userXp}, '
+              'لفتح هذا التحدي يلزم ${challenge.minXp}',
+              style: AppTextStyles.body,
+            ),),
+            backgroundColor: AppColors.backGroundError,
+            duration: const Duration(milliseconds: 1500),
+          ),
+        );
+        return;
+      }
+
+      final userId = context.read<CurrentUserProvider>().userId ?? 1;
+      final ChallengeFinishAction? finishAction = await Navigator.of(context)
+          .push<ChallengeFinishAction>(
+            MaterialPageRoute(
+              builder: (_) => ChallengeScreen(
+                learningUnitId: unit.id,
+                userId: userId,
+                roadmapTitle: widget.roadmapTitle,
+              ),
+            ),
+          );
+
+      if (finishAction == null) return;
+
+      await provider.completeUnit(unitId: unit.id, earnedXp: 0);
+      if (!mounted) return;
+
+      if (finishAction == ChallengeFinishAction.goHome) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+          (route) => false,
+        );
+      }
       return;
     }
 
@@ -414,7 +496,6 @@ class _HeaderCard extends StatelessWidget {
     );
   }
 }
-
 
 class _RoadmapConnectorPainter extends CustomPainter {
   final bool fromLeft;

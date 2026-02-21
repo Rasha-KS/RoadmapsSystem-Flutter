@@ -10,6 +10,10 @@ import 'package:roadmaps/features/community/domain/get_user_community_rooms_usec
 import 'package:roadmaps/features/community/domain/send_image_message_usecase.dart';
 import 'package:roadmaps/features/community/domain/send_message_usecase.dart';
 import 'package:roadmaps/features/community/presentation/community_provider.dart';
+import 'package:roadmaps/features/challenge/data/challenge_repository.dart';
+import 'package:roadmaps/features/challenge/domain/get_challenge_by_learning_unit_usecase.dart';
+import 'package:roadmaps/features/challenge/domain/run_challenge_code_usecase.dart';
+import 'package:roadmaps/features/challenge/presentation/challenge_provider.dart';
 import 'package:roadmaps/features/homepage/data/home_repository.dart';
 import 'package:roadmaps/features/homepage/domain/delete_my_roadmap_usecase.dart';
 import 'package:roadmaps/features/homepage/domain/enroll_roadmap_usecase.dart';
@@ -158,6 +162,16 @@ class Injection {
       ),
       sendSmartInstructorImageMessageUseCase:
           SendSmartInstructorImageMessageUseCase(repository),
+    );
+  }
+
+  static ChallengeProvider provideChallengeProvider() {
+    final repository = ChallengeRepository();
+    return ChallengeProvider(
+      getChallengeByLearningUnitUseCase: GetChallengeByLearningUnitUseCase(
+        repository,
+      ),
+      runChallengeCodeUseCase: RunChallengeCodeUseCase(repository),
     );
   }
 }

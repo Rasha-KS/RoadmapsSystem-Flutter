@@ -4,6 +4,7 @@ import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/widgets/app_primary_button.dart';
 import 'package:roadmaps/features/challenge/presentation/challenge_provider.dart';
+import 'package:roadmaps/features/main_screen.dart';
 
 enum ChallengeFinishAction { goHome, backToLearningPath }
 
@@ -25,6 +26,7 @@ class ChallengeScreen extends StatefulWidget {
 
 class _ChallengeScreenState extends State<ChallengeScreen> {
   final TextEditingController _codeController = TextEditingController();
+  bool _isNavigating = false;
 
   @override
   void initState() {
@@ -66,33 +68,32 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         preferredSize: const Size.fromHeight(62),
         child: Directionality(
           textDirection: TextDirection.ltr,
-          child: Padding(padding: EdgeInsets.only(left: 15, top: 30 , right: 14),
-          child:  AppBar(
-            automaticallyImplyLeading: false,
-            backgroundColor: AppColors.background,
-            surfaceTintColor: AppColors.background,
-            elevation: 0,
-            titleSpacing: 16,
-            title: Text(
-              provider.challenge?.language ?? widget.roadmapTitle,
-              style: AppTextStyles.heading4.copyWith(color: AppColors.text_3),
-            ),
-            actions: [
-              
-              IconButton(
-                onPressed: () => Navigator.of(context).maybePop(false),
-                icon: const Icon(
-                Icons.arrow_right_alt_outlined,
-                color: AppColors.text_3,
-                size: 35,
-                
-                ),
-                padding: EdgeInsets.only(bottom: 5),
+          child: Padding(
+            padding: EdgeInsets.only(left: 15, top: 30, right: 14),
+            child: AppBar(
+              automaticallyImplyLeading: false,
+              backgroundColor: AppColors.background,
+              surfaceTintColor: AppColors.background,
+              elevation: 0,
+              titleSpacing: 16,
+              title: Text(
+                provider.challenge?.language ?? widget.roadmapTitle,
+                style: AppTextStyles.heading4.copyWith(color: AppColors.text_3),
               ),
-              const SizedBox(width: 8),
-            ],
+              actions: [
+                IconButton(
+                  onPressed: _handleBackPressed,
+                  icon: const Icon(
+                    Icons.arrow_right_alt_outlined,
+                    color: AppColors.text_3,
+                    size: 35,
+                  ),
+                  padding: EdgeInsets.only(bottom: 5),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
           ),
-          )
         ),
       ),
       body: SafeArea(
@@ -186,12 +187,16 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                 ),
               ),
               const SizedBox(height: 15),
-              
-              Padding(padding: EdgeInsetsGeometry.symmetric(horizontal: 40),
-              child: AppPrimaryButton(
-                text: 'إنتهاء',
-                onPressed: () => _onFinish(provider),
-              ),)
+
+              Padding(
+                padding: EdgeInsetsGeometry.symmetric(horizontal: 40),
+                child: AppPrimaryButton(
+                  text: 'إنتهاء',
+                  onPressed: provider.canFinish
+                      ? () => _onFinish(provider)
+                      : null,
+                ),
+              ),
             ],
           ),
         );
@@ -211,7 +216,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         content: Text(
           'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
           textAlign: TextAlign.right,
-           style: AppTextStyles.heading5.copyWith(color: AppColors.text_2)
+          style: AppTextStyles.heading5.copyWith(color: AppColors.text_2),
         ),
         backgroundColor: AppColors.backGroundError,
         duration: const Duration(milliseconds: 1000),
@@ -222,8 +227,12 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   Future<void> _onFinish(ChallengeProvider provider) async {
     if (!provider.canFinish) {
       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(
-          content: Text('نفذ الكود بنجاح قبل إنهاء التحدي' ,textAlign: TextAlign.right, style: AppTextStyles.heading5.copyWith(color: AppColors.text_2),),
+        SnackBar(
+          content: Text(
+            'نفذ الكود بنجاح قبل إنهاء التحدي',
+            textAlign: TextAlign.right,
+            style: AppTextStyles.heading5.copyWith(color: AppColors.text_2),
+          ),
           backgroundColor: AppColors.backGroundError,
           duration: Duration(milliseconds: 1200),
         ),
@@ -235,82 +244,108 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         await showDialog<ChallengeFinishAction>(
           context: context,
           builder: (dialogContext) {
-            return Padding(padding: EdgeInsets.fromLTRB(20,0,20,20),
-            child:  Dialog(
-              backgroundColor: AppColors.primary1.withValues(alpha: 0.9),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 25,
+            return Padding(
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Dialog(
+                backgroundColor: AppColors.primary1.withValues(alpha: 0.9),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: Directionality(
-                  textDirection: TextDirection.rtl,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'تهانينا !',
-                        style: AppTextStyles.heading2.copyWith(
-                          color: AppColors.success,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 25,
+                  ),
+                  child: Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'تهانينا !',
+                          style: AppTextStyles.heading2.copyWith(
+                            color: AppColors.success,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'لقد اكملت المسار',
-                        style: AppTextStyles.heading4.copyWith(
-                          color: AppColors.text_2,
+                        const SizedBox(height: 12),
+                        Text(
+                          'لقد اكملت المسار',
+                          style: AppTextStyles.heading4.copyWith(
+                            color: AppColors.text_2,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 30),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor: AppColors.secondary4,
-                              side: BorderSide.none,
-                            ),
-                            onPressed: () => Navigator.of(
-                              dialogContext,
-                            ).pop(ChallengeFinishAction.goHome),
-                            child: Text(
-                              'الرئيسية',
-                              style: AppTextStyles.boldSmallText.copyWith(
-                                color: AppColors.text_3,
+                        const SizedBox(height: 30),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: AppColors.secondary4,
+                                side: BorderSide.none,
+                              ),
+                              onPressed: () => Navigator.of(
+                                dialogContext,
+                              ).pop(ChallengeFinishAction.goHome),
+                              child: Text(
+                                'الرئيسية',
+                                style: AppTextStyles.boldSmallText.copyWith(
+                                  color: AppColors.text_3,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 22),
-                          OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor: AppColors.secondary4,
-                              side: BorderSide.none,
-                            ),
-                            onPressed: () => Navigator.of(
-                              dialogContext,
-                            ).pop(ChallengeFinishAction.backToLearningPath),
-                            child: Text(
-                              'المسار',
-                              style: AppTextStyles.boldSmallText.copyWith(
-                                color: AppColors.text_3,
+                            const SizedBox(width: 22),
+                            OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: AppColors.secondary4,
+                                side: BorderSide.none,
+                              ),
+                              onPressed: () => Navigator.of(
+                                dialogContext,
+                              ).pop(ChallengeFinishAction.backToLearningPath),
+                              child: Text(
+                                'المسار',
+                                style: AppTextStyles.boldSmallText.copyWith(
+                                  color: AppColors.text_3,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),);
+            );
           },
         );
 
     if (!mounted || action == null) return;
-    Navigator.of(context).pop(action);
+    _closeChallengeScreen(action: action);
+  }
+
+  void _handleBackPressed() {
+    _closeChallengeScreen();
+  }
+
+  void _closeChallengeScreen({ChallengeFinishAction? action}) {
+    if (!mounted || _isNavigating) return;
+    _isNavigating = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final navigator = Navigator.of(context);
+      if (navigator.canPop()) {
+        navigator.pop(action);
+        return;
+      }
+
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const MainScreen()),
+        (route) => false,
+      );
+    });
   }
 }
 
@@ -387,11 +422,9 @@ class _ChallengeDescriptionCard extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: AppTextStyles.heading4.copyWith(
-                  color: AppColors.text_1,
-                ),
+                style: AppTextStyles.heading4.copyWith(color: AppColors.text_1),
               ),
-              const SizedBox(width:8),
+              const SizedBox(width: 8),
               const Icon(Icons.code, color: AppColors.text_1, size: 25),
             ],
           ),
@@ -408,7 +441,9 @@ class _ChallengeDescriptionCard extends StatelessWidget {
             onTap: onToggle,
             child: Text(
               expanded ? 'اقل' : 'المزيد...',
-              style: AppTextStyles.boldSmallText.copyWith(color: AppColors.primary2),
+              style: AppTextStyles.boldSmallText.copyWith(
+                color: AppColors.primary2,
+              ),
             ),
           ),
         ],
@@ -445,7 +480,7 @@ class _CodeEditorCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primary,
         borderRadius: BorderRadius.circular(16),
-        border: BoxBorder.all(color: AppColors.primary2)
+        border: BoxBorder.all(color: AppColors.primary2),
       ),
       child: Stack(
         children: [

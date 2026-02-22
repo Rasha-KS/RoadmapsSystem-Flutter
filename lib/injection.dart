@@ -14,6 +14,9 @@ import 'package:roadmaps/features/challenge/data/challenge_repository.dart';
 import 'package:roadmaps/features/challenge/domain/get_challenge_by_learning_unit_usecase.dart';
 import 'package:roadmaps/features/challenge/domain/run_challenge_code_usecase.dart';
 import 'package:roadmaps/features/challenge/presentation/challenge_provider.dart';
+import 'package:roadmaps/features/checkpoints/data/checkpoint_repository.dart';
+import 'package:roadmaps/features/checkpoints/domain/get_checkpoint_usecase.dart';
+import 'package:roadmaps/features/checkpoints/presentation/checkpoints_provider.dart';
 import 'package:roadmaps/features/homepage/data/home_repository.dart';
 import 'package:roadmaps/features/homepage/domain/delete_my_roadmap_usecase.dart';
 import 'package:roadmaps/features/homepage/domain/enroll_roadmap_usecase.dart';
@@ -141,6 +144,11 @@ class Injection {
   static LessonsProvider provideLessonsProvider() {
     final repository = LessonRepository();
     return LessonsProvider(GetLessonUseCase(repository));
+  }
+
+  static CheckpointsProvider provideCheckpointsProvider() {
+    final repository = CheckpointRepository();
+    return CheckpointsProvider(GetCheckpointUseCase(repository));
   }
 
   static NotificationsProvider provideNotificationsProvider() {

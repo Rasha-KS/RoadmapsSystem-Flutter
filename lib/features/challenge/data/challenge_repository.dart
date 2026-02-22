@@ -1,4 +1,5 @@
 import 'package:roadmaps/features/challenge/data/challenge_model.dart';
+import 'package:roadmaps/core/constants/xp_rules.dart';
 
 class ChallengeRepository {
   final List<ChallengeModel> _challenges = <ChallengeModel>[
@@ -8,10 +9,9 @@ class ChallengeRepository {
       title: 'اكتب كود',
       description:
           'اكتب برنامجا بسيطا ليقبل اسماء منتجات في مصفوفة مع سعر كل منتج، '
-          'ثم يحسب التكلفة الاجمالية. ادخل 100 كحد اقصى من الاسماء kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.'
-          ,
+          'ثم يحسب التكلفة الاجمالية. ادخل 100 كحد اقصى من الاسماء kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.',
       language: 'C++',
-      minXp: 120,
+      minXp: XpRules.challengeUnlockMinXp,
       isActive: true,
       starterCode: '''
 #include <iostream>
@@ -45,11 +45,9 @@ int main() {
   ) async {
     await Future.delayed(const Duration(milliseconds: 350));
     try {
-
       return _challenges.firstWhere(
         (challenge) =>
             challenge.learningUnitId == learningUnitId && challenge.isActive,
-            
       );
     } catch (_) {
       return null;
@@ -77,7 +75,6 @@ int main() {
     final String executionOutput = passed
         ? 'تم التنفيذ بنجاح\nAll tests passed: 2/2\nOutput: 50.00'
         : 'Error in line 15\nهناك خطأ في الكود';
-
 
     _attempts.add(
       ChallengeAttemptModel(

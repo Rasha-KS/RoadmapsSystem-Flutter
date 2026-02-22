@@ -9,6 +9,7 @@ import 'package:roadmaps/core/widgets/roadmap_progress.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
 import 'package:roadmaps/features/challenge/presentation/challenge_provider.dart';
 import 'package:roadmaps/features/challenge/presentation/challenge_screen.dart';
+import 'package:roadmaps/features/checkpoints/presentation/checkpoint_screen.dart';
 import 'package:roadmaps/features/main_screen.dart';
 import 'package:roadmaps/features/learning_path/domain/learning_unit_entity.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
@@ -93,7 +94,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     if (provider.units.isEmpty) {
       return Center(
         child: Text(
-          'لا توجد دروس.',
+          'لا يوجد محتوى للعرض',
           style: AppTextStyles.body.copyWith(color: AppColors.text_1),
         ),
       );
@@ -172,9 +173,10 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     LearningUnitEntity unit,
   ) async {
     if (unit.status == LearningUnitStatus.locked) {
+      final bool isLockedChallenge = unit.type == LearningUnitType.challenge;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          shape: RoundedRectangleBorder(
+        SnackBar(
+          shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(30),
               topRight: Radius.circular(30),
@@ -182,11 +184,13 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           ),
           content: Text(
             textAlign: TextAlign.right,
-            'هدا الدرس مقفل اكمل الدرس السابق',
+               isLockedChallenge &( provider.userXp < unit.requiredXp)
+                ? 'نقاط خبرتك الحالية ${provider.userXp}. لفتح التحدي تحتاج ${unit.requiredXp} .'
+                : 'هذا الدرس مقفل، أكمل الدرس السابق.',
             style: AppTextStyles.body,
           ),
           backgroundColor: AppColors.backGroundError,
-          duration: Duration(milliseconds: 1000),
+          duration: const Duration(milliseconds: 1200),
         ),
       );
       return;
@@ -230,13 +234,15 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                 topRight: Radius.circular(30),
               ),
             ),
-            content: Directionality(textDirection: TextDirection.rtl, 
-            child: Text(
-              textAlign: TextAlign.right,
-              'XP الحالي: ${provider.userXp}, '
-              'لفتح هذا التحدي يلزم ${challenge.minXp}',
-              style: AppTextStyles.body,
-            ),),
+            content: Directionality(
+              textDirection: TextDirection.rtl,
+              child: Text(
+                textAlign: TextAlign.right,
+                'XP الحالي: ${provider.userXp}, '
+                'لفتح هذا التحدي يلزم ${challenge.minXp}',
+                style: AppTextStyles.body,
+              ),
+            ),
             backgroundColor: AppColors.backGroundError,
             duration: const Duration(milliseconds: 1500),
           ),
@@ -262,10 +268,13 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       if (!mounted) return;
 
       if (finishAction == ChallengeFinishAction.goHome) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainScreen()),
-          (route) => false,
-        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const MainScreen()),
+            (route) => false,
+          );
+        });
       }
       return;
     }
@@ -282,7 +291,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
 
       if (shouldComplete != true) return;
 
-      final int earnedXp = _earnedXpForUnit(unit.type);
+      const int earnedXp = 0;
       await provider.completeUnit(unitId: unit.id, earnedXp: earnedXp);
       if (!mounted) return;
 
@@ -295,7 +304,65 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
             ),
           ),
           content: Text(
-            '${unit.title} completed. +$earnedXp XP',
+            '${unit.title} مكتمل.',
+            textAlign: TextAlign.right,
+            style: AppTextStyles.body.copyWith(color: AppColors.text_5),
+          ),
+          backgroundColor: AppColors.backGroundSuccess,
+          duration: const Duration(milliseconds: 1500),
+        ),
+      );
+      return;
+    }
+
+    if (unit.type == LearningUnitType.quiz) {
+      final CheckpointResult? result = await Navigator.of(context)
+          .push<CheckpointResult>(
+            MaterialPageRoute(
+              builder: (_) => CheckpointScreen(
+                learningPathId: widget.roadmapId.toString(),
+                checkpointId: unit.id.toString(),
+                roadmapTitle: widget.roadmapTitle,
+              ),
+            ),
+          );
+
+      if (!mounted || result == null) return;
+
+      if (!result.passed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(30),
+                topRight: Radius.circular(30),
+              ),
+            ),
+            content: Text(
+              'لم تحقق الحد المطلوب من XP بعد. أعد الاختبار لفتح الدرس التالي.',
+              textAlign: TextAlign.right,
+              style: AppTextStyles.body.copyWith(color: AppColors.text_2),
+            ),
+            backgroundColor: AppColors.backGroundError,
+            duration: const Duration(milliseconds: 1700),
+          ),
+        );
+        return;
+      }
+
+      await provider.completeUnit(unitId: unit.id, earnedXp: result.earnedXp);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30),
+              topRight: Radius.circular(30),
+            ),
+          ),
+          content: Text(
+            'أحسنت! +${result.earnedXp} XP',
             textAlign: TextAlign.right,
             style: AppTextStyles.body.copyWith(color: AppColors.text_5),
           ),
@@ -317,7 +384,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           ),
           content: Text(
             textAlign: TextAlign.right,
-            '.هدا الدرس مكتمل',
+            'هذا الدرس مكتمل.',
             style: AppTextStyles.body.copyWith(color: AppColors.text_5),
           ),
           duration: Duration(milliseconds: 1000),
@@ -333,13 +400,13 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         return AlertDialog(
           title: Text(unit.title),
           content: Text(
-            'Open ${_unitTypeText(unit.type)} and mark it as completed?',
+            'هل تريد فتح ${_unitTypeText(unit.type)} ووضعه كمكتمل؟',
             style: AppTextStyles.body,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('الغاء'),
+              child: const Text('إلغاء'),
             ),
             FilledButton(
               style: FilledButton.styleFrom(
@@ -392,11 +459,11 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   int _earnedXpForUnit(LearningUnitType type) {
     switch (type) {
       case LearningUnitType.lesson:
-        return 20;
+        return 0;
       case LearningUnitType.quiz:
-        return 30;
+        return 0;
       case LearningUnitType.challenge:
-        return 50;
+        return 0;
     }
   }
 }
@@ -417,7 +484,7 @@ class _ErrorState extends StatelessWidget {
             Directionality(
               textDirection: TextDirection.rtl,
               child: Text(
-                'تعذر تحميل المسار التعليمي',
+                'انقطع الاتصال. أعد المحاولة لتحميل المسار.',
                 style: AppTextStyles.heading5.copyWith(color: AppColors.error),
                 textAlign: TextAlign.center,
               ),

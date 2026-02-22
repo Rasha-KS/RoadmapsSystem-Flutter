@@ -1,3 +1,4 @@
+import 'package:roadmaps/core/constants/xp_rules.dart';
 import '../domain/learning_unit_entity.dart';
 
 class LearningPathRepository {
@@ -64,7 +65,7 @@ class LearningPathRepository {
         position: 7,
         type: LearningUnitType.challenge,
         status: LearningUnitStatus.locked,
-        requiredXp: 120,
+        requiredXp: XpRules.challengeUnlockMinXp,
       ),
     ];
 
@@ -119,6 +120,20 @@ class LearningPathRepository {
             .every((lesson) => completedLessonIds.contains(lesson.id));
         updated.add(
           allPreviousLessonsDone
+              ? unit.copyWith(status: LearningUnitStatus.unlocked)
+              : unit,
+        );
+        continue;
+      }
+
+      if (unit.type == LearningUnitType.challenge) {
+        final bool allPreviousUnitsCompleted = sortedUnits
+            .where((other) => other.position < unit.position)
+            .every((other) => completedLessonIds.contains(other.id));
+        final bool hasRequiredXp = userXp >= unit.requiredXp;
+
+        updated.add(
+          allPreviousUnitsCompleted && hasRequiredXp
               ? unit.copyWith(status: LearningUnitStatus.unlocked)
               : unit,
         );

@@ -7,8 +7,13 @@ import 'package:roadmaps/features/lessons/domain/sub_lesson_entity.dart';
 
 class SubLessonCard extends StatelessWidget {
   final SubLessonEntity subLesson;
+  final String? displayTitle;
 
-  const SubLessonCard({super.key, required this.subLesson});
+  const SubLessonCard({
+    super.key,
+    required this.subLesson,
+    this.displayTitle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -41,11 +46,10 @@ class SubLessonCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 10),
             child: Text(
-              subLesson.title,
+              displayTitle ?? subLesson.title,
               textAlign: TextAlign.right,
               style: AppTextStyles.heading5.copyWith(
                 color: AppColors.text_4,
-               
               ),
             ),
           ),
@@ -61,7 +65,6 @@ class SubLessonCard extends StatelessWidget {
             textAlign: TextAlign.right,
             style: AppTextStyles.body.copyWith(
               color: AppColors.text_3,
-            
             ),
           ),
           if (hasResources) ...[
@@ -82,7 +85,7 @@ class SubLessonCard extends StatelessWidget {
             ...bookResources.map(
               (resource) => ResourceTile(resource: resource),
             ),
-             const SizedBox(height: 10),
+            const SizedBox(height: 10),
           ],
         ],
       ),

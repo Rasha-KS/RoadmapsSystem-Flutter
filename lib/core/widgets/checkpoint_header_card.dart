@@ -34,8 +34,9 @@ class CheckpointHeaderCard extends StatelessWidget {
                 child: IconButton(
                   onPressed: onBackPressed,
                   icon: const Icon(
-                    Icons.arrow_forward_rounded,
+                    Icons.arrow_right_alt_outlined,
                     color: AppColors.text_5,
+                    size: 35,
                   ),
                 ),
               ),

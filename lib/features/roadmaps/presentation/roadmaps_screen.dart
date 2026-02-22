@@ -442,7 +442,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø£ÙŠ Ù†ØªÙŠØ¬Ø©',
+                                'لم يتم العثور على أي نتيجة',
                                 style: AppTextStyles.heading5.copyWith(
                                   color: AppColors.text_1,
                                 ),
@@ -464,9 +464,9 @@ class SearchRoadmapsDelegate extends SearchDelegate {
                               onDelete: () {
                                 showConfirmActionDialog(
                                   context: context,
-                                  title: 'Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ù…Ù† Ø­Ø°Ù Ø§Ù„Ù…Ø³Ø§Ø±ØŸ',
+                                  title: 'هل أنت متأكد من حذف المسار؟',
                                   message:
-                                      'Ø³ÙˆÙ ÙŠØ¤Ø¯ÙŠ Ø°Ù„Ùƒ Ø¥Ù„Ù‰ Ø¥Ù„ØºØ§Ø¡ Ø§Ø´ØªØ±Ø§ÙƒÙƒ ÙÙŠ Ø§Ù„Ù…Ø³Ø§Ø±',
+                                      'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
                                   onConfirm: () async {
                                     final learningPathProvider = context
                                         .read<LearningPathProvider>();
@@ -483,9 +483,9 @@ class SearchRoadmapsDelegate extends SearchDelegate {
                               onRefresh: () {
                                 showConfirmActionDialog(
                                   context: context,
-                                  title: 'Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ù…Ù† Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø³Ø§Ø±ØŸ',
+                                  title: 'هل أنت متأكد من إعادة المسار؟',
                                   message:
-                                      'Ø³ÙˆÙ ÙŠØ¤Ø¯ÙŠ Ø°Ù„Ùƒ Ø¥Ù„Ù‰ Ø¥Ø¹Ø§Ø¯ØªÙƒ Ù„Ù†Ù‚Ø·Ø© Ø§Ù„Ø¨Ø¯Ø§ÙŠØ© ÙÙŠ Ø§Ù„Ù…Ø³Ø§Ø±',
+                                      'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
                                   onConfirm: () async {
                                     await context
                                         .read<LearningPathProvider>()

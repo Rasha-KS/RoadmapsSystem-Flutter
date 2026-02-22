@@ -280,10 +280,12 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     }
 
     if (unit.type == LearningUnitType.lesson) {
+      final int lessonNumber = _lessonNumberForUnit(provider.units, unit.id);
       final bool? shouldComplete = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
           builder: (_) => LessonsScreen(
             learningUnitId: unit.id.toString(),
+            lessonNumber: lessonNumber,
             roadmapTitle: widget.roadmapTitle,
           ),
         ),
@@ -466,6 +468,18 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         return 0;
     }
   }
+
+  int _lessonNumberForUnit(List<LearningUnitEntity> units, int unitId) {
+    final int unitIndex = units.indexWhere((element) => element.id == unitId);
+    if (unitIndex == -1) return 1;
+
+    final int lessonCount = units
+        .take(unitIndex + 1)
+        .where((element) => element.type == LearningUnitType.lesson)
+        .length;
+
+    return lessonCount <= 0 ? 1 : lessonCount;
+  }
 }
 
 class _ErrorState extends StatelessWidget {
@@ -551,9 +565,10 @@ class _HeaderCard extends StatelessWidget {
               IconButton(
                 onPressed: () => Navigator.of(context).maybePop(),
                 icon: const Icon(
-                  Icons.arrow_forward_rounded,
-                  color: AppColors.text_5,
-                ),
+                    Icons.arrow_right_alt_outlined,
+                    color: AppColors.text_5,
+                    size: 35,
+                  ),
               ),
             ],
           ),

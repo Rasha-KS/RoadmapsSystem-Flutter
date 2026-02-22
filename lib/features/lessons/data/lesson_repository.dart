@@ -10,16 +10,15 @@ class LessonRepository {
     final int unitNumber = int.tryParse(learningUnitId) ?? 1;
     final String prefix = 'unit_$unitNumber';
 
-    String topicAt(int offset) =>
-        _topics[(unitNumber - 1 + offset) % _topics.length];
+    String topicAt(int offset) => _topics[(unitNumber - 1 + offset) % _topics.length];
 
     return LessonModel(
       id: learningUnitId,
-      title: 'اساسيات البرمجة',
+      title: 'أساسيات البرمجة',
       subLessons: [
         SubLessonModel(
           id: '${prefix}_sub_1',
-          title: 'الدرس 1-$unitNumber ( ${topicAt(0)} )',
+          title: topicAt(0),
           introductionTitle: 'المقدمة',
           introductionDescription:
               'في هذا الجزء نتعرف على ${topicAt(0)} وكيفية استخدامها في تطبيقات C++ العملية.',
@@ -41,7 +40,7 @@ class LessonRepository {
         ),
         SubLessonModel(
           id: '${prefix}_sub_2',
-          title: 'الدرس 2-$unitNumber ( ${topicAt(1)} )',
+          title: topicAt(1),
           introductionTitle: 'المقدمة',
           introductionDescription:
               'يشرح هذا الدرس ${topicAt(1)} مع أمثلة مبسطة تساعدك على كتابة كود أكثر وضوحا.',
@@ -56,7 +55,7 @@ class LessonRepository {
         ),
         SubLessonModel(
           id: '${prefix}_sub_3',
-          title: 'الدرس 3-$unitNumber ( ${topicAt(2)} )',
+          title: topicAt(2),
           introductionTitle: 'المقدمة',
           introductionDescription:
               'الجزء الأخير من هذه الوحدة يركز على ${topicAt(2)} مع نقاط مهمة للمراجعة.',

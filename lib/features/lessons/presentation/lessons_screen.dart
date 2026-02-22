@@ -9,11 +9,13 @@ import 'package:roadmaps/features/lessons/presentation/lessons_provider.dart';
 
 class LessonsScreen extends StatefulWidget {
   final String learningUnitId;
+  final int lessonNumber;
   final String roadmapTitle;
 
   const LessonsScreen({
     super.key,
     required this.learningUnitId,
+    required this.lessonNumber,
     required this.roadmapTitle,
   });
 
@@ -87,6 +89,7 @@ class _LessonsScreenState extends State<LessonsScreen> {
                         )
                       : _Content(
                           lesson: lesson,
+                          lessonNumber: widget.lessonNumber,
                           isLoading: provider.isLoading,
                           onRetry: () {
                             context.read<LessonsProvider>().fetchLesson(
@@ -107,12 +110,14 @@ class _LessonsScreenState extends State<LessonsScreen> {
 
 class _Content extends StatelessWidget {
   final LessonEntity? lesson;
+  final int lessonNumber;
   final bool isLoading;
   final VoidCallback onRetry;
   final VoidCallback onNextLesson;
 
   const _Content({
     required this.lesson,
+    required this.lessonNumber,
     required this.isLoading,
     required this.onRetry,
     required this.onNextLesson,
@@ -178,9 +183,16 @@ class _Content extends StatelessWidget {
             itemCount: lesson!.subLessons.length,
             itemBuilder: (context, index) {
               final subLesson = lesson!.subLessons[index];
+              final int subLessonNumber = index + 1;
+              final String topicTitle = _extractTopicTitle(subLesson.title);
+              final String displayTitle =
+                  'الدرس $lessonNumber-$subLessonNumber ( $topicTitle )';
               return Padding(
                 padding: const EdgeInsets.only(bottom: 14),
-                child: SubLessonCard(subLesson: subLesson),
+                child: SubLessonCard(
+                  subLesson: subLesson,
+                  displayTitle: displayTitle,
+                ),
               );
             },
           ),
@@ -192,5 +204,19 @@ class _Content extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _extractTopicTitle(String rawTitle) {
+    final String normalized = rawTitle.trim();
+    final RegExp bracketedTopic = RegExp(
+      r'^الدرس\s+\d+(?:-\d+)?\s*\(\s*(.*?)\s*\)\s*$',
+    );
+    final Match? bracketedMatch = bracketedTopic.firstMatch(normalized);
+    if (bracketedMatch != null) {
+      final String topic = bracketedMatch.group(1)?.trim() ?? '';
+      if (topic.isNotEmpty) return topic;
+    }
+
+    return normalized;
   }
 }

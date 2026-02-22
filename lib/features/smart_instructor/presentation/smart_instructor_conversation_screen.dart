@@ -65,7 +65,7 @@ class _SmartInstructorConversationScreenState
                 children: [
                   Text(
                     'المعلم الذكي',
-                    style: AppTextStyles.boldHeading5.copyWith(
+                    style: AppTextStyles.heading5.copyWith(
                       color: AppColors.text_3,
                       fontSize: 18
                     ),

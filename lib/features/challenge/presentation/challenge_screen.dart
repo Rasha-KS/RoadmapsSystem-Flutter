@@ -191,7 +191,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
               Padding(
                 padding: EdgeInsetsGeometry.symmetric(horizontal: 40),
                 child: AppPrimaryButton(
-                  text: 'إنتهاء',
+                  text: 'إنهاء',
                   onPressed: provider.canFinish
                       ? () => _onFinish(provider)
                       : null,
@@ -269,7 +269,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'لقد اكملت المسار',
+                          'لقد أكملت المسار',
                           style: AppTextStyles.heading4.copyWith(
                             color: AppColors.text_2,
                           ),
@@ -440,7 +440,7 @@ class _ChallengeDescriptionCard extends StatelessWidget {
           GestureDetector(
             onTap: onToggle,
             child: Text(
-              expanded ? 'اقل' : 'المزيد...',
+              expanded ? 'أقل' : 'المزيد...',
               style: AppTextStyles.boldSmallText.copyWith(
                 color: AppColors.primary2,
               ),

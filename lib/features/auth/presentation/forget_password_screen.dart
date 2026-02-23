@@ -109,7 +109,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                         children: [
                           SizedBox(height: screenHeight * 0.01),
                           Text(
-                            "ادخل البريد الإلكتروني هنا",
+                            "أدخل البريد الإلكتروني هنا",
                             style: AppTextStyles.heading3.copyWith(
                               color: AppColors.text_1,
                             ),

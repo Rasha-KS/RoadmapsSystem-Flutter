@@ -131,7 +131,7 @@ class _Content extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              ' انفطع الاتصال لا توجد دروس للعرض اعد المحاولة  ',
+              'انقطع الاتصال. لا توجد دروس للعرض. أعد المحاولة.',
               style: AppTextStyles.heading5.copyWith(color: AppColors.error),
               textAlign: TextAlign.center,
             ),

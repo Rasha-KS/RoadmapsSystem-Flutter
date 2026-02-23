@@ -159,7 +159,7 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
             padding: const EdgeInsets.only(bottom: 12),
             child: CheckpointHeaderCard(
               title: titleToShow,
-              subtitle: "'اكمل الاختبار للحصول على نقاط خبرة'",
+              subtitle: 'أكمل الاختبار للحصول على نقاط خبرة',
               onBackPressed: () => Navigator.of(context).maybePop(),
             ),
           );

@@ -6,10 +6,10 @@ class ChallengeRepository {
     ChallengeModel(
       id: 1,
       learningUnitId: 7,
-      title: 'اكتب كود',
+      title: 'اكتب كودًا',
       description:
-          'اكتب برنامجا بسيطا ليقبل اسماء منتجات في مصفوفة مع سعر كل منتج، '
-          'ثم يحسب التكلفة الاجمالية. ادخل 100 كحد اقصى من الاسماء kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.',
+          'اكتب برنامجًا بسيطًا يقبل أسماء المنتجات في مصفوفة مع سعر كل منتج، '
+          'ثم يحسب التكلفة الإجمالية. أدخل حتى 100 اسم منتج كحد أقصى.',
       language: 'C++',
       minXp: XpRules.challengeUnlockMinXp,
       isActive: true,

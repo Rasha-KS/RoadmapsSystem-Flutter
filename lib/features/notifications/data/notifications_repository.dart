@@ -28,7 +28,7 @@ class NotificationsRepository {
     {
       'id': 4,
       'title': 'عنوان الإشعار',
-      'message': 'صوّر من مهاراتك وتعلّم لغة جديدة',
+      'message': 'طوّر من مهاراتك وتعلّم لغة جديدة',
       'scheduled_at': DateTime(2026, 1, 12),
       'is_read': true,
     },

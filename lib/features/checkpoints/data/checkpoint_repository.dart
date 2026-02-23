@@ -21,7 +21,7 @@ class CheckpointRepository {
     return CheckpointModel(
       id: checkpointKey,
       title: 'C++',
-      subtitle: 'اكمل الاختبار للحصول على نقاط خبرة',
+      subtitle: 'أكمل الاختبار للحصول على نقاط خبرة',
       questions: const [
         QuestionModel(
           id: 'q1',

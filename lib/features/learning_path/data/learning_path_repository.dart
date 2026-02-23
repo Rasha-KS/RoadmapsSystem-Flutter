@@ -13,7 +13,7 @@ class LearningPathRepository {
       LearningUnitEntity(
         id: 1,
         roadmapId: roadmapId,
-        title: 'الدرس  1',
+        title: 'الدرس 1',
         position: 1,
         type: LearningUnitType.lesson,
         status: LearningUnitStatus.locked,
@@ -61,7 +61,7 @@ class LearningPathRepository {
       LearningUnitEntity(
         id: 7,
         roadmapId: roadmapId,
-        title: 'التحدي النهائي ',
+        title: 'التحدي النهائي',
         position: 7,
         type: LearningUnitType.challenge,
         status: LearningUnitStatus.locked,

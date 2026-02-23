@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
+import 'package:roadmaps/core/widgets/action_snackbar.dart';
 import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/lesson_card_1.dart';
 import 'package:roadmaps/core/widgets/lesson_card_2.dart';
@@ -191,12 +192,29 @@ class HomeScreen extends StatelessWidget {
                   title: 'هل أنت متأكد من حذف المسار؟',
                   message: 'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
                   onConfirm: () async {
-                    final learningPathProvider = context
-                        .read<LearningPathProvider>();
-                    await homeProvider.deleteCourse(course.id);
-                    await learningPathProvider.resetProgress(
-                      roadmapId: course.id,
-                    );
+                    final messenger = ScaffoldMessenger.of(context);
+                    try {
+
+                      final learningPathProvider = context
+                          .read<LearningPathProvider>();
+                      await homeProvider.deleteCourse(course.id);
+                      await learningPathProvider.resetProgress(
+                        roadmapId: course.id,
+                      );
+                      if (!context.mounted) return;
+                      showActionSnackBar(
+                        messenger,
+                        message: 'تم حذف المسار بنجاح',
+                        isSuccess: true,
+                      );
+                    } catch (_) {
+                      if (!context.mounted) return;
+                      showActionSnackBar(
+                        messenger,
+                        message: 'فشل حذف المسار. حاول مرة أخرى',
+                        isSuccess: false,
+                      );
+                    }
                   },
                 );
               },
@@ -206,12 +224,30 @@ class HomeScreen extends StatelessWidget {
                   title: 'هل أنت متأكد من إعادة المسار؟',
                   message: 'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
                   onConfirm: () async {
-                    final learningPathProvider = context
-                        .read<LearningPathProvider>();
-                    await homeProvider.resetCourse(course.id);
-                    await learningPathProvider.resetProgress(
-                      roadmapId: course.id,
-                    );
+                    final messenger = ScaffoldMessenger.of(context);
+                    
+                    try {
+
+                      final learningPathProvider = context
+                          .read<LearningPathProvider>();
+                      await homeProvider.resetCourse(course.id);
+                      await learningPathProvider.resetProgress(
+                        roadmapId: course.id,
+                      );
+                      if (!context.mounted) return;
+                      showActionSnackBar(
+                        messenger,
+                        message: 'تمت إعادة المسار بنجاح',
+                        isSuccess: true,
+                      );
+                    } catch (_) {
+                      if (!context.mounted) return;
+                      showActionSnackBar(
+                        messenger,
+                        message: 'فشلت إعادة المسار. حاول مرة أخرى',
+                        isSuccess: false,
+                      );
+                    }
                   },
                 );
               },
@@ -253,7 +289,7 @@ class HomeScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 32),
             child: Text(
-              'هل انت مستعد',
+              'هل أنت مستعد',
               textAlign: TextAlign.right,
               style: AppTextStyles.heading2_2.copyWith(color: AppColors.text_1),
             ),
@@ -274,7 +310,7 @@ class HomeScreen extends StatelessWidget {
                       text: 'مسارك ',
                       style: TextStyle(color: AppColors.primary2),
                     ),
-                    const TextSpan(text: 'الاول؟'),
+                    const TextSpan(text: 'الأول؟'),
                   ],
                 ),
               ),
@@ -304,6 +340,7 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
 }
 
 class _ErrorState extends StatelessWidget {

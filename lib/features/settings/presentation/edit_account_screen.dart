@@ -28,6 +28,8 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
   bool _updatingUsername = false;
   bool _updatingPassword = false;
   bool _updatingPicture = false;
+  bool _isCurrentPasswordHidden = true;
+  bool _isNewPasswordHidden = true;
   String? _pendingLocalImagePath;
 
   String? _usernameError;
@@ -199,8 +201,13 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
                       controller: _currentPasswordController,
                       focusNode: _currentPasswordFocusNode,
                       hintText: 'كلمة المرور القديمة',
-                      icon: Icons.lock_outline,
-                      obscureText: true,
+                      icon: null,
+                      obscureText: _isCurrentPasswordHidden,
+                      onToggleObscure: () {
+                        setState(() {
+                          _isCurrentPasswordHidden = !_isCurrentPasswordHidden;
+                        });
+                      },
                       onChanged: (_) {
                         if (_currentPasswordError != null) {
                           setState(() => _currentPasswordError = null);
@@ -214,8 +221,13 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
                       controller: _newPasswordController,
                       focusNode: _newPasswordFocusNode,
                       hintText: 'كلمة المرور الجديدة',
-                      icon: Icons.lock_outline,
-                      obscureText: true,
+                      icon: null,
+                      obscureText: _isNewPasswordHidden,
+                      onToggleObscure: () {
+                        setState(() {
+                          _isNewPasswordHidden = !_isNewPasswordHidden;
+                        });
+                      },
                       onChanged: (_) {
                         if (_newPasswordError != null) {
                           setState(() => _newPasswordError = null);
@@ -277,10 +289,11 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
     required TextEditingController controller,
     required FocusNode focusNode,
     required String hintText,
-    required IconData icon,
+    IconData? icon,
     ValueChanged<String>? onChanged,
     String? errorText,
     bool obscureText = false,
+    VoidCallback? onToggleObscure,
   }) {
     final hasError = errorText != null;
     final borderColor = hasError
@@ -304,11 +317,25 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: borderColor,
-              ),
+              if (icon != null)
+                Icon(
+                  icon,
+                  size: 20,
+                  color: borderColor,
+                ),
+              if (onToggleObscure != null && focusNode.hasFocus)
+                IconButton(
+                  onPressed: onToggleObscure,
+                  icon: Icon(
+                    obscureText
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: AppColors.primary1,
+                    size: 20,
+                  ),
+                  splashRadius: 18,
+                  padding: EdgeInsets.zero,
+                ),
               Expanded(
                 child: TextField(
                   controller: controller,

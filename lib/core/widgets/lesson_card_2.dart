@@ -1,7 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:see_more/see_more.dart';
+import 'package:roadmaps/core/widgets/action_snackbar.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
+import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/lesson_card_1.dart';
 
 class LessonCard2 extends StatefulWidget {
@@ -36,6 +38,69 @@ class _LessonCard2State extends State<LessonCard2>
     with SingleTickerProviderStateMixin {
   bool _isEnrolled = false;
 
+  void _setEnrollment(bool enrolled) {
+    if (widget.onEnrollmentChanged != null) {
+      widget.onEnrollmentChanged!(enrolled);
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() => _isEnrolled = enrolled);
+  }
+
+  Future<void> _showDeleteConfirmDialog() async {
+    await showConfirmActionDialog(
+      context: context,
+      title: 'هل أنت متأكد من حذف المسار؟',
+      message: 'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
+      onConfirm: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        try {
+          _setEnrollment(false);
+          if (!context.mounted) return;
+          showActionSnackBar(
+            messenger,
+            message: 'تم حذف المسار بنجاح',
+            isSuccess: true,
+          );
+        } catch (_) {
+          if (!context.mounted) return;
+          showActionSnackBar(
+            messenger,
+            message: 'فشل حذف المسار. حاول مرة أخرى',
+            isSuccess: false,
+          );
+        }
+      },
+    );
+  }
+
+  Future<void> _showResetConfirmDialog() async {
+    await showConfirmActionDialog(
+      context: context,
+      title: 'هل أنت متأكد من إعادة المسار؟',
+      message: 'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
+      onConfirm: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        try {
+          if (!context.mounted) return;
+          showActionSnackBar(
+            messenger,
+            message: 'تمت إعادة المسار بنجاح',
+            isSuccess: true,
+          );
+        } catch (_) {
+          if (!context.mounted) return;
+          showActionSnackBar(
+            messenger,
+            message: 'فشلت إعادة المسار. حاول مرة أخرى',
+            isSuccess: false,
+          );
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEnrolled = widget.isEnrolled ?? _isEnrolled;
@@ -47,13 +112,12 @@ class _LessonCard2State extends State<LessonCard2>
         widthMultiplier: 0.80,
         onDelete: widget.onDelete ??
             () {
-              if (widget.onEnrollmentChanged != null) {
-                widget.onEnrollmentChanged!(false);
-              } else {
-                setState(() => _isEnrolled = false);
-              }
+              _showDeleteConfirmDialog();
             },
-        onRefresh: widget.onRefresh ?? () {},
+        onRefresh: widget.onRefresh ??
+            () {
+              _showResetConfirmDialog();
+            },
         onTap: widget.onTap ?? () {},
       );
     }

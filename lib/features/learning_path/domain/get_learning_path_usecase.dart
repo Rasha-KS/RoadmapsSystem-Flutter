@@ -10,12 +10,24 @@ class GetLearningPathUseCase {
   Future<List<LearningUnitEntity>> call({
     required int roadmapId,
     required int userXp,
-    required Set<int> completedLessonIds,
+    required Set<int> completedUnitIds,
   }) {
     return repository.getLearningPath(
       roadmapId: roadmapId,
       userXp: userXp,
-      completedLessonIds: completedLessonIds,
+      completedUnitIds: completedUnitIds,
+    );
+  }
+
+  Future<Map<String, dynamic>> asJson({
+    required int roadmapId,
+    required int userXp,
+    required Set<int> completedUnitIds,
+  }) {
+    return repository.getLearningPathJson(
+      roadmapId: roadmapId,
+      userXp: userXp,
+      completedUnitIds: completedUnitIds,
     );
   }
 }

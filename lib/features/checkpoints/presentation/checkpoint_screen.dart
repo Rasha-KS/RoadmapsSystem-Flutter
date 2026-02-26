@@ -5,6 +5,7 @@ import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/widgets/app_primary_button.dart';
 import 'package:roadmaps/core/widgets/checkpoint_header_card.dart';
 import 'package:roadmaps/core/widgets/checkpoint_question_card.dart';
+import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/features/checkpoints/domain/checkpoint_entity.dart';
 import 'package:roadmaps/features/checkpoints/domain/question_entity.dart';
 import 'package:roadmaps/features/checkpoints/presentation/checkpoints_provider.dart';
@@ -202,10 +203,18 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
       barrierDismissible: false,
       builder: (dialogContext) {
         final bool passed = result.passed;
+        final bool hasFullScore = result.correctCount == result.totalQuestions;
+
         return Dialog(
+          alignment: Alignment.topCenter,
           backgroundColor: AppColors.primary1.withValues(alpha: 0.95),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
+          ),
+          insetPadding: const EdgeInsets.only(
+            left: 50,
+            right: 50,
+            top: 250,
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
@@ -224,50 +233,155 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
                   Text(
                     '${result.correctCount}/${result.totalQuestions}',
                     style: AppTextStyles.heading2.copyWith(
-                      color: result.correctCount == result.totalQuestions
-                          ? AppColors.success
-                          : AppColors.text_2,
+                      color: passed ? AppColors.success : AppColors.error,
                     ),
                   ),
-                  const SizedBox(height: 4),
-
                   const SizedBox(height: 8),
                   Text(
                     'نقاط الخبرة: ${result.earnedXp}/${result.minimumRequiredXp}',
                     style: AppTextStyles.body.copyWith(color: AppColors.text_2),
                     textAlign: TextAlign.center,
                   ),
+                  if (!passed) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'لم تنجح. لن يتم فتح الدرس التالي. يرجى إعادة المحاولة.',
+                      style: AppTextStyles.body.copyWith(color: AppColors.text_2),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                   const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.secondary4,
-                            foregroundColor: AppColors.text_3,
-                            elevation: 0,
-                          ),
-                          onPressed: () {
-                            Navigator.of(dialogContext).pop();
-                            if (!mounted) return;
-
-                            if (passed) {
+                  if (passed && hasFullScore)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.secondary4,
+                              foregroundColor: AppColors.text_3,
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              Navigator.of(dialogContext).pop();
+                              if (!mounted) return;
                               Navigator.of(context).pop(result);
-                              return;
-                            }
-
-                            context.read<CheckpointsProvider>().resetAnswers();
-                          },
-                          child: Text(
-                            passed ? 'الدرس التالي' : 'إعادة المحاولة',
-                            style: AppTextStyles.boldSmallText.copyWith(
-                              color: AppColors.text_3,
+                            },
+                            child: Text(
+                              'الدرس التالي',
+                              style: AppTextStyles.boldSmallText.copyWith(
+                                color: AppColors.text_3,
+                              ),
                             ),
                           ),
                         ),
+                      ],
+                    ),
+                  if (passed && !hasFullScore)
+                    Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.secondary4,
+                                foregroundColor: AppColors.text_3,
+                                elevation: 0,
+                              ),
+                              onPressed: () {
+                                Navigator.of(dialogContext).pop();
+                                if (!mounted) return;
+                                Navigator.of(context).pop(result);
+                              },
+                              child: Text(
+                                'التالي',
+                                style: AppTextStyles.boldSmallText.copyWith(
+                                  color: AppColors.text_3,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.secondary4,
+                                foregroundColor: AppColors.text_3,
+                                elevation: 0,
+                              ),
+                              onPressed: () async {
+                                Navigator.of(dialogContext).pop();
+                                if (!mounted) return;
+                                bool confirmed = false;
+                                await showConfirmActionDialog(
+                                  context: context,
+                                  title: 'إعادة الاختبار',
+                                  message:
+                                      'سيتم بدء محاولة جديدة وإعادة ضبط نتيجة الاختبار الحالية. هل تريد المتابعة؟',
+                                  cancelText: 'إلغاء',
+                                  confirmText: 'إعادة',
+                                  onConfirm: () async {
+                                    confirmed = true;
+                                  },
+                                );
+                                if (!mounted || !confirmed) return;
+                                context.read<CheckpointsProvider>().resetAnswers();
+                              },
+                              child: Text(
+                                'إعادة',
+                                style: AppTextStyles.boldSmallText.copyWith(
+                                  color: AppColors.text_3,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  if (!passed)
+                    Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.of(dialogContext).pop();
+                                if (!mounted) return;
+                                Navigator.of(context).pop();
+                              },
+                              child: Text(
+                                'إلغاء',
+                                style: AppTextStyles.boldSmallText.copyWith(
+                                  color: AppColors.text_2,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.secondary4,
+                                foregroundColor: AppColors.text_3,
+                                elevation: 0,
+                              ),
+                              onPressed: () {
+                                Navigator.of(dialogContext).pop();
+                                if (!mounted) return;
+                                context.read<CheckpointsProvider>().resetAnswers();
+                              },
+                              child: Text(
+                                'إعادة المحاولة',
+                                style: AppTextStyles.boldSmallText.copyWith(
+                                  color: AppColors.text_3,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),

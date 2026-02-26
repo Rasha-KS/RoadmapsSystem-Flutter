@@ -62,7 +62,7 @@ class CheckpointsProvider extends ChangeNotifier {
     return (totalPossibleXp * passingPercentThreshold / 100).ceil();
   }
 
-  bool get isPassed => scorePercent >= passingPercentThreshold;
+  bool get isPassed => earnedXp >= minimumRequiredXp;
 
   Future<void> fetchCheckpoint({
     required String learningPathId,

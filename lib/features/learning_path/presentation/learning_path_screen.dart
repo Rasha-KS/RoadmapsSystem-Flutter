@@ -1,9 +1,10 @@
-import 'dart:math';
+﻿import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
+import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/roadmap_node.dart';
 import 'package:roadmaps/core/widgets/roadmap_progress.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
@@ -183,10 +184,10 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
             ),
           ),
           content: Text(
-            textAlign: TextAlign.right,
-               isLockedChallenge &( provider.userXp < unit.requiredXp)
-                ? 'نقاط خبرتك الحالية ${provider.userXp}. لفتح التحدي تحتاج ${unit.requiredXp} .'
+            isLockedChallenge && (provider.userXp < unit.requiredXp)
+                ? 'نقاط خبرتك الحالية ${provider.userXp}. لفتح التحدي تحتاج ${unit.requiredXp}.'
                 : 'هذا الدرس مقفل، أكمل الدرس السابق.',
+            textAlign: TextAlign.right,
             style: AppTextStyles.body,
           ),
           backgroundColor: AppColors.backGroundError,
@@ -228,6 +229,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       if (provider.userXp < challenge.minXp) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
+            behavior: SnackBarBehavior.fixed,
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(30),
@@ -299,6 +301,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          behavior: SnackBarBehavior.fixed,
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(30),
@@ -318,6 +321,18 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     }
 
     if (unit.type == LearningUnitType.quiz) {
+      if (provider.isCheckpointCompleted(unit.id) &&
+          !provider.hasConfirmedRetake(unit.id)) {
+        final bool shouldRetake = await _showRetakeCheckpointDialog();
+        if (!shouldRetake) return;
+
+        provider.markRetakeConfirmed(unit.id);
+        await provider.resetCheckpointProgress(unitId: unit.id);
+        if (!mounted) return;
+      }
+
+      provider.registerCheckpointAttemptStart(unit.id);
+
       final CheckpointResult? result = await Navigator.of(context)
           .push<CheckpointResult>(
             MaterialPageRoute(
@@ -331,6 +346,13 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
 
       if (!mounted || result == null) return;
 
+      await provider.submitCheckpointAttempt(
+        unitId: unit.id,
+        passed: result.passed,
+        earnedXp: result.earnedXp,
+      );
+      if (!mounted) return;
+
       if (!result.passed) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -341,7 +363,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
               ),
             ),
             content: Text(
-              'لم تحقق الحد المطلوب من XP بعد. أعد الاختبار لفتح الدرس التالي.',
+              'لم تحقق الحد الأدنى للنجاح في هذه المحاولة. يمكنك إعادة الاختبار.',
               textAlign: TextAlign.right,
               style: AppTextStyles.body.copyWith(color: AppColors.text_2),
             ),
@@ -352,9 +374,6 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         return;
       }
 
-      await provider.completeUnit(unitId: unit.id, earnedXp: result.earnedXp);
-      if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           shape: const RoundedRectangleBorder(
@@ -364,7 +383,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
             ),
           ),
           content: Text(
-            'أحسنت! +${result.earnedXp} XP',
+            'أحسنت! تم فتح الدرس التالي. +${result.earnedXp} XP',
             textAlign: TextAlign.right,
             style: AppTextStyles.body.copyWith(color: AppColors.text_5),
           ),
@@ -447,14 +466,30 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     );
   }
 
+  Future<bool> _showRetakeCheckpointDialog() async {
+    bool confirmed = false;
+    await showConfirmActionDialog(
+      context: context,
+      title: 'إعادة الاختبار',
+      message:
+          'سيتم بدء محاولة جديدة وإعادة ضبط نتيجة الاختبار الحالية. هل تريد المتابعة؟',
+      cancelText: 'إلغاء',
+      confirmText: 'إعادة',
+      onConfirm: () async {
+        confirmed = true;
+      },
+    );
+    return confirmed;
+  }
+
   String _unitTypeText(LearningUnitType type) {
     switch (type) {
       case LearningUnitType.lesson:
-        return 'lesson';
+        return 'درس';
       case LearningUnitType.quiz:
-        return 'quiz';
+        return 'اختبار';
       case LearningUnitType.challenge:
-        return 'challenge';
+        return 'تحدي';
     }
   }
 

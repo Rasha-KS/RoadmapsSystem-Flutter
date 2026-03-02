@@ -165,9 +165,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                 );
               },
-              // onEnroll: () {
-              //   homeProvider.enrollCourse(course.id);
-              // },
+             
             ),
         ],
       ),

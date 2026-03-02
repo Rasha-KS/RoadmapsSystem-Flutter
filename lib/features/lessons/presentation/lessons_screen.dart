@@ -60,7 +60,8 @@ class _LessonsScreenState extends State<LessonsScreen> {
                 IconButton(
                   onPressed: () => Navigator.of(context).maybePop(false),
                   icon: const Icon(
-                    Icons.arrow_forward_rounded,
+                      Icons.arrow_right_alt_outlined,
+                      size: 35,
                     color: AppColors.text_5,
                   ),
 

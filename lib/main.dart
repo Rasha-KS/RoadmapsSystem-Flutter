@@ -6,6 +6,7 @@ import 'package:roadmaps/features/challenge/presentation/challenge_provider.dart
 import 'package:roadmaps/features/checkpoints/presentation/checkpoints_provider.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
 import 'package:roadmaps/features/lessons/presentation/lessons_provider.dart';
+import 'package:roadmaps/features/main_screen.dart';
 import 'package:roadmaps/features/notifications/presentation/notifications_provider.dart';
 import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_provider.dart';
 import 'package:roadmaps/injection.dart';
@@ -75,7 +76,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Tajawal_R',
         scaffoldBackgroundColor: AppColors.background,
       ),
-      home: const SplashScreen(), //SplashScreen(),
+      home: const MainScreen(), //SplashScreen(),
     );
   }
 }

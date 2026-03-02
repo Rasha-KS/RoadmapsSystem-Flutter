@@ -175,6 +175,8 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   ) async {
     if (unit.status == LearningUnitStatus.locked) {
       final bool isLockedChallenge = unit.type == LearningUnitType.challenge;
+      final bool isLockedCheckPonit = unit.type == LearningUnitType.quiz;
+      final bool isLockedLesson = unit.type == LearningUnitType.lesson;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           shape: const RoundedRectangleBorder(
@@ -186,7 +188,11 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           content: Text(
             isLockedChallenge && (provider.userXp < unit.requiredXp)
                 ? 'نقاط خبرتك الحالية ${provider.userXp}. لفتح التحدي تحتاج ${unit.requiredXp}.'
-                : 'هذا الدرس مقفل، أكمل الدرس السابق.',
+                : isLockedCheckPonit
+                ? 'هذا الاختبار مقفل، أكمل الدرس السابق.'
+                : isLockedLesson
+                ? 'هذا الدرس مقفل، أكمل الدرس السابق.'
+                : ' التحدي مقفل، أكمل الدروس السابقة.',
             textAlign: TextAlign.right,
             style: AppTextStyles.body,
           ),
@@ -415,34 +421,6 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       return;
     }
 
-    final bool? shouldComplete = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(unit.title),
-          content: Text(
-            'هل تريد فتح ${_unitTypeText(unit.type)} ووضعه كمكتمل؟',
-            style: AppTextStyles.body,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('إلغاء'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary1,
-              ),
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('مكتمل'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (shouldComplete != true) return;
-
     final int earnedXp = _earnedXpForUnit(unit.type);
     await provider.completeUnit(unitId: unit.id, earnedXp: earnedXp);
     if (!mounted) return;
@@ -480,17 +458,6 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       },
     );
     return confirmed;
-  }
-
-  String _unitTypeText(LearningUnitType type) {
-    switch (type) {
-      case LearningUnitType.lesson:
-        return 'درس';
-      case LearningUnitType.quiz:
-        return 'اختبار';
-      case LearningUnitType.challenge:
-        return 'تحدي';
-    }
   }
 
   int _earnedXpForUnit(LearningUnitType type) {
@@ -600,10 +567,10 @@ class _HeaderCard extends StatelessWidget {
               IconButton(
                 onPressed: () => Navigator.of(context).maybePop(),
                 icon: const Icon(
-                    Icons.arrow_right_alt_outlined,
-                    color: AppColors.text_5,
-                    size: 35,
-                  ),
+                  Icons.arrow_right_alt_outlined,
+                  color: AppColors.text_5,
+                  size: 35,
+                ),
               ),
             ],
           ),

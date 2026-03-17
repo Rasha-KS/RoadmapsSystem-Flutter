@@ -163,9 +163,7 @@ class HomeScreen extends StatelessWidget {
               onEnroll: () async {
                 await homeProvider.enrollCourse(course.id);
               },
-              // onEnroll: () {
-              //   homeProvider.enrollCourse(course.id);
-              // },
+             
             ),
         ],
       ),

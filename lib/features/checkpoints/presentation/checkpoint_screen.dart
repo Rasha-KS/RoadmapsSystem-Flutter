@@ -153,9 +153,9 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
       itemCount: checkpoint.questions.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
-          final String titleToShow = widget.roadmapTitle.trim().isNotEmpty
-              ? widget.roadmapTitle
-              : checkpoint.title;
+          final String titleToShow = checkpoint.title.trim().isNotEmpty
+              ? checkpoint.title
+              : widget.roadmapTitle ;
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: CheckpointHeaderCard(

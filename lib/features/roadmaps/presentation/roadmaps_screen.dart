@@ -44,7 +44,10 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
     final hasInitialError =
         roadmapsProvider.state == PageState.connectionError &&
         roadmaps.isEmpty;
-
+final screenWidth = MediaQuery.of(context).size.width;
+  final screenHeight = MediaQuery.of(context).size.height;
+  final double iconSize = ((screenWidth + screenHeight) / 2) * 0.045;
+  final double rightPadding = screenWidth * 0.03;
     return Scaffold(
       key: scaffoldkey,
       backgroundColor: AppColors.background,
@@ -92,20 +95,23 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
                           ],
                         ),
                       ),
-                      IconButton(
-                        padding: const EdgeInsets.all(15),
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const MainScreen(),
-                            ),
-                          );
-                        },
-                        icon: const Icon(
-                          Icons.arrow_right_alt_outlined,
-                          color: AppColors.text_5,
-                          size: 35,
+                      Padding(
+                         padding: EdgeInsets.only(right: rightPadding, top: 1),
+                        child: IconButton(
+                          padding: const EdgeInsets.all(15),
+                          onPressed: () {
+                            Navigator.pop(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const MainScreen(),
+                              ),
+                            );
+                          },
+                          icon: Icon(
+                            Icons.arrow_right_alt_outlined,
+                            color: AppColors.text_5,
+                            size: 35,
+                          ),
                         ),
                       ),
                     ],

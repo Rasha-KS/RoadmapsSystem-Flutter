@@ -1,9 +1,17 @@
-import 'package:roadmaps/core/data/user/mock_user_repository.dart';
+import 'package:roadmaps/core/api/api_client.dart';
+import 'package:roadmaps/core/api/auth_interceptor.dart';
+import 'package:roadmaps/core/auth/token_manager.dart';
+import 'package:roadmaps/core/data/user/api_user_repository.dart';
 import 'package:roadmaps/core/domain/repositories/user_repository.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
 import 'package:roadmaps/features/announcements/data/announcements_repository.dart';
 import 'package:roadmaps/features/announcements/domain/get_active_announcements_usecase.dart';
 import 'package:roadmaps/features/announcements/presentation/announcements_provider.dart';
+import 'package:roadmaps/features/auth/data/auth_repository.dart';
+import 'package:roadmaps/features/auth/domain/github_login_usecase.dart';
+import 'package:roadmaps/features/auth/domain/login_usecase.dart';
+import 'package:roadmaps/features/auth/domain/register_usecase.dart';
+import 'package:roadmaps/features/auth/presentation/auth_provider.dart';
 import 'package:roadmaps/features/community/data/mock_community_repository.dart';
 import 'package:roadmaps/features/community/domain/get_messages_by_room_usecase.dart';
 import 'package:roadmaps/features/community/domain/get_user_community_rooms_usecase.dart';
@@ -21,6 +29,7 @@ import 'package:roadmaps/features/homepage/data/home_repository.dart';
 import 'package:roadmaps/features/homepage/domain/delete_my_roadmap_usecase.dart';
 import 'package:roadmaps/features/homepage/domain/enroll_roadmap_usecase.dart';
 import 'package:roadmaps/features/homepage/domain/get_home_data_usecase.dart';
+import 'package:roadmaps/features/homepage/domain/get_roadmap_details_usecase.dart';
 import 'package:roadmaps/features/homepage/domain/reset_my_roadmap_usecase.dart';
 import 'package:roadmaps/features/homepage/presentation/home_provider.dart';
 import 'package:roadmaps/features/learning_path/data/learning_path_repository.dart';
@@ -31,6 +40,7 @@ import 'package:roadmaps/features/lessons/domain/get_lesson_usecase.dart';
 import 'package:roadmaps/features/lessons/presentation/lessons_provider.dart';
 import 'package:roadmaps/features/notifications/data/notifications_repository.dart';
 import 'package:roadmaps/features/notifications/domain/get_notifications_usecase.dart';
+import 'package:roadmaps/features/notifications/domain/get_unread_count_usecase.dart';
 import 'package:roadmaps/features/notifications/presentation/notifications_provider.dart';
 import 'package:roadmaps/features/profile/data/profile_repository.dart';
 import 'package:roadmaps/features/profile/domain/delete_user_roadmap_usecase.dart';
@@ -56,7 +66,19 @@ import 'package:roadmaps/features/smart_instructor/domain/send_smart_instructor_
 import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_provider.dart';
 
 class Injection {
-  static final UserRepository _userRepository = MockUserRepository();
+  static final TokenManager _tokenManager = TokenManager();
+  static final AuthInterceptor _authInterceptor = AuthInterceptor(
+    tokenManager: _tokenManager,
+  );
+  static final ApiClient _apiClient = ApiClient(client: _authInterceptor);
+  static final UserRepository _userRepository = ApiUserRepository(
+    apiClient: _apiClient,
+    tokenManager: _tokenManager,
+  );
+  static final AuthRepository _authRepository = AuthRepository(
+    apiClient: _apiClient,
+    tokenManager: _tokenManager,
+  );
   static final CurrentUserProvider _currentUserProvider = CurrentUserProvider(
     userRepository: _userRepository,
   );
@@ -65,15 +87,30 @@ class Injection {
     return _currentUserProvider;
   }
 
+  static TokenManager provideTokenManager() {
+    return _tokenManager;
+  }
+
+  static AuthProvider provideAuthProvider() {
+    return AuthProvider(
+      loginUseCase: LoginUseCase(_authRepository),
+      registerUseCase: RegisterUseCase(_authRepository),
+      githubLoginUseCase: GithubLoginUseCase(_authRepository),
+      currentUserProvider: _currentUserProvider,
+    );
+  }
+
   static HomeProvider provideHomeProvider() {
-    final repository = HomeRepository();
+    final repository = HomeRepository(apiClient: _apiClient);
     final getHomeDataUseCase = GetHomeDataUseCase(repository);
+    final getRoadmapDetailsUseCase = GetRoadmapDetailsUseCase(repository);
     final deleteMyCourseUseCase = DeleteMyCourseUseCase(repository);
     final resetMyCourseUseCase = ResetMyCourseUseCase(repository);
     final enrollCourseUseCase = EnrollCourseUseCase(repository);
 
     return HomeProvider(
       getHomeDataUseCase: getHomeDataUseCase,
+      getRoadmapDetailsUseCase: getRoadmapDetailsUseCase,
       deleteMyCourseUseCase: deleteMyCourseUseCase,
       resetMyCourseUseCase: resetMyCourseUseCase,
       enrollCourseUseCase: enrollCourseUseCase,
@@ -97,13 +134,18 @@ class Injection {
   }
 
   static AnnouncementsProvider provideAnnouncementsProvider() {
-    final announcementsRepository = AnnouncementsRepository();
+    final announcementsRepository = AnnouncementsRepository(
+      apiClient: _apiClient,
+    );
     final useCase = GetActiveAnnouncementsUseCase(announcementsRepository);
     return AnnouncementsProvider(useCase);
   }
 
   static SettingsProvider provideSettingsProvider() {
-    final repository = SettingsRepository(userRepository: _userRepository);
+    final repository = SettingsRepository(
+      userRepository: _userRepository,
+      apiClient: _apiClient,
+    );
     return SettingsProvider(
       getSettingsDataUseCase: GetSettingsDataUseCase(repository),
       toggleNotificationsUseCase: ToggleNotificationsUseCase(repository),
@@ -152,8 +194,11 @@ class Injection {
   }
 
   static NotificationsProvider provideNotificationsProvider() {
-    final repository = NotificationsRepository();
-    return NotificationsProvider(GetNotificationsUseCase(repository));
+    final repository = NotificationsRepository(apiClient: _apiClient);
+    return NotificationsProvider(
+      GetNotificationsUseCase(repository),
+      GetUnreadCountUseCase(repository),
+    );
   }
 
   static SmartInstructorProvider provideSmartInstructorProvider() {

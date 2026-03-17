@@ -7,9 +7,9 @@ class LessonCard1 extends StatelessWidget {
   final dynamic course;
   final double widthMultiplier;
   final int trimLength;
-  final VoidCallback onDelete;
-  final VoidCallback onRefresh;
-  final VoidCallback onTap;
+  final Future<void> Function() onDelete;
+  final Future<void> Function() onRefresh;
+  final Future<void> Function() onTap;
 
   const LessonCard1({
     super.key,
@@ -59,7 +59,9 @@ class LessonCard1 extends StatelessWidget {
                   color: AppColors.text_2,
                   size: 22,
                 ),
-                onPressed: onDelete,
+                onPressed: () {
+                  onDelete();
+                },
               ),
               IconButton(
                 icon: const Icon(
@@ -67,7 +69,9 @@ class LessonCard1 extends StatelessWidget {
                   color: AppColors.text_2,
                   size: 22,
                 ),
-                onPressed: onRefresh,
+                onPressed: () {
+                  onRefresh();
+                },
               ),
               const SizedBox(width:12),
               Expanded(
@@ -118,7 +122,9 @@ class LessonCard1 extends StatelessWidget {
                     size: 20,
                   ),
                 ),
-                onPressed: onTap,
+                onPressed: () {
+                  onTap();
+                },
                 padding: EdgeInsets.zero,
               ),
               const SizedBox(width: 15),

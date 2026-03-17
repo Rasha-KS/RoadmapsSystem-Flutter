@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:roadmaps/core/navigation/auth_guard.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/widgets/app_appbar.dart';
 import 'package:roadmaps/core/widgets/app_bottom_nav.dart';
+import 'package:roadmaps/features/auth/presentation/login_screen.dart';
 import 'package:roadmaps/features/announcements/presentation/announcements_provider.dart';
 import 'package:roadmaps/features/community/presentation/community_provider.dart';
 import 'package:roadmaps/features/community/presentation/community_screen.dart';
@@ -45,25 +47,40 @@ class _MainScreenState extends State<MainScreen> {
       context.read<AnnouncementsProvider>().loadAnnouncements();
       context.read<CommunityProvider>().loadRooms();
       context.read<NotificationsProvider>().loadNotifications();
+      context.read<NotificationsProvider>().loadUnreadCount();
       context.read<SmartInstructorProvider>().loadIntro();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasUnread = context.watch<NotificationsProvider>().hasUnread;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: buildAppBar(
         context: context,
+        showUnreadDot: hasUnread,
         onNotificationsTap: () {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            MaterialPageRoute(
+              builder: (_) => AuthGuard(
+                child: const NotificationsScreen(),
+                unauthenticatedBuilder: (_) => const LoginScreen(),
+              ),
+            ),
           );
         },
         onSettingsTap: () {
           Navigator.of(
             context,
-          ).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
+          ).push(
+            MaterialPageRoute(
+              builder: (_) => AuthGuard(
+                child: const SettingsScreen(),
+                unauthenticatedBuilder: (_) => const LoginScreen(),
+              ),
+            ),
+          );
         },
       ),
       body: SafeArea(

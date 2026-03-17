@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/widgets/settings_confirm_action_dialog.dart';
+import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
 import 'edit_account_screen.dart';
 import 'settings_provider.dart';
 
@@ -89,13 +90,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         text: 'حذف حساب',
                         icon: Icons.delete_outline,
                         onTap: () {
-                          final messenger = ScaffoldMessenger.of(context);
                           showSettingsConfirmActionDialog(
                             context: context,
                             title: 'هل أنت متأكد من حذف الحساب؟',
                             onConfirm: () async {
                               await provider.deleteAccount();
-                              if (!mounted) return;
+                              if (!context.mounted) return;
+                              final messenger =
+                                  ScaffoldMessenger.of(context);
                               messenger.showSnackBar(
                                 SnackBar(
                                   content: Directionality(
@@ -125,25 +127,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         text: 'تسجيل خروج',
                         icon: Icons.logout,
                         onTap: () {
-                          final messenger = ScaffoldMessenger.of(context);
                           showSettingsConfirmActionDialog(
                             context: context,
                             title: 'هل أنت متأكد من رغبتك بتسجيل الخروج؟',
                             onConfirm: () async {
-                              await provider.logout();
-                              if (!mounted) return;
+                              final success = await provider.logout();
+                              if (!context.mounted) return;
+                              final messenger =
+                                  ScaffoldMessenger.of(context);
                               messenger.showSnackBar(
                                 SnackBar(
                                   content: Directionality(
                                     textDirection: TextDirection.rtl,
                                     child: Text(
-                                      'تم تسجيل الخروج بنجاح (تجريبي)',
+                                      success
+                                          ? 'تم تسجيل الخروج بنجاح'
+                                          : (provider.error ??
+                                              'تعذر تسجيل الخروج'),
                                       style: AppTextStyles.heading5.copyWith(
                                         color: AppColors.primary,
                                       ),
                                     ),
                                   ),
-                                  backgroundColor: AppColors.backGroundSuccess,
+                                  backgroundColor: success
+                                      ? AppColors.backGroundSuccess
+                                      : AppColors.backGroundError,
                                   duration: const Duration(seconds: 3),
                                   shape: const RoundedRectangleBorder(
                                     borderRadius: BorderRadius.vertical(
@@ -151,6 +159,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     ),
                                   ),
                                 ),
+                              );
+                              await Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                  builder: (_) => const SplashScreen(),
+                                ),
+                                (route) => false,
                               );
                             },
                           );

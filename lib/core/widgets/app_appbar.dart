@@ -26,6 +26,7 @@ AppBar buildAppBar({
   required VoidCallback onNotificationsTap,
   VoidCallback? onSettingsTap,
   required BuildContext context,
+  bool showUnreadDot = false,
 }) {
   final screenWidth = MediaQuery.of(context).size.width;
   final screenHeight = MediaQuery.of(context).size.height;
@@ -36,10 +37,28 @@ AppBar buildAppBar({
     backgroundColor: AppColors.background,
     // Left side: Notifications
     leading: IconButton(
-      icon: Icon(
-        Icons.notifications_none_outlined,
-        color: AppColors.primary,
-        size: iconSize,
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(
+            Icons.notifications_none_outlined,
+            color: AppColors.primary,
+            size: iconSize,
+          ),
+          if (showUnreadDot)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                width: iconSize * 0.28,
+                height: iconSize * 0.28,
+                decoration: const BoxDecoration(
+                  color: AppColors.error,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
       ),
       onPressed: onNotificationsTap,
     ),

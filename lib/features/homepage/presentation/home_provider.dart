@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../domain/delete_my_roadmap_usecase.dart';
 import '../domain/enroll_roadmap_usecase.dart';
 import '../domain/get_home_data_usecase.dart';
+import '../domain/get_roadmap_details_usecase.dart';
 import '../domain/home_entity.dart';
 import '../domain/reset_my_roadmap_usecase.dart';
 
@@ -9,12 +10,14 @@ enum HomeState { loading, loaded, connectionError }
 
 class HomeProvider extends ChangeNotifier {
   final GetHomeDataUseCase getHomeDataUseCase;
+  final GetRoadmapDetailsUseCase getRoadmapDetailsUseCase;
   final DeleteMyCourseUseCase deleteMyCourseUseCase;
   final ResetMyCourseUseCase resetMyCourseUseCase;
   final EnrollCourseUseCase enrollCourseUseCase;
 
   HomeProvider({
     required this.getHomeDataUseCase,
+    required this.getRoadmapDetailsUseCase,
     required this.deleteMyCourseUseCase,
     required this.resetMyCourseUseCase,
     required this.enrollCourseUseCase,
@@ -29,6 +32,7 @@ class HomeProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Fetch home data from API and update the UI lists.
       recommended = await getHomeDataUseCase.callRecommended();
       myCourses = await getHomeDataUseCase.callMyCourses();
       state = HomeState.loaded;
@@ -82,6 +86,10 @@ class HomeProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  Future<HomeCourseEntity> fetchRoadmapDetails(int roadmapId) {
+    return getRoadmapDetailsUseCase(roadmapId);
   }
 }
 

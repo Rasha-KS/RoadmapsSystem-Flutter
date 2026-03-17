@@ -1,12 +1,19 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
+import 'package:roadmaps/core/navigation/auth_guard.dart';
+import 'package:roadmaps/core/widgets/action_snackbar.dart';
 import 'package:roadmaps/core/widgets/auth_custom_button.dart';
 import 'package:roadmaps/core/widgets/auth_custom_text_field.dart';
+import 'package:roadmaps/features/auth/presentation/auth_provider.dart';
 import 'package:roadmaps/features/auth/presentation/forget_password_screen.dart';
+import 'package:roadmaps/features/auth/presentation/github_login_screen.dart';
 import 'package:roadmaps/features/auth/presentation/register_screen.dart';
 import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
 import 'package:roadmaps/features/main_screen.dart';
+import 'package:flutter_octicons/flutter_octicons.dart';
+
 
 // LoginScreen - User Login Page
 //
@@ -68,6 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
@@ -154,6 +162,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                             () => _suppressEmailError = true,
                                           );
                                         }
+                                        if (authProvider.error != null) {
+                                          context
+                                              .read<AuthProvider>()
+                                              .clearError();
+                                        }
                                       },
                                       validator: (value) {
                                         if (_suppressEmailError) return null;
@@ -188,6 +201,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                           setState(
                                             () => _suppressPasswordError = true,
                                           );
+                                        }
+                                        if (authProvider.error != null) {
+                                          context
+                                              .read<AuthProvider>()
+                                              .clearError();
                                         }
                                       },
                                       validator: (value) {
@@ -252,7 +270,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           CustomButton(
                             height: 45,
                             width: screenWidth > 420 ? 240 : screenWidth * 0.6,
-                            onPressed: () {
+                            onPressed: () async {
+                              if (authProvider.isLoading) return;
                               setState(() {
                                 _suppressEmailError = false;
                                 _suppressPasswordError = false;
@@ -260,18 +279,36 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (formStateKey.currentState?.validate() ??
                                   false) {
                                 FocusScope.of(context).unfocus();
-                                clearFieldsAndFocusLogin();
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const MainScreen(),
-                                  ),
+                                final user = await authProvider.login(
+                                  email: emailController.text.trim(),
+                                  password: passwordController.text,
                                 );
+                                if (!context.mounted) return;
+                                if (user != null) {
+                                  clearFieldsAndFocusLogin();
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AuthGuard(
+                                        child: const MainScreen(),
+                                        unauthenticatedBuilder: (_) =>
+                                            const LoginScreen(),
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  _showError(
+                                    authProvider.error ??
+                                        'تعذر تسجيل الدخول.',
+                                  );
+                                }
                               }
                               passwordFocus.unfocus();
                               emailFocus.unfocus();
                             },
-                            text: "تسجيل",
+                            text: authProvider.isLoading
+                                ? 'جاري تسجيل الدخول...'
+                                : 'تسجيل',
                             fontsize: 17,
                           ),
                           SizedBox(height: screenHeight * 0.02),
@@ -317,14 +354,21 @@ class _LoginScreenState extends State<LoginScreen> {
                               IconButton(
                                 onPressed: () {
                                   clearFieldsAndFocusLogin();
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const GithubLoginScreen(),
+                                    ),
+                                  );
                                 },
                                 icon: Icon(
-                                  Icons.g_mobiledata,
+                                  OctIcons.mark_github_16,
                                   size: screenWidth * 0.12,
                                 ),
                               ),
                               Text(
-                                "Google",
+                                "Github",
                                 style: const TextStyle(
                                   color: AppColors.primary1,
                                 ),
@@ -345,6 +389,11 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  void _showError(String message) {
+    final messenger = ScaffoldMessenger.of(context);
+    showActionSnackBar(messenger, message: message, isSuccess: false);
+  }
+
   void clearFieldsAndFocusLogin() {
     emailController.clear();
     passwordController.clear();
@@ -354,3 +403,10 @@ class _LoginScreenState extends State<LoginScreen> {
     FocusManager.instance.primaryFocus?.unfocus();
   }
 }
+
+
+
+
+
+
+

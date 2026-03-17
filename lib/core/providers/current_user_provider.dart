@@ -9,16 +9,24 @@ class CurrentUserProvider extends ChangeNotifier {
   final UserRepository _userRepository;
   UserEntity? _currentUser;
   bool _loading = false;
+  String? _error;
 
   UserEntity? get user => _currentUser;
   int? get userId => _currentUser?.id;
   bool get isLoading => _loading;
+  String? get error => _error;
 
   Future<void> loadCurrentUser() async {
     _loading = true;
+    _error = null;
     notifyListeners();
 
-    _currentUser = await _userRepository.getCurrentUser();
+    try {
+      _currentUser = await _userRepository.getCurrentUser();
+    } catch (e) {
+      _currentUser = null;
+      _error = e.toString();
+    }
 
     _loading = false;
     notifyListeners();
@@ -31,13 +39,18 @@ class CurrentUserProvider extends ChangeNotifier {
     String? profileImageUrl,
     bool? isNotificationsEnabled,
   }) async {
-    _currentUser = await _userRepository.updateCurrentUser(
-      username: username,
-      email: email,
-      password: password,
-      profileImageUrl: profileImageUrl,
-      isNotificationsEnabled: isNotificationsEnabled,
-    );
+    try {
+      _currentUser = await _userRepository.updateCurrentUser(
+        username: username,
+        email: email,
+        password: password,
+        profileImageUrl: profileImageUrl,
+        isNotificationsEnabled: isNotificationsEnabled,
+      );
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+    }
     notifyListeners();
   }
 
@@ -47,8 +60,13 @@ class CurrentUserProvider extends ChangeNotifier {
   }
 
   Future<void> deleteUser() async {
-    await _userRepository.deleteCurrentUser();
-    _currentUser = null;
+    try {
+      await _userRepository.deleteCurrentUser();
+      _currentUser = null;
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+    }
     notifyListeners();
   }
 }

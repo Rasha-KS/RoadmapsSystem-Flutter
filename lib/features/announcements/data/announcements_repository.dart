@@ -1,49 +1,55 @@
+import 'package:roadmaps/core/api/api_client.dart';
+import 'package:roadmaps/core/api/api_exceptions.dart';
+import 'package:roadmaps/core/constants/api_constants.dart';
+
 import '../domain/announcement_entity.dart';
+import 'announcement_model.dart';
 
 class AnnouncementsRepository {
+  AnnouncementsRepository({required ApiClient apiClient})
+      : _apiClient = apiClient;
+
+  final ApiClient _apiClient;
+
   Future<List<AnnouncementEntity>> getActiveAnnouncements() async {
-    await Future.delayed(const Duration(milliseconds: 400));
+    // Fetch announcements for the Home announcements section.
+    final response = await _apiClient.get(
+      ApiConstants.url(ApiConstants.announcements),
+    );
 
-    return [
-    AnnouncementEntity(
-      id: 1,
-      title: 'يوم التقني العالمي',
-      description: 'ابدأ رحلتك البرمجية اليوم 🚀',
-      startsAt: DateTime(2026, 2, 1),
-      endsAt: DateTime(2026, 2, 15),
-      isActive: true,
-      link: 'https://google.com',
-    ),
+    if (response.containsKey('success') && response['success'] != true) {
+      final message = response['message'];
+      throw ApiException(
+        message is String && message.trim().isNotEmpty
+            ? message.trim()
+            : 'تعذر تحميل الإعلانات.',
+      );
+    }
 
-    AnnouncementEntity(
-      id: 2,
-      title: 'إطلاق دورة Flutter',
-      description: 'دورة جديدة لبناء تطبيقات احترافية من الصفر',
-      startsAt: DateTime(2026, 1, 1),
-      endsAt: DateTime(2026, 3, 20),
-      isActive: true,
-      link: 'https://google.com',
-    ),
+    final items = _extractList(
+      response['data'],
+      keys: const ['announcements', 'items', 'data', 'results'],
+    );
 
-    AnnouncementEntity(
-      id: 3,
-      title: 'خصم لفترة محدودة',
-      description: 'خصم 30٪ على جميع الدورات البرمجية',
-      startsAt: DateTime(2026, 2, 1),
-      endsAt: DateTime(2026, 2, 25),
-      isActive: true,
-      link: 'https://google.com',
-    ),
+    return items.map(AnnouncementModel.fromJson).toList();
+  }
 
-    AnnouncementEntity(
-      id: 4,
-      title: 'تحديث المنصة',
-      description: 'تحسينات جديدة على الأداء وتجربة المستخدم',
-      startsAt: DateTime(2026, 2, 1),
-      endsAt: DateTime(2026, 2, 12),
-      isActive: true,
-      link: 'https://google.com',
-    ),
-    ];
+  List<Map<String, dynamic>> _extractList(
+    dynamic payload, {
+    required List<String> keys,
+  }) {
+    if (payload == null) return [];
+    if (payload is List) {
+      return payload.whereType<Map<String, dynamic>>().toList();
+    }
+    if (payload is Map<String, dynamic>) {
+      for (final key in keys) {
+        final value = payload[key];
+        if (value is List) {
+          return value.whereType<Map<String, dynamic>>().toList();
+        }
+      }
+    }
+    throw const ParsingException();
   }
 }

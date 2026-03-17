@@ -1,0 +1,81 @@
+import 'package:roadmaps/core/api/api_client.dart';
+import 'package:roadmaps/core/api/api_exceptions.dart';
+import 'package:roadmaps/core/auth/token_manager.dart';
+import 'package:roadmaps/core/constants/api_constants.dart';
+import 'package:roadmaps/core/entities/user_entity.dart';
+
+import 'auth_model.dart';
+
+class AuthRepository {
+  AuthRepository({
+    required ApiClient apiClient,
+    required TokenManager tokenManager,
+  })  : _apiClient = apiClient,
+        _tokenManager = tokenManager;
+
+  final ApiClient _apiClient;
+  final TokenManager _tokenManager;
+
+  Future<UserEntity> register({
+    required String username,
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    final response = await _apiClient.post(
+      ApiConstants.url(ApiConstants.register),
+      body: {
+        'username': username,
+        'email': email,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+      },
+    );
+
+    final auth = AuthModel.fromResponse(response);
+    await _tokenManager.saveToken(auth.token);
+    return auth.user;
+  }
+
+  Future<UserEntity> login({
+    required String email,
+    required String password,
+  }) async {
+    final response = await _apiClient.post(
+      ApiConstants.url(ApiConstants.login),
+      body: {
+        'email': email,
+        'password': password,
+      },
+    );
+
+    final auth = AuthModel.fromResponse(response);
+    await _tokenManager.saveToken(auth.token);
+    return auth.user;
+  }
+
+  Future<UserEntity> loginWithGithub({required String code}) async {
+    final response = await _apiClient.post(
+      ApiConstants.url(ApiConstants.githubLogin),
+      body: {'code': code},
+    );
+
+    final auth = AuthModel.fromResponse(response);
+    await _tokenManager.saveToken(auth.token);
+    return auth.user;
+  }
+
+  Future<void> clearSession() async {
+    await _tokenManager.clearToken();
+  }
+
+  Future<String?> readToken() async {
+    return _tokenManager.getToken();
+  }
+
+  Future<void> deleteTokenOnUnauthorized(ApiException exception) async {
+    if (exception.statusCode == 401) {
+      await _tokenManager.clearToken();
+    }
+  }
+}

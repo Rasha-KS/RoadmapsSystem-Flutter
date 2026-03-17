@@ -73,7 +73,28 @@ class _AnnouncementWidgetState extends State<AnnouncementWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final announcements = context.watch<AnnouncementsProvider>().announcements;
+    final provider = context.watch<AnnouncementsProvider>();
+    final announcements = provider.announcements;
+
+    // Show loading indicator while announcements are fetched from API.
+    if (provider.state == AnnouncementsState.loading &&
+        announcements.isEmpty) {
+      return const SizedBox(
+        height: 120,
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.primary2),
+        ),
+      );
+    }
+
+    // Show a lightweight error card if the API call fails.
+    if (provider.state == AnnouncementsState.connectionError &&
+        announcements.isEmpty) {
+      return SizedBox(
+        height: 120,
+        child: _buildErrorCard(provider.error ?? 'تعذر تحميل الإعلانات.'),
+      );
+    }
 
     if (announcements.isEmpty) {
       return SizedBox(height: 120, child: _buildMotivationCard());
@@ -271,6 +292,50 @@ class _AnnouncementWidgetState extends State<AnnouncementWidget> {
           ],
         ),
     ),);
+  }
+
+  Widget _buildErrorCard(String message) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return Center(
+      child: Container(
+        width: screenWidth * 0.75,
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.secondary2,
+          borderRadius: BorderRadius.circular(23),
+          border: Border.all(
+            color: AppColors.error.withValues(alpha: 0.4),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.error,
+              size: 22,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: Text(
+                  message,
+                  style: AppTextStyles.boldSmallText.copyWith(
+                    color: AppColors.error,
+                  ),
+                  textAlign: TextAlign.right,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

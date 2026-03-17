@@ -237,7 +237,7 @@ class _RoadmapSection extends StatelessWidget {
               }
             },
           ),
-          onTap: () {
+          onTap: () async {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => LearningPathScreen(

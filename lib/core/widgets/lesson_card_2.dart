@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:see_more/see_more.dart';
+import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/widgets/action_snackbar.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
@@ -12,10 +13,10 @@ class LessonCard2 extends StatefulWidget {
   final int trimLength;
   final bool? isEnrolled;
   final ValueChanged<bool>? onEnrollmentChanged;
-   final VoidCallback? onEnroll;
-  final VoidCallback? onDelete;
-  final VoidCallback? onRefresh;
-  final VoidCallback? onTap;
+  final Future<void> Function()? onEnroll;
+  final Future<void> Function()? onDelete;
+  final Future<void> Function()? onRefresh;
+  final Future<void> Function()? onTap;
 
   const LessonCard2({
     super.key,
@@ -56,18 +57,25 @@ class _LessonCard2State extends State<LessonCard2>
       onConfirm: () async {
         final messenger = ScaffoldMessenger.of(context);
         try {
-          _setEnrollment(false);
+          if (widget.onDelete != null) {
+            await widget.onDelete!();
+          } else {
+            _setEnrollment(false);
+          }
           if (!context.mounted) return;
+          _setEnrollment(false);
           showActionSnackBar(
             messenger,
             message: 'تم حذف المسار بنجاح',
             isSuccess: true,
           );
-        } catch (_) {
+        } catch (e) {
           if (!context.mounted) return;
+          final message =
+              e is ApiException ? e.message : 'فشل حذف المسار. حاول مرة أخرى';
           showActionSnackBar(
             messenger,
-            message: 'فشل حذف المسار. حاول مرة أخرى',
+            message: message,
             isSuccess: false,
           );
         }
@@ -83,17 +91,57 @@ class _LessonCard2State extends State<LessonCard2>
       onConfirm: () async {
         final messenger = ScaffoldMessenger.of(context);
         try {
+          if (widget.onRefresh != null) {
+            await widget.onRefresh!();
+          }
           if (!context.mounted) return;
           showActionSnackBar(
             messenger,
             message: 'تمت إعادة المسار بنجاح',
             isSuccess: true,
           );
-        } catch (_) {
+        } catch (e) {
           if (!context.mounted) return;
+          final message =
+              e is ApiException ? e.message : 'فشلت إعادة المسار. حاول مرة أخرى';
           showActionSnackBar(
             messenger,
-            message: 'فشلت إعادة المسار. حاول مرة أخرى',
+            message: message,
+            isSuccess: false,
+          );
+        }
+      },
+    );
+  }
+
+  Future<void> _showEnrollConfirmDialog() async {
+    await showConfirmActionDialog(
+      context: context,
+      title: 'هل تريد الاشتراك في المسار؟',
+      message: 'سيتم تسجيلك في هذا المسار ويمكنك إلغاء الاشتراك لاحقاً.',
+      confirmText: 'اشتراك',
+      onConfirm: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        try {
+          if (widget.onEnroll != null) {
+            await widget.onEnroll!();
+          } else if (widget.onEnrollmentChanged != null) {
+            widget.onEnrollmentChanged!(true);
+          }
+          if (!context.mounted) return;
+          _setEnrollment(true);
+          showActionSnackBar(
+            messenger,
+            message: 'تم التسجيل بنجاح',
+            isSuccess: true,
+          );
+        } catch (e) {
+          if (!context.mounted) return;
+          final message =
+              e is ApiException ? e.message : 'تعذر الاشتراك في المسار';
+          showActionSnackBar(
+            messenger,
+            message: message,
             isSuccess: false,
           );
         }
@@ -111,14 +159,14 @@ class _LessonCard2State extends State<LessonCard2>
         course: widget.course,
         widthMultiplier: 0.80,
         onDelete: widget.onDelete ??
-            () {
-              _showDeleteConfirmDialog();
+            () async {
+              await _showDeleteConfirmDialog();
             },
         onRefresh: widget.onRefresh ??
-            () {
-              _showResetConfirmDialog();
+            () async {
+              await _showResetConfirmDialog();
             },
-        onTap: widget.onTap ?? () {},
+        onTap: widget.onTap ?? () async {},
       );
     }
 
@@ -200,18 +248,27 @@ class _LessonCard2State extends State<LessonCard2>
                     borderRadius: BorderRadius.circular(30),
                   ),
                   onPressed: () {
-                    
+                    if (widget.onEnroll != null) {
+                      _showEnrollConfirmDialog();
+                      return;
+                    }
+
                     if (widget.onEnrollmentChanged != null) {
                       widget.onEnrollmentChanged!(true);
                     } else {
-                      
                       setState(() => _isEnrolled = true);
                     }
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content:  Directionality(textDirection: TextDirection.rtl, child: Text(
-                          "تم التسجيل بنجاح", style:  AppTextStyles.heading5.copyWith(color:AppColors.primary),
-                        )),
+                        content: Directionality(
+                          textDirection: TextDirection.rtl,
+                          child: Text(
+                            "تم التسجيل بنجاح",
+                            style: AppTextStyles.heading5.copyWith(
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
                         backgroundColor: AppColors.backGroundSuccess,
                         duration: const Duration(seconds: 3),
                         shape: const RoundedRectangleBorder(

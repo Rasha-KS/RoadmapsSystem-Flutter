@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/entities/user_entity.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
 import '../domain/delete_account_usecase.dart';
@@ -114,15 +115,19 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> logout() async {
+  Future<bool> logout() async {
+    var success = false;
     try {
       await logoutUseCase();
+      success = true;
       error = null;
-      notifyListeners();
-    } catch (_) {
-      error = 'تعذر تسجيل الخروج';
+    } catch (e) {
+      error = e is ApiException ? e.message : 'تعذر تسجيل الخروج';
+    } finally {
+      await currentUserProvider.deleteUser();
       notifyListeners();
     }
+    return success;
   }
 
   void _onCurrentUserChanged() {

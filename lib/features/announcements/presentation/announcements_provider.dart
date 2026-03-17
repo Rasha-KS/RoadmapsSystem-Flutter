@@ -1,7 +1,10 @@
 // features/announcements/presentation/announcements_provider.dart
 import 'package:flutter/material.dart';
+import 'package:roadmaps/core/api/api_exceptions.dart';
 import '../domain/announcement_entity.dart';
 import '../domain/get_active_announcements_usecase.dart';
+
+enum AnnouncementsState { loading, loaded, connectionError }
 
 class AnnouncementsProvider extends ChangeNotifier {
   final GetActiveAnnouncementsUseCase useCase;
@@ -10,16 +13,23 @@ class AnnouncementsProvider extends ChangeNotifier {
   List<AnnouncementEntity> _announcements = [];
   List<AnnouncementEntity> get announcements => _announcements;
 
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
+  AnnouncementsState state = AnnouncementsState.loading;
+  String? error;
 
   Future<void> loadAnnouncements() async {
-    _isLoading = true;
+    state = AnnouncementsState.loading;
+    error = null;
     notifyListeners();
 
-    _announcements = await useCase.execute();
+    try {
+      // Load announcements from API and update the Home UI list.
+      _announcements = await useCase.execute();
+      state = AnnouncementsState.loaded;
+    } catch (e) {
+      error = e is ApiException ? e.message : 'تعذر تحميل الإعلانات.';
+      state = AnnouncementsState.connectionError;
+    }
 
-    _isLoading = false;
     notifyListeners();
   }
 }

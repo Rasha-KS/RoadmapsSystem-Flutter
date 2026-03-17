@@ -2,12 +2,11 @@
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
-import 'package:roadmaps/core/widgets/action_snackbar.dart';
-import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/lesson_card_2.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_screen.dart';
 import 'package:roadmaps/features/main_screen.dart';
+import 'package:roadmaps/features/notifications/presentation/notifications_provider.dart';
 import 'package:roadmaps/features/notifications/presentation/notifications_screen.dart';
 
 import '../domain/roadmap_entity.dart';
@@ -32,6 +31,7 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
       if (provider.roadmaps.isEmpty) {
         provider.loadRoadmaps();
       }
+      context.read<NotificationsProvider>().loadUnreadCount();
     });
   }
 
@@ -68,10 +68,28 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
                             ),
                           );
                         },
-                        icon: const Icon(
-                          Icons.notifications_none,
-                          color: AppColors.text_5,
-                          size: 25,
+                        icon: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Icon(
+                              Icons.notifications_none,
+                              color: AppColors.text_5,
+                              size: 25,
+                            ),
+                            if (context.watch<NotificationsProvider>().hasUnread)
+                              Positioned(
+                                right: -1,
+                                top: -1,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.error,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                       IconButton(
@@ -183,86 +201,32 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
                                       widthMultiplier: 0.92,
                                       trimLength: 70,
                                       isEnrolled: roadmapsProvider.isCourseEnrolled(course.id),
-                                      onDelete: () {
-                                        showConfirmActionDialog(
-                                          context: context,
-                                          title: 'هل أنت متأكد من حذف المسار؟',
-                                          message:
-                                              'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
-                                          onConfirm: () async {
-                                            final messenger =
-                                                ScaffoldMessenger.of(context);
-                                            try {
-                                              final learningPathProvider =
-                                                  context.read<LearningPathProvider>();
-                                              context
-                                                  .read<RoadmapsProvider>()
-                                                  .setCourseEnrollment(
-                                                    course.id,
-                                                    false,
-                                                  );
-                                              await learningPathProvider
-                                                  .resetProgress(
-                                                    roadmapId: course.id,
-                                                  );
-                                              if (!context.mounted) return;
-                                              showActionSnackBar(
-                                                messenger,
-                                                message: 'تم حذف المسار بنجاح',
-                                                isSuccess: true,
-                                              );
-                                            } catch (_) {
-                                              if (!context.mounted) return;
-                                              showActionSnackBar(
-                                                messenger,
-                                                message:
-                                                    'فشل حذف المسار. حاول مرة أخرى',
-                                                isSuccess: false,
-                                              );
-                                            }
-                                          },
+                                      onDelete: () async {
+                                        final learningPathProvider =
+                                            context.read<LearningPathProvider>();
+                                        context
+                                            .read<RoadmapsProvider>()
+                                            .setCourseEnrollment(
+                                              course.id,
+                                              false,
+                                            );
+                                        await learningPathProvider.resetProgress(
+                                          roadmapId: course.id,
                                         );
                                       },
-                                      onRefresh: () {
-                                        showConfirmActionDialog(
-                                          context: context,
-                                          title: 'هل أنت متأكد من إعادة المسار؟',
-                                          message:
-                                              'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
-                                          onConfirm: () async {
-                                            final messenger =
-                                                ScaffoldMessenger.of(context);
-                                            try {
-                                              await context
-                                                  .read<LearningPathProvider>()
-                                                  .resetProgress(
-                                                    roadmapId: course.id,
-                                                  );
-                                              if (!context.mounted) return;
-                                              showActionSnackBar(
-                                                messenger,
-                                                message:
-                                                    'تمت إعادة المسار بنجاح',
-                                                isSuccess: true,
-                                              );
-                                            } catch (_) {
-                                              if (!context.mounted) return;
-                                              showActionSnackBar(
-                                                messenger,
-                                                message:
-                                                    'فشلت إعادة المسار. حاول مرة أخرى',
-                                                isSuccess: false,
-                                              );
-                                            }
-                                          },
-                                        );
+                                      onRefresh: () async {
+                                        await context
+                                            .read<LearningPathProvider>()
+                                            .resetProgress(
+                                              roadmapId: course.id,
+                                            );
                                       },
                                       onEnrollmentChanged: (enrolled) {
                                         context
                                             .read<RoadmapsProvider>()
                                             .setCourseEnrollment(course.id, enrolled);
                                       },
-                                      onTap: () {
+                                      onTap: () async {
                                         Navigator.of(context).push(
                                           MaterialPageRoute(
                                             builder: (_) => LearningPathScreen(
@@ -498,100 +462,48 @@ class SearchRoadmapsDelegate extends SearchDelegate {
                       : ListView(
                           padding: const EdgeInsets.only(right: 10, left: 10),
                           children: filteredCourses.map((course) {
-                            return LessonCard2(
-                              course: course,
-                              widthMultiplier: 0.92,
-                              trimLength: 70,
-                              isEnrolled: roadmapsProvider.isCourseEnrolled(
+                          return LessonCard2(
+                            course: course,
+                            widthMultiplier: 0.92,
+                            trimLength: 70,
+                            isEnrolled: roadmapsProvider.isCourseEnrolled(
+                              course.id,
+                            ),
+                            onDelete: () async {
+                              final learningPathProvider =
+                                  context.read<LearningPathProvider>();
+                              context
+                                  .read<RoadmapsProvider>()
+                                  .setCourseEnrollment(course.id, false);
+                              await learningPathProvider.resetProgress(
+                                roadmapId: course.id,
+                              );
+                              setState(() {});
+                            },
+                            onRefresh: () async {
+                              await context
+                                  .read<LearningPathProvider>()
+                                  .resetProgress(roadmapId: course.id);
+                            },
+                            onEnrollmentChanged: (enrolled) {
+                              context.read<RoadmapsProvider>().setCourseEnrollment(
                                 course.id,
-                              ),
-                              onDelete: () {
-                                showConfirmActionDialog(
-                                  context: context,
-                                  title: 'هل أنت متأكد من حذف المسار؟',
-                                  message:
-                                      'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
-                                  onConfirm: () async {
-                                    final messenger =
-                                        ScaffoldMessenger.of(context);
-                                    try {
-                                      final learningPathProvider = context
-                                          .read<LearningPathProvider>();
-                                      context
-                                          .read<RoadmapsProvider>()
-                                          .setCourseEnrollment(course.id, false);
-                                      await learningPathProvider.resetProgress(
-                                        roadmapId: course.id,
-                                      );
-                                      if (!context.mounted) return;
-                                      setState(() {});
-                                      showActionSnackBar(
-                                        messenger,
-                                        message: 'تم حذف المسار بنجاح',
-                                        isSuccess: true,
-                                      );
-                                    } catch (_) {
-                                      if (!context.mounted) return;
-                                      showActionSnackBar(
-                                        messenger,
-                                        message:
-                                            'فشل حذف المسار. حاول مرة أخرى',
-                                        isSuccess: false,
-                                      );
-                                    }
-                                  },
-                                );
-                              },
-                              onRefresh: () {
-                                showConfirmActionDialog(
-                                  context: context,
-                                  title: 'هل أنت متأكد من إعادة المسار؟',
-                                  message:
-                                      'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
-                                  onConfirm: () async {
-                                    final messenger =
-                                        ScaffoldMessenger.of(context);
-                                    try {
-                                      await context
-                                          .read<LearningPathProvider>()
-                                          .resetProgress(roadmapId: course.id);
-                                      if (!context.mounted) return;
-                                      showActionSnackBar(
-                                        messenger,
-                                        message: 'تمت إعادة المسار بنجاح',
-                                        isSuccess: true,
-                                      );
-                                    } catch (_) {
-                                      if (!context.mounted) return;
-                                      showActionSnackBar(
-                                        messenger,
-                                        message:
-                                            'فشلت إعادة المسار. حاول مرة أخرى',
-                                        isSuccess: false,
-                                      );
-                                    }
-                                  },
-                                );
-                              },
-                              onEnrollmentChanged: (enrolled) {
-                                context.read<RoadmapsProvider>().setCourseEnrollment(
-                                  course.id,
-                                  enrolled,
-                                );
-                                setState(() {});
-                              },
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => LearningPathScreen(
-                                      roadmapId: course.id,
-                                      roadmapTitle: course.title,
-                                    ),
+                                enrolled,
+                              );
+                              setState(() {});
+                            },
+                            onTap: () async {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => LearningPathScreen(
+                                    roadmapId: course.id,
+                                    roadmapTitle: course.title,
                                   ),
-                                );
-                              },
-                            );
-                          }).toList(),
+                                ),
+                              );
+                            },
+                          );
+                        }).toList(),
                         ),
                 ),
               ],

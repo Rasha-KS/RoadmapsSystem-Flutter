@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:roadmaps/core/auth/token_manager.dart';
+import 'package:roadmaps/core/navigation/auth_guard.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
+import 'package:roadmaps/features/main_screen.dart';
+import 'package:roadmaps/features/auth/presentation/auth_provider.dart';
 import 'package:roadmaps/features/challenge/presentation/challenge_provider.dart';
 import 'package:roadmaps/features/checkpoints/presentation/checkpoints_provider.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
@@ -19,7 +23,13 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        Provider<TokenManager>.value(
+          value: Injection.provideTokenManager(),
+        ),
         ChangeNotifierProvider.value(value: currentUserProvider),
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => Injection.provideAuthProvider(),
+        ),
 
         ChangeNotifierProvider(create: (_) => Injection.provideHomeProvider()),
 
@@ -75,7 +85,10 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Tajawal_R',
         scaffoldBackgroundColor: AppColors.background,
       ),
-      home: const SplashScreen(), //SplashScreen(),
+      home: AuthGuard(
+        child: const MainScreen(),
+        unauthenticatedBuilder: (_) => const SplashScreen(),
+      ),
     );
   }
 }

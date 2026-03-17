@@ -45,8 +45,6 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
         roadmapsProvider.state == PageState.connectionError &&
         roadmaps.isEmpty;
 final screenWidth = MediaQuery.of(context).size.width;
-  final screenHeight = MediaQuery.of(context).size.height;
-  final double iconSize = ((screenWidth + screenHeight) / 2) * 0.045;
   final double rightPadding = screenWidth * 0.03;
     return Scaffold(
       key: scaffoldkey,

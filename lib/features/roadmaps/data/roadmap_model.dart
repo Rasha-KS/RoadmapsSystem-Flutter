@@ -1,22 +1,30 @@
 import '../domain/roadmap_entity.dart';
 
 class RoadmapModel extends RoadmapEntity {
-  RoadmapModel({
+  const RoadmapModel({
     required super.id,
     required super.title,
     required super.level,
     required super.description,
-    super.status
- 
+    super.status,
+    super.isActive,
+    super.isEnrolled,
   });
 
   factory RoadmapModel.fromJson(Map<String, dynamic> json) {
+    final isEnrolled = _asBool(json['is_enrolled']);
+
     return RoadmapModel(
-      id: json['id'],
-      title: json['title'],
-      level: json['level'],
-      description: json['description'],
-    status: json['status']
+      id: _asInt(json['id']),
+      title: _asString(json['title']),
+      level: _asString(
+        json['level_arabic'] ?? json['level'],
+        fallback: 'غير محدد',
+      ),
+      description: _asString(json['description']),
+      status: _asOptionalString(json['status']) ?? (isEnrolled ? 'مشترك' : null),
+      isActive: _asBool(json['is_active'], fallback: true),
+      isEnrolled: isEnrolled,
     );
   }
 
@@ -25,6 +33,52 @@ class RoadmapModel extends RoadmapEntity {
         'title': title,
         'level': level,
         'description': description,
-      'status':status
+        'status': status,
+        'is_active': isActive,
+        'is_enrolled': isEnrolled,
       };
+
+  static int _asInt(dynamic value) {
+    if (value is int) return value;
+
+    final parsed = int.tryParse(value?.toString() ?? '');
+    if (parsed != null) return parsed;
+
+    throw const FormatException('Invalid roadmap id');
+  }
+
+  static String _asString(dynamic value, {String fallback = ''}) {
+    final text = value?.toString().trim();
+    if (text != null && text.isNotEmpty) {
+      return text;
+    }
+    return fallback;
+  }
+
+  static String? _asOptionalString(dynamic value) {
+    final text = value?.toString().trim();
+    if (text == null || text.isEmpty) {
+      return null;
+    }
+    return text;
+  }
+
+  static bool _asBool(dynamic value, {bool fallback = false}) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+
+    final normalized = value?.toString().trim().toLowerCase();
+    switch (normalized) {
+      case '1':
+      case 'true':
+      case 'yes':
+        return true;
+      case '0':
+      case 'false':
+      case 'no':
+        return false;
+      default:
+        return fallback;
+    }
+  }
 }

@@ -64,13 +64,23 @@ class HomeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> enrollCourse(int courseId) async {
+  Future<void> enrollCourse(int courseId, {HomeCourseEntity? courseData}) async {
     await enrollCourseUseCase(courseId);
 
     final index = recommended.indexWhere((course) => course.id == courseId);
-    if (index == -1) return;
+    HomeCourseEntity? enrolledCourse;
+    if (index != -1) {
+      enrolledCourse = recommended.removeAt(index);
+    } else {
+      enrolledCourse = courseData;
+    }
 
-    final course = recommended.removeAt(index);
+    if (enrolledCourse == null) {
+      notifyListeners();
+      return;
+    }
+
+    final course = enrolledCourse;
     final alreadyExists = myCourses.any((item) => item.id == course.id);
     if (!alreadyExists) {
       myCourses = [

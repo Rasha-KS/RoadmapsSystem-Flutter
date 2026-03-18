@@ -128,7 +128,7 @@ class Injection {
   }
 
   static RoadmapsProvider provideRoadmapsProvider() {
-    final roadmapsRepository = RoadmapRepository();
+    final roadmapsRepository = RoadmapRepository(apiClient: _apiClient);
     final useCase = GetRoadmapsUseCase(roadmapsRepository);
     return RoadmapsProvider(useCase);
   }

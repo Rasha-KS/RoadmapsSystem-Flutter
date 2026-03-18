@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/widgets/lesson_card_2.dart';
+import 'package:roadmaps/features/homepage/domain/home_entity.dart';
+import 'package:roadmaps/features/homepage/presentation/home_provider.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_screen.dart';
 import 'package:roadmaps/features/main_screen.dart';
@@ -13,6 +15,52 @@ import '../domain/roadmap_entity.dart';
 import 'roadmaps_provider.dart';
 
 final GlobalKey<ScaffoldState> scaffoldkey = GlobalKey();
+
+HomeCourseEntity _toHomeCourse(RoadmapEntity course) {
+  return HomeCourseEntity(
+    id: course.id,
+    title: course.title,
+    level: course.level,
+    description: course.description,
+    status: course.status,
+  );
+}
+
+Future<void> _openRoadmap(
+  BuildContext context,
+  RoadmapEntity course,
+) async {
+  final homeProvider = context.read<HomeProvider>();
+  HomeCourseEntity details = _toHomeCourse(course);
+
+  try {
+    details = await homeProvider.fetchRoadmapDetails(course.id);
+  } catch (_) {}
+
+  if (!context.mounted) return;
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => LearningPathScreen(
+        roadmapId: course.id,
+        roadmapTitle: details.title,
+      ),
+    ),
+  );
+}
+
+Future<void> _loadRoadmapsWithHomeState(BuildContext context) async {
+  final homeProvider = context.read<HomeProvider>();
+  await homeProvider.loadHome();
+  if (!context.mounted) return;
+
+  final enrolledCourseIds = homeProvider.myCourses
+      .map((course) => course.id)
+      .toSet();
+
+  await context.read<RoadmapsProvider>().loadRoadmaps(
+    enrolledCourseIds: enrolledCourseIds,
+  );
+}
 
 class RoadmapsScreen extends StatefulWidget {
   const RoadmapsScreen({super.key});
@@ -27,10 +75,7 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final provider = context.read<RoadmapsProvider>();
-      if (provider.roadmaps.isEmpty) {
-        provider.loadRoadmaps();
-      }
+      _loadRoadmapsWithHomeState(context);
       context.read<NotificationsProvider>().loadUnreadCount();
     });
   }
@@ -184,14 +229,14 @@ final screenWidth = MediaQuery.of(context).size.width;
                           : hasInitialError
                           ? _ErrorState(
                               onRetry: () async {
-                                await context.read<RoadmapsProvider>().loadRoadmaps();
+                                await _loadRoadmapsWithHomeState(context);
                               },
                             )
                           : RefreshIndicator(
                               color: AppColors.primary2,
                               onRefresh: () async {
                                 final messenger = ScaffoldMessenger.of(context);
-                                await context.read<RoadmapsProvider>().loadRoadmaps();
+                                await _loadRoadmapsWithHomeState(context);
                                 if (roadmapsProvider.state == PageState.connectionError) {
                                   _showRefreshFailedSnackBar(messenger);
                                 }
@@ -205,40 +250,42 @@ final screenWidth = MediaQuery.of(context).size.width;
                                       widthMultiplier: 0.92,
                                       trimLength: 70,
                                       isEnrolled: roadmapsProvider.isCourseEnrolled(course.id),
+                                      onEnroll: () async {
+                                        await context.read<HomeProvider>().enrollCourse(
+                                          course.id,
+                                          courseData: _toHomeCourse(course),
+                                        );
+                                        if (!context.mounted) return;
+                                        await _loadRoadmapsWithHomeState(context);
+                                      },
                                       onDelete: () async {
                                         final learningPathProvider =
                                             context.read<LearningPathProvider>();
-                                        context
-                                            .read<RoadmapsProvider>()
-                                            .setCourseEnrollment(
-                                              course.id,
-                                              false,
-                                            );
+                                        await context.read<HomeProvider>().deleteCourse(
+                                          course.id,
+                                        );
+                                        if (!context.mounted) return;
+                                        await _loadRoadmapsWithHomeState(context);
+                                        if (!context.mounted) return;
                                         await learningPathProvider.resetProgress(
                                           roadmapId: course.id,
                                         );
                                       },
                                       onRefresh: () async {
+                                        await context.read<HomeProvider>().resetCourse(
+                                          course.id,
+                                        );
+                                        if (!context.mounted) return;
+                                        await _loadRoadmapsWithHomeState(context);
+                                        if (!context.mounted) return;
                                         await context
                                             .read<LearningPathProvider>()
                                             .resetProgress(
                                               roadmapId: course.id,
                                             );
                                       },
-                                      onEnrollmentChanged: (enrolled) {
-                                        context
-                                            .read<RoadmapsProvider>()
-                                            .setCourseEnrollment(course.id, enrolled);
-                                      },
                                       onTap: () async {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) => LearningPathScreen(
-                                              roadmapId: course.id,
-                                              roadmapTitle: course.title,
-                                            ),
-                                          ),
-                                        );
+                                        await _openRoadmap(context, course);
                                       },
                                     ),
                                   ),
@@ -411,7 +458,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
       child: StatefulBuilder(
         builder: (context, setState) {
           final roadmapsProvider = context.watch<RoadmapsProvider>();
-          final levels = ['محترف', 'متوسط', 'مبتدئ'];
+          final levels = ['متقدم', 'متوسط', 'مبتدئ'];
           final filteredCourses = _filteredCourses(selectedLevel, query);
 
           return Container(
@@ -473,38 +520,42 @@ class SearchRoadmapsDelegate extends SearchDelegate {
                             isEnrolled: roadmapsProvider.isCourseEnrolled(
                               course.id,
                             ),
+                            onEnroll: () async {
+                              await context.read<HomeProvider>().enrollCourse(
+                                course.id,
+                                courseData: _toHomeCourse(course),
+                              );
+                              if (!context.mounted) return;
+                              await _loadRoadmapsWithHomeState(context);
+                              setState(() {});
+                            },
                             onDelete: () async {
                               final learningPathProvider =
                                   context.read<LearningPathProvider>();
-                              context
-                                  .read<RoadmapsProvider>()
-                                  .setCourseEnrollment(course.id, false);
+                              await context.read<HomeProvider>().deleteCourse(
+                                course.id,
+                              );
+                              if (!context.mounted) return;
+                              await _loadRoadmapsWithHomeState(context);
+                              if (!context.mounted) return;
                               await learningPathProvider.resetProgress(
                                 roadmapId: course.id,
                               );
                               setState(() {});
                             },
                             onRefresh: () async {
+                              await context.read<HomeProvider>().resetCourse(
+                                course.id,
+                              );
+                              if (!context.mounted) return;
+                              await _loadRoadmapsWithHomeState(context);
+                              if (!context.mounted) return;
                               await context
                                   .read<LearningPathProvider>()
                                   .resetProgress(roadmapId: course.id);
                             },
-                            onEnrollmentChanged: (enrolled) {
-                              context.read<RoadmapsProvider>().setCourseEnrollment(
-                                course.id,
-                                enrolled,
-                              );
-                              setState(() {});
-                            },
                             onTap: () async {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => LearningPathScreen(
-                                    roadmapId: course.id,
-                                    roadmapTitle: course.title,
-                                  ),
-                                ),
-                              );
+                              await _openRoadmap(context, course);
                             },
                           );
                         }).toList(),

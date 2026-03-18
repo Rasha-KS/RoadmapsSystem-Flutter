@@ -22,6 +22,7 @@ class ApiConstants {
   static const String notificationsUnreadCount = "/notifications/unread-count";
 
   // Roadmaps
+  static const String roadmaps = "/roadmaps";
   static String roadmapDetails(int roadmapId) => "/roadmaps/$roadmapId";
   static String enrollRoadmap(int roadmapId) => "/roadmaps/$roadmapId/enroll";
   static String unenrollRoadmap(int roadmapId) =>"/roadmaps/$roadmapId/unenroll";

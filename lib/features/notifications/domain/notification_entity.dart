@@ -1,5 +1,5 @@
 class NotificationEntity {
-  final int id;
+  final String id;
   final String title;
   final String message;
   final DateTime scheduledAt;

@@ -158,14 +158,12 @@ class _LessonCard2State extends State<LessonCard2>
         trimLength:70 ,
         course: widget.course,
         widthMultiplier: 0.80,
-        onDelete: widget.onDelete ??
-            () async {
-              await _showDeleteConfirmDialog();
-            },
-        onRefresh: widget.onRefresh ??
-            () async {
-              await _showResetConfirmDialog();
-            },
+        onDelete: () async {
+          await _showDeleteConfirmDialog();
+        },
+        onRefresh: () async {
+          await _showResetConfirmDialog();
+        },
         onTap: widget.onTap ?? () async {},
       );
     }

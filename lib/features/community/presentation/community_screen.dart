@@ -61,9 +61,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   )
                 : RefreshIndicator(
                     onRefresh: () async {
-                      final messenger = ScaffoldMessenger.of(context);
                       await context.read<CommunityProvider>().loadRooms();
                       if (provider.roomsError != null) {
+                        if (!context.mounted) return;
+                        final messenger = ScaffoldMessenger.of(context);
                         _showRefreshFailedSnackBar(messenger);
                       }
                     },

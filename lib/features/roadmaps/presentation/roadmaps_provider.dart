@@ -32,7 +32,7 @@ class RoadmapsProvider extends ChangeNotifier {
       if (course.id == courseId) {
         final updatedCourse = course.copyWith(
           isEnrolled: enrolled,
-          status: enrolled ? (course.status ?? 'مشترك') : null,
+          status: enrolled ? 'active' : null,
           clearStatus: !enrolled,
         );
         matchedCourse = updatedCourse;
@@ -47,6 +47,13 @@ class RoadmapsProvider extends ChangeNotifier {
         final alreadyExists = myCourses.any((item) => item.id == course.id);
         if (!alreadyExists) {
           myCourses = [...myCourses, course];
+        } else {
+          myCourses = myCourses.map((item) {
+            if (item.id != course.id) {
+              return item;
+            }
+            return course;
+          }).toList();
         }
       }
     } else {
@@ -73,7 +80,7 @@ class RoadmapsProvider extends ChangeNotifier {
         final isEnrolled = persistedEnrollmentIds.contains(course.id);
         return course.copyWith(
           isEnrolled: isEnrolled,
-          status: isEnrolled ? (course.status ?? 'مشترك') : null,
+          status: isEnrolled ? (course.status ?? 'active') : null,
           clearStatus: !isEnrolled,
         );
       }).toList();

@@ -1,6 +1,7 @@
 import 'package:roadmaps/core/api/api_client.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/constants/api_constants.dart';
+import 'package:roadmaps/core/utils/roadmap_display.dart';
 
 import '../domain/home_entity.dart';
 import 'home_model.dart';
@@ -11,7 +12,6 @@ class HomeRepository {
   final ApiClient _apiClient;
 
   Future<List<HomeCourseEntity>> getRecommendedCourses() async {
-    // Fetch suggested roadmaps for the Home "recommended" section.
     final response = await _apiClient.get(
       ApiConstants.url(ApiConstants.suggestedRoadmaps),
     );
@@ -26,9 +26,8 @@ class HomeRepository {
   }
 
   Future<List<HomeCourseEntity>> getMyCourses() async {
-    // Fetch the latest 3 enrollments for the Home "my courses" section.
     final response = await _apiClient.get(
-      '${ApiConstants.url(ApiConstants.enrollments)}?per_page=3',
+      '${ApiConstants.url(ApiConstants.enrollments)}?per_page=2',
     );
     _ensureSuccess(response);
 
@@ -41,7 +40,6 @@ class HomeRepository {
   }
 
   Future<void> deleteMyCourse(int courseId) async {
-    // Unenroll the user from a roadmap.
     final response = await _apiClient.delete(
       ApiConstants.url(ApiConstants.unenrollRoadmap(courseId)),
     );
@@ -55,7 +53,6 @@ class HomeRepository {
   }
 
   Future<void> resetMyCourse(int courseId) async {
-    // Reset uses the same enroll endpoint as requested.
     final response = await _apiClient.post(
       ApiConstants.url(ApiConstants.enrollRoadmap(courseId)),
     );
@@ -69,7 +66,6 @@ class HomeRepository {
   }
 
   Future<void> enrollCourse(int courseId) async {
-    // Enroll the user in a roadmap.
     final response = await _apiClient.post(
       ApiConstants.url(ApiConstants.enrollRoadmap(courseId)),
     );
@@ -85,7 +81,6 @@ class HomeRepository {
   }
 
   Future<HomeCourseEntity> getRoadmapDetails(int roadmapId) async {
-    // Fetch roadmap details when opening from the card.
     final response = await _apiClient.get(
       ApiConstants.url(ApiConstants.roadmapDetails(roadmapId)),
     );
@@ -102,12 +97,9 @@ class HomeRepository {
     return HomeCourseModel(
       id: _asInt(data['id']),
       title: _asString(data['title']),
-      level: _asString(
-        data['level_arabic'] ?? data['level'],
-        fallback: 'غير محدد',
-      ),
+      level: RoadmapDisplay.level(data['level_arabic'] ?? data['level']),
       description: _asString(data['description'], fallback: ''),
-      status: _asOptionalString(data['status']),
+      status: RoadmapDisplay.status(data['status']),
     );
   }
 
@@ -117,9 +109,7 @@ class HomeRepository {
   }) {
     if (response.containsKey('success') && response['success'] != true) {
       final message = _normalizeMessage(response['message']);
-      throw ApiException(
-        message ?? fallbackMessage,
-      );
+      throw ApiException(message ?? fallbackMessage);
     }
   }
 
@@ -200,38 +190,34 @@ class HomeRepository {
     return HomeCourseModel(
       id: _asInt(payload['id']),
       title: _asString(payload['title'] ?? payload['name']),
-      level: _asString(
+      level: RoadmapDisplay.level(
         payload['level'] ?? payload['level_name'] ?? payload['difficulty'],
-        fallback: 'غير محدد',
       ),
       description: _asString(
         payload['description'] ?? payload['summary'],
         fallback: '',
       ),
-      status: _asOptionalString(payload['status'] ?? json['status']),
+      status: RoadmapDisplay.status(payload['status'] ?? json['status']),
     );
   }
 
   HomeCourseEntity _mapEnrollment(Map<String, dynamic> json) {
     final payload = _extractRoadmapPayload(json);
-    final status = _asOptionalString(
-      json['status'] ?? json['enrollment_status'] ?? json['state'],
-    );
+    final status = json['status'] ?? json['enrollment_status'] ?? json['state'];
 
     return HomeCourseModel(
       id: _asInt(payload['id'] ?? json['roadmap_id']),
       title: _asString(
         payload['title'] ?? payload['name'] ?? json['roadmap_title'],
       ),
-      level: _asString(
+      level: RoadmapDisplay.level(
         payload['level'] ?? payload['level_name'] ?? payload['difficulty'],
-        fallback: 'غير محدد',
       ),
       description: _asString(
         payload['description'] ?? payload['summary'],
         fallback: '',
       ),
-      status: status ?? 'غير محدد',
+      status: RoadmapDisplay.status(status ?? payload['status']),
     );
   }
 
@@ -254,11 +240,5 @@ class HomeRepository {
     final text = value?.toString().trim();
     if (text != null && text.isNotEmpty) return text;
     return fallback;
-  }
-
-  String? _asOptionalString(dynamic value) {
-    final text = value?.toString().trim();
-    if (text == null || text.isEmpty) return null;
-    return text;
   }
 }

@@ -45,7 +45,20 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>FlutterDeepLinkingEnabled</key>
+	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Allow access to photo library to choose a profile image.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>roadmaps</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>roadmaps</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 import 'api_exceptions.dart';
 
@@ -14,12 +15,13 @@ class ApiClient {
   Future<Map<String, dynamic>> get(
     String url, {
     Map<String, String>? headers,
+    Duration timeout = const Duration(seconds: 20),
   }) async {
     try {
       final response = await _client
           .get(Uri.parse(url), headers: _mergeHeaders(headers))
-          .timeout(const Duration(seconds: 20));
-      return _handleResponse(response);
+          .timeout(timeout);
+      return _handleResponse(url, response);
     } on TimeoutException {
       throw NetworkException('انتهت مهلة الاتصال. حاول مرة أخرى.');
     } on SocketException {
@@ -33,6 +35,7 @@ class ApiClient {
     String url, {
     Map<String, dynamic>? body,
     Map<String, String>? headers,
+    Duration timeout = const Duration(seconds: 20),
   }) async {
     try {
       final response = await _client
@@ -41,8 +44,8 @@ class ApiClient {
             headers: _mergeHeaders(headers),
             body: jsonEncode(body ?? const <String, dynamic>{}),
           )
-          .timeout(const Duration(seconds: 20));
-      return _handleResponse(response);
+          .timeout(timeout);
+      return _handleResponse(url, response);
     } on TimeoutException {
       throw NetworkException('انتهت مهلة الاتصال. حاول مرة أخرى.');
     } on SocketException {
@@ -56,6 +59,7 @@ class ApiClient {
     String url, {
     Map<String, dynamic>? body,
     Map<String, String>? headers,
+    Duration timeout = const Duration(seconds: 20),
   }) async {
     try {
       final response = await _client
@@ -64,8 +68,8 @@ class ApiClient {
             headers: _mergeHeaders(headers),
             body: body == null ? null : jsonEncode(body),
           )
-          .timeout(const Duration(seconds: 20));
-      return _handleResponse(response);
+          .timeout(timeout);
+      return _handleResponse(url, response);
     } on TimeoutException {
       throw NetworkException('انتهت مهلة الاتصال. حاول مرة أخرى.');
     } on SocketException {
@@ -83,7 +87,7 @@ class ApiClient {
     };
   }
 
-  Map<String, dynamic> _handleResponse(http.Response response) {
+  Map<String, dynamic> _handleResponse(String url, http.Response response) {
     final statusCode = response.statusCode;
     final dynamic payload = _decodeBody(response.body);
 
@@ -94,6 +98,9 @@ class ApiClient {
       throw ParsingException();
     }
 
+    debugPrint(
+      'API error: $url | statusCode=$statusCode | body=${response.body}',
+    );
     final message = _extractMessage(payload) ?? _defaultMessage(statusCode);
     if (statusCode == 401) {
       throw UnauthorizedException(message);
@@ -115,6 +122,26 @@ class ApiClient {
       final message = payload['message'];
       if (message is String && message.trim().isNotEmpty) {
         return message.trim();
+      }
+
+      final validationErrors = payload['errors'];
+      if (validationErrors is Map<String, dynamic>) {
+        final messages = <String>[];
+        for (final entry in validationErrors.entries) {
+          final value = entry.value;
+          if (value is Iterable) {
+            for (final item in value) {
+              if (item is String && item.trim().isNotEmpty) {
+                messages.add(item.trim());
+              }
+            }
+          } else if (value is String && value.trim().isNotEmpty) {
+            messages.add(value.trim());
+          }
+        }
+        if (messages.isNotEmpty) {
+          return messages.join('\n');
+        }
       }
     }
     return null;

@@ -1,8 +1,17 @@
-﻿import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:roadmaps/core/constants/ui_texts.dart';
+import 'package:roadmaps/core/widgets/action_snackbar.dart';
+import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
+import 'package:roadmaps/core/widgets/lesson_card_1.dart';
 import 'package:roadmaps/core/widgets/lesson_card_2.dart';
+import 'package:roadmaps/core/navigation/app_route_observer.dart';
+import 'package:roadmaps/core/utils/enrollment_sync.dart';
+import 'package:roadmaps/core/utils/page_refresh.dart';
 import 'package:roadmaps/features/homepage/domain/home_entity.dart';
 import 'package:roadmaps/features/homepage/presentation/home_provider.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
@@ -10,6 +19,7 @@ import 'package:roadmaps/features/learning_path/presentation/learning_path_scree
 import 'package:roadmaps/features/main_screen.dart';
 import 'package:roadmaps/features/notifications/presentation/notifications_provider.dart';
 import 'package:roadmaps/features/notifications/presentation/notifications_screen.dart';
+import 'package:roadmaps/features/profile/presentation/profile_provider.dart';
 
 import '../domain/roadmap_entity.dart';
 import 'roadmaps_provider.dart';
@@ -48,17 +58,164 @@ Future<void> _openRoadmap(
   );
 }
 
-Future<void> _loadRoadmapsWithHomeState(BuildContext context) async {
+Widget _buildRoadmapTile(
+  BuildContext context,
+  RoadmapEntity course, {
+  required bool enrolled,
+}) {
   final homeProvider = context.read<HomeProvider>();
-  await homeProvider.loadHome();
-  if (!context.mounted) return;
+  final roadmapsProvider = context.read<RoadmapsProvider>();
+  final profileProvider = context.read<ProfileProvider>();
+  final learningPathProvider = context.read<LearningPathProvider>();
 
-  final enrolledCourseIds = homeProvider.myCourses
-      .map((course) => course.id)
-      .toSet();
+  if (enrolled) {
+    return LessonCard1(
+      course: course,
+      widthMultiplier: 0.92,
+      trimLength: 70,
+      onDelete: () => showConfirmActionDialog(
+        context: context,
+        title: AppTexts.deleteConfirmTitle,
+        message: AppTexts.deleteConfirmMessage,
+        onConfirm: () async {
+          try {
+            await homeProvider.deleteCourse(
+              course.id,
+              courseData: _toHomeCourse(course),
+              updateState: false,
+            );
+            await learningPathProvider.resetProgress(
+              roadmapId: course.id,
+              updateState: false,
+            );
+            homeProvider.removeCourseById(
+              course.id,
+              courseData: _toHomeCourse(course),
+            );
+            roadmapsProvider.setCourseEnrollment(course.id, false);
+            if (!context.mounted) return;
+            showActionSnackBar(
+              ScaffoldMessenger.of(context),
+              message: AppTexts.deleteSuccess,
+              isSuccess: true,
+            );
 
-  await context.read<RoadmapsProvider>().loadRoadmaps(
-    enrolledCourseIds: enrolledCourseIds,
+            unawaited(
+              retryUntilSuccess(
+                () => EnrollmentSync.refreshAll(
+                  homeProvider: homeProvider,
+                  roadmapsProvider: roadmapsProvider,
+                  profileProvider: profileProvider,
+                ),
+                label: 'RoadmapsScreen delete sync',
+              ),
+            );
+          } catch (e) {
+            if (!context.mounted) return;
+            showActionSnackBar(
+              ScaffoldMessenger.of(context),
+              message: e is Exception
+                  ? AppTexts.deleteFailure
+                  : AppTexts.deleteFailure,
+              isSuccess: false,
+            );
+          }
+        },
+      ),
+      onRefresh: () => showConfirmActionDialog(
+        context: context,
+        title: AppTexts.resetConfirmTitle,
+        message: AppTexts.resetConfirmMessage,
+        onConfirm: () async {
+          try {
+            await homeProvider.resetCourse(
+              course.id,
+              updateState: false,
+            );
+            await learningPathProvider.resetProgress(
+              roadmapId: course.id,
+              updateState: false,
+            );
+            homeProvider.resetCourseById(course.id);
+            if (!context.mounted) return;
+            showActionSnackBar(
+              ScaffoldMessenger.of(context),
+              message: AppTexts.resetSuccess,
+              isSuccess: true,
+            );
+
+            unawaited(
+              retryUntilSuccess(
+                () => EnrollmentSync.refreshAll(
+                  homeProvider: homeProvider,
+                  roadmapsProvider: roadmapsProvider,
+                  profileProvider: profileProvider,
+                ),
+                label: 'RoadmapsScreen reset sync',
+              ),
+            );
+          } catch (e) {
+            if (!context.mounted) return;
+            showActionSnackBar(
+              ScaffoldMessenger.of(context),
+              message: e is Exception
+                  ? AppTexts.resetFailure
+                  : AppTexts.resetFailure,
+              isSuccess: false,
+            );
+          }
+        },
+      ),
+      onTap: () async {
+        await _openRoadmap(context, course);
+      },
+    );
+  }
+
+  return LessonCard2(
+    course: course,
+    widthMultiplier: 0.92,
+    trimLength: 70,
+    isEnrolled: false,
+    onEnroll: () async {
+      try {
+        await homeProvider.enrollCourse(
+          course.id,
+          courseData: _toHomeCourse(course),
+          updateState: true,
+        );
+        roadmapsProvider.setCourseEnrollment(course.id, true);
+        if (!context.mounted) return;
+        showActionSnackBar(
+          ScaffoldMessenger.of(context),
+          message: AppTexts.enrollSuccess,
+          isSuccess: true,
+        );
+
+        unawaited(
+          retryUntilSuccess(
+            () => EnrollmentSync.refreshAll(
+              homeProvider: homeProvider,
+              roadmapsProvider: roadmapsProvider,
+              profileProvider: profileProvider,
+            ),
+            label: 'RoadmapsScreen enroll sync',
+          ),
+        );
+      } catch (e) {
+        if (!context.mounted) return;
+        showActionSnackBar(
+          ScaffoldMessenger.of(context),
+          message: e is Exception
+              ? AppTexts.enrollFailure
+              : AppTexts.enrollFailure,
+          isSuccess: false,
+        );
+      }
+    },
+    onTap: () async {
+      await _openRoadmap(context, course);
+    },
   );
 }
 
@@ -69,28 +226,67 @@ class RoadmapsScreen extends StatefulWidget {
   State<RoadmapsScreen> createState() => _RoadmapsScreenState();
 }
 
-class _RoadmapsScreenState extends State<RoadmapsScreen> {
+class _RoadmapsScreenState extends State<RoadmapsScreen> with RouteAware {
+  PageRoute<dynamic>? _route;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute<dynamic> && route != _route) {
+      _route = route;
+      appRouteObserver.subscribe(this, route);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _loadRoadmapsWithHomeState(context);
+      refreshRoadmapsPageData(context);
       context.read<NotificationsProvider>().loadUnreadCount();
     });
   }
 
   @override
+  void didPopNext() {
+    _refreshRoadmaps();
+  }
+
+  Future<void> _refreshRoadmaps() async {
+    if (!mounted) return;
+    final notificationsProvider = context.read<NotificationsProvider>();
+    await refreshRoadmapsPageData(context);
+    await notificationsProvider.loadUnreadCount();
+  }
+
+  @override
+  void dispose() {
+    if (_route != null) {
+      appRouteObserver.unsubscribe(this);
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final roadmapsProvider = context.watch<RoadmapsProvider>();
+    final homeProvider = context.watch<HomeProvider>();
+    final profileProvider = context.watch<ProfileProvider>();
     final roadmaps = roadmapsProvider.roadmaps;
     final hasInitialLoading =
         roadmapsProvider.state == PageState.loading && roadmaps.isEmpty;
     final hasInitialError =
-        roadmapsProvider.state == PageState.connectionError &&
-        roadmaps.isEmpty;
-final screenWidth = MediaQuery.of(context).size.width;
-  final double rightPadding = screenWidth * 0.03;
+        (roadmapsProvider.state == PageState.connectionError &&
+                roadmaps.isEmpty) ||
+            (!homeProvider.hasLoadedHomeData && homeProvider.lastLoadFailed) ||
+            (!profileProvider.hasLoadedProfileData &&
+                profileProvider.lastLoadFailed);
+    final isRefreshing =
+        roadmapsProvider.state == PageState.loading && roadmaps.isNotEmpty;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final double rightPadding = screenWidth * 0.03;
     return Scaffold(
       key: scaffoldkey,
       backgroundColor: AppColors.background,
@@ -168,7 +364,7 @@ final screenWidth = MediaQuery.of(context).size.width;
                     margin: const EdgeInsets.all(15),
                     child: Text(
                       textAlign: TextAlign.right,
-                      'هيا لنبدأ رحلتنا في  مسارٍ جديد',
+                      AppTexts.roadmapsBanner,
                       style: AppTextStyles.heading4.copyWith(
                         color: AppColors.text_1,
                       ),
@@ -196,7 +392,7 @@ final screenWidth = MediaQuery.of(context).size.width;
                             Icons.search_outlined,
                             color: AppColors.text_1,
                           ),
-                          hintText: 'البحث',
+                          hintText: AppTexts.search,
                           hintStyle: AppTextStyles.body.copyWith(
                             color: AppColors.text_1,
                           ),
@@ -229,66 +425,51 @@ final screenWidth = MediaQuery.of(context).size.width;
                           : hasInitialError
                           ? _ErrorState(
                               onRetry: () async {
-                                await _loadRoadmapsWithHomeState(context);
+                                await refreshRoadmapsPageData(context);
                               },
                             )
                           : RefreshIndicator(
                               color: AppColors.primary2,
                               onRefresh: () async {
                                 final messenger = ScaffoldMessenger.of(context);
-                                await _loadRoadmapsWithHomeState(context);
-                                if (roadmapsProvider.state == PageState.connectionError) {
-                                  _showRefreshFailedSnackBar(messenger);
+                                await refreshRoadmapsPageData(context);
+                                if (roadmapsProvider.state == PageState.connectionError ||
+                                    homeProvider.lastLoadFailed ||
+                                    profileProvider.lastLoadFailed) {
+                                  _showRefreshFailedSnackBar(
+                                    messenger,
+                                    message: AppTexts.roadmapsRefreshError,
+                                  );
                                 }
                               },
-                              child: ListView(
-                                physics: const AlwaysScrollableScrollPhysics(),
+                              child: Stack(
                                 children: [
-                                  ...roadmaps.map(
-                                    (course) => LessonCard2(
-                                      course: course,
-                                      widthMultiplier: 0.92,
-                                      trimLength: 70,
-                                      isEnrolled: roadmapsProvider.isCourseEnrolled(course.id),
-                                      onEnroll: () async {
-                                        await context.read<HomeProvider>().enrollCourse(
-                                          course.id,
-                                          courseData: _toHomeCourse(course),
-                                        );
-                                        if (!context.mounted) return;
-                                        await _loadRoadmapsWithHomeState(context);
-                                      },
-                                      onDelete: () async {
-                                        final learningPathProvider =
-                                            context.read<LearningPathProvider>();
-                                        await context.read<HomeProvider>().deleteCourse(
-                                          course.id,
-                                        );
-                                        if (!context.mounted) return;
-                                        await _loadRoadmapsWithHomeState(context);
-                                        if (!context.mounted) return;
-                                        await learningPathProvider.resetProgress(
-                                          roadmapId: course.id,
-                                        );
-                                      },
-                                      onRefresh: () async {
-                                        await context.read<HomeProvider>().resetCourse(
-                                          course.id,
-                                        );
-                                        if (!context.mounted) return;
-                                        await _loadRoadmapsWithHomeState(context);
-                                        if (!context.mounted) return;
-                                        await context
-                                            .read<LearningPathProvider>()
-                                            .resetProgress(
-                                              roadmapId: course.id,
-                                            );
-                                      },
-                                      onTap: () async {
-                                        await _openRoadmap(context, course);
-                                      },
-                                    ),
+                                  ListView(
+                                    physics: const AlwaysScrollableScrollPhysics(),
+                                    children: [
+                                      ...roadmaps.map(
+                                        (course) => _buildRoadmapTile(
+                                          context,
+                                          course,
+                                          enrolled: roadmapsProvider.isCourseEnrolled(course.id),
+                                        ),
+                                      ),
+                                    ],
                                   ),
+                                  if (isRefreshing)
+                                    Positioned.fill(
+                                      child: IgnorePointer(
+                                        child: Container(
+                                          color: AppColors.background
+                                              .withValues(alpha: 0.35),
+                                          child: const Center(
+                                            child: CircularProgressIndicator(
+                                              color: AppColors.primary2,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),
@@ -303,7 +484,10 @@ final screenWidth = MediaQuery.of(context).size.width;
     );
   }
 
-  void _showRefreshFailedSnackBar(ScaffoldMessengerState messenger) {
+  void _showRefreshFailedSnackBar(
+    ScaffoldMessengerState messenger, {
+    required String message,
+  }) {
     messenger.showSnackBar(
       SnackBar(
         shape: const RoundedRectangleBorder(
@@ -313,7 +497,7 @@ final screenWidth = MediaQuery.of(context).size.width;
           ),
         ),
         content: Text(
-          'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
+          message,
           textAlign: TextAlign.right,
           style: AppTextStyles.body.copyWith(color: AppColors.text_2),
         ),
@@ -340,7 +524,7 @@ class _ErrorState extends StatelessWidget {
             Directionality(
               textDirection: TextDirection.rtl,
               child: Text(
-                'تعذر تحميل المسارات',
+                AppTexts.roadmapsLoadError,
                 style: AppTextStyles.heading5.copyWith(color: AppColors.error),
                 textAlign: TextAlign.center,
               ),
@@ -354,7 +538,7 @@ class _ErrorState extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                'إعادة المحاولة',
+                AppTexts.retry,
                 style: AppTextStyles.boldSmallText.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
@@ -458,7 +642,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
       child: StatefulBuilder(
         builder: (context, setState) {
           final roadmapsProvider = context.watch<RoadmapsProvider>();
-          final levels = ['متقدم', 'متوسط', 'مبتدئ'];
+          final levels = ['مبتدئ', 'متوسط', 'متقدم'];
           final filteredCourses = _filteredCourses(selectedLevel, query);
 
           return Container(
@@ -481,7 +665,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
                         ),
                       ),
                       _levelButton(
-                        text: 'الكل',
+                        text: AppTexts.all,
                         active: selectedLevel.isEmpty,
                         onPressed: () => setState(() => selectedLevel = ''),
                       ),
@@ -501,7 +685,7 @@ class SearchRoadmapsDelegate extends SearchDelegate {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'لم يتم العثور على أي نتيجة',
+                                AppTexts.roadmapsNoResults,
                                 style: AppTextStyles.heading5.copyWith(
                                   color: AppColors.text_1,
                                 ),
@@ -512,53 +696,16 @@ class SearchRoadmapsDelegate extends SearchDelegate {
                         )
                       : ListView(
                           padding: const EdgeInsets.only(right: 10, left: 10),
-                          children: filteredCourses.map((course) {
-                          return LessonCard2(
-                            course: course,
-                            widthMultiplier: 0.92,
-                            trimLength: 70,
-                            isEnrolled: roadmapsProvider.isCourseEnrolled(
-                              course.id,
-                            ),
-                            onEnroll: () async {
-                              await context.read<HomeProvider>().enrollCourse(
-                                course.id,
-                                courseData: _toHomeCourse(course),
-                              );
-                              if (!context.mounted) return;
-                              await _loadRoadmapsWithHomeState(context);
-                              setState(() {});
-                            },
-                            onDelete: () async {
-                              final learningPathProvider =
-                                  context.read<LearningPathProvider>();
-                              await context.read<HomeProvider>().deleteCourse(
-                                course.id,
-                              );
-                              if (!context.mounted) return;
-                              await _loadRoadmapsWithHomeState(context);
-                              if (!context.mounted) return;
-                              await learningPathProvider.resetProgress(
-                                roadmapId: course.id,
-                              );
-                              setState(() {});
-                            },
-                            onRefresh: () async {
-                              await context.read<HomeProvider>().resetCourse(
-                                course.id,
-                              );
-                              if (!context.mounted) return;
-                              await _loadRoadmapsWithHomeState(context);
-                              if (!context.mounted) return;
-                              await context
-                                  .read<LearningPathProvider>()
-                                  .resetProgress(roadmapId: course.id);
-                            },
-                            onTap: () async {
-                              await _openRoadmap(context, course);
-                            },
-                          );
-                        }).toList(),
+                          children: filteredCourses
+                              .map(
+                                (course) => _buildRoadmapTile(
+                                  context,
+                                  course,
+                                  enrolled:
+                                      roadmapsProvider.isCourseEnrolled(course.id),
+                                ),
+                              )
+                              .toList(),
                         ),
                 ),
               ],
@@ -584,4 +731,6 @@ class SearchRoadmapsDelegate extends SearchDelegate {
     );
   }
 }
+
+
 

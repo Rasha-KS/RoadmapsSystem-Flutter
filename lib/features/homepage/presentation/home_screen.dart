@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
+import 'package:roadmaps/core/constants/ui_texts.dart';
 import 'package:roadmaps/core/navigation/auth_guard.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
@@ -8,44 +11,64 @@ import 'package:roadmaps/core/widgets/action_snackbar.dart';
 import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/lesson_card_1.dart';
 import 'package:roadmaps/core/widgets/lesson_card_2.dart';
+import 'package:roadmaps/core/utils/enrollment_sync.dart';
+import 'package:roadmaps/core/utils/page_refresh.dart';
 import 'package:roadmaps/features/auth/presentation/login_screen.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
 import 'package:roadmaps/features/roadmaps/presentation/roadmaps_screen.dart';
+import 'package:roadmaps/features/roadmaps/presentation/roadmaps_provider.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_screen.dart';
+import 'package:roadmaps/features/profile/presentation/profile_provider.dart';
 // Providers
 import '../domain/home_entity.dart';
 import 'home_provider.dart';
-import '../../announcements/presentation/announcements_provider.dart';
 import '../../announcements/presentation/announcement_widget.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      refreshHomePageData(context);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const _HomeScreenBody();
+  }
+}
+
+class _HomeScreenBody extends StatelessWidget {
+  const _HomeScreenBody();
 
   @override
   Widget build(BuildContext context) {
     final homeProvider = context.watch<HomeProvider>();
     final size = MediaQuery.of(context).size;
     final hasInitialLoading =
-        homeProvider.state == HomeState.loading &&
-        homeProvider.recommended.isEmpty &&
-        homeProvider.myCourses.isEmpty;
+        !homeProvider.hasLoadedHomeData && !homeProvider.lastLoadFailed;
     final hasInitialError =
-        homeProvider.state == HomeState.connectionError &&
-        homeProvider.recommended.isEmpty &&
-        homeProvider.myCourses.isEmpty;
+        homeProvider.lastLoadFailed && !homeProvider.hasLoadedHomeData;
 
     if (hasInitialLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary2),
       );
     }
-
     if (hasInitialError) {
       return _ErrorState(
+        message: homeProvider.errorMessage ?? AppTexts.homeLoadError,
         onRetry: () async {
-          final announcementsProvider = context.read<AnnouncementsProvider>();
-          await homeProvider.loadHome();
-          await announcementsProvider.loadAnnouncements();
+          await refreshHomePageData(context);
         },
       );
     }
@@ -53,11 +76,12 @@ class HomeScreen extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () async {
         final messenger = ScaffoldMessenger.of(context);
-        final announcementsProvider = context.read<AnnouncementsProvider>();
-        await homeProvider.loadHome();
-        await announcementsProvider.loadAnnouncements();
-        if (homeProvider.state == HomeState.connectionError) {
-          _showRefreshFailedSnackBar(messenger);
+        await refreshHomePageData(context);
+        if (homeProvider.lastLoadFailed) {
+          _showRefreshFailedSnackBar(
+            messenger,
+            message: homeProvider.errorMessage ?? AppTexts.homeRefreshError,
+          );
         }
       },
       color: AppColors.primary2,
@@ -71,7 +95,7 @@ class HomeScreen extends StatelessWidget {
             Divider(color: AppColors.secondary2, thickness: 1, height: 2),
             const SizedBox(height: 12),
             _sectionHeader(
-              'المسارات المقترحة',
+              AppTexts.homeRecommended,
               context,
 
               onButtonPressed: () => Navigator.push(
@@ -91,7 +115,7 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 12),
             homeProvider.myCourses.isEmpty
                 ? _buildEmptyState(size)
-                : _sectionHeader('مساراتي', context),
+                : _sectionHeader(AppTexts.homeMyRoadmaps, context),
             const SizedBox(height: 3),
             _buildMyCoursesList(context, homeProvider),
             const SizedBox(height: 50),
@@ -128,7 +152,7 @@ class HomeScreen extends StatelessWidget {
               ),
               color: AppColors.accent_1,
               child: Text(
-                'عرض الكل',
+                AppTexts.showAll,
                 style: AppTextStyles.boldSmallText.copyWith(
                   color: AppColors.text_4,
                 ),
@@ -168,7 +192,31 @@ class HomeScreen extends StatelessWidget {
                 await _openRoadmap(context, homeProvider, course);
               },
               onEnroll: () async {
-                await homeProvider.enrollCourse(course.id);
+                final profileProvider = context.read<ProfileProvider>();
+                final roadmapsProvider = context.read<RoadmapsProvider>();
+                await homeProvider.enrollCourse(
+                  course.id,
+                  updateState: true,
+                );
+                roadmapsProvider.setCourseEnrollment(course.id, true);
+                if (!context.mounted) return;
+                final messenger = ScaffoldMessenger.of(context);
+                showActionSnackBar(
+                  messenger,
+                  message: AppTexts.enrollSuccess,
+                  isSuccess: true,
+                );
+
+                unawaited(
+                  retryUntilSuccess(
+                    () => EnrollmentSync.refreshAll(
+                      homeProvider: homeProvider,
+                      roadmapsProvider: roadmapsProvider,
+                      profileProvider: profileProvider,
+                    ),
+                    label: 'HomeScreen enroll sync',
+                  ),
+                );
               },
              
             ),
@@ -192,31 +240,54 @@ class HomeScreen extends StatelessWidget {
               onDelete: () async {
                 await showConfirmActionDialog(
                   context: context,
-                  title: 'هل أنت متأكد من حذف المسار؟',
-                  message: 'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
+                  title: AppTexts.deleteConfirmTitle,
+                  message: AppTexts.deleteConfirmMessage,
                   onConfirm: () async {
-                    final messenger = ScaffoldMessenger.of(context);
                     try {
-
+                      final profileProvider = context.read<ProfileProvider>();
+                      final roadmapsProvider = context.read<RoadmapsProvider>();
                       final learningPathProvider = context
                           .read<LearningPathProvider>();
-                      await homeProvider.deleteCourse(course.id);
+                      await homeProvider.deleteCourse(
+                        course.id,
+                        courseData: course,
+                        updateState: false,
+                      );
                       await learningPathProvider.resetProgress(
                         roadmapId: course.id,
+                        updateState: false,
                       );
+                      homeProvider.removeCourseById(
+                        course.id,
+                        courseData: course,
+                      );
+                      roadmapsProvider.setCourseEnrollment(course.id, false);
                       if (!context.mounted) return;
+                      final messenger = ScaffoldMessenger.of(context);
                       showActionSnackBar(
                         messenger,
-                        message: 'تم حذف المسار بنجاح',
+                        message: AppTexts.deleteSuccess,
                         isSuccess: true,
+                      );
+
+                      unawaited(
+                        retryUntilSuccess(
+                          () => EnrollmentSync.refreshAll(
+                            homeProvider: homeProvider,
+                            roadmapsProvider: roadmapsProvider,
+                            profileProvider: profileProvider,
+                          ),
+                          label: 'HomeScreen delete sync',
+                        ),
                       );
                     } catch (e) {
                       if (!context.mounted) return;
+                      final messenger = ScaffoldMessenger.of(context);
                       showActionSnackBar(
                         messenger,
                         message: e is ApiException
                             ? e.message
-                            : 'فشل حذف المسار. حاول مرة أخرى',
+                            : AppTexts.deleteFailure,
                         isSuccess: false,
                       );
                     }
@@ -226,32 +297,49 @@ class HomeScreen extends StatelessWidget {
               onRefresh: () async {
                 await showConfirmActionDialog(
                   context: context,
-                  title: 'هل أنت متأكد من إعادة المسار؟',
-                  message: 'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
+                  title: AppTexts.resetConfirmTitle,
+                  message: AppTexts.resetConfirmMessage,
                   onConfirm: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    
                     try {
-
+                      final profileProvider = context.read<ProfileProvider>();
+                      final roadmapsProvider = context.read<RoadmapsProvider>();
                       final learningPathProvider = context
                           .read<LearningPathProvider>();
-                      await homeProvider.resetCourse(course.id);
+                      await homeProvider.resetCourse(
+                        course.id,
+                        updateState: false,
+                      );
                       await learningPathProvider.resetProgress(
                         roadmapId: course.id,
+                        updateState: false,
                       );
+                      homeProvider.resetCourseById(course.id);
                       if (!context.mounted) return;
+                      final messenger = ScaffoldMessenger.of(context);
                       showActionSnackBar(
                         messenger,
-                        message: 'تمت إعادة المسار بنجاح',
+                        message: AppTexts.resetSuccess,
                         isSuccess: true,
+                      );
+
+                      unawaited(
+                        retryUntilSuccess(
+                          () => EnrollmentSync.refreshAll(
+                            homeProvider: homeProvider,
+                            roadmapsProvider: roadmapsProvider,
+                            profileProvider: profileProvider,
+                          ),
+                          label: 'HomeScreen reset sync',
+                        ),
                       );
                     } catch (e) {
                       if (!context.mounted) return;
+                      final messenger = ScaffoldMessenger.of(context);
                       showActionSnackBar(
                         messenger,
                         message: e is ApiException
                             ? e.message
-                            : 'فشلت إعادة المسار. حاول مرة أخرى',
+                            : AppTexts.resetFailure,
                         isSuccess: false,
                       );
                     }
@@ -310,7 +398,7 @@ class HomeScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 32),
             child: Text(
-              'هل أنت مستعد',
+              AppTexts.emptyHomeTitle,
               textAlign: TextAlign.right,
               style: AppTextStyles.heading2_2.copyWith(color: AppColors.text_1),
             ),
@@ -342,7 +430,10 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  void _showRefreshFailedSnackBar(ScaffoldMessengerState messenger) {
+  void _showRefreshFailedSnackBar(
+    ScaffoldMessengerState messenger, {
+    required String message,
+  }) {
     messenger.showSnackBar(
       SnackBar(
         shape: const RoundedRectangleBorder(
@@ -352,7 +443,7 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         content: Text(
-          'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
+          message,
           textAlign: TextAlign.right,
           style: AppTextStyles.body.copyWith(color: AppColors.text_2),
         ),
@@ -365,9 +456,10 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _ErrorState extends StatelessWidget {
+  final String message;
   final Future<void> Function() onRetry;
 
-  const _ErrorState({required this.onRetry});
+  const _ErrorState({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -380,7 +472,7 @@ class _ErrorState extends StatelessWidget {
             Directionality(
               textDirection: TextDirection.rtl,
               child: Text(
-                'تعذر تحميل الصفحة الرئيسية',
+                message,
                 style: AppTextStyles.heading5.copyWith(color: AppColors.error),
                 textAlign: TextAlign.center,
               ),
@@ -394,7 +486,7 @@ class _ErrorState extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                'إعادة المحاولة',
+                AppTexts.retry,
                 style: AppTextStyles.boldSmallText.copyWith(
                   fontWeight: FontWeight.w800,
                 ),

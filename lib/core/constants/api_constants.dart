@@ -6,6 +6,9 @@ class ApiConstants {
   static const String register = "/auth/register";
   static const String githubLogin = "/auth/github";
   static const String githubCallback = "/auth/github/callback";
+  static const String forgotPassword = "/auth/forgot-password";
+  static const String resetPassword = "/auth/reset-password";
+  static const String resetAttempts = "/auth/reset-attempts";
   static const String logout = "/logout";
 
   // Profile
@@ -26,8 +29,7 @@ class ApiConstants {
   static const String roadmaps = "/roadmaps";
   static String roadmapDetails(int roadmapId) => "/roadmaps/$roadmapId";
   static String enrollRoadmap(int roadmapId) => "/roadmaps/$roadmapId/enroll";
-  static String unenrollRoadmap(int roadmapId) =>
-      "/roadmaps/$roadmapId/unenroll";
+  static String unenrollRoadmap(int roadmapId) => "/roadmaps/$roadmapId/unenroll";
 
   static String url(String path) => "$baseUrl$path";
 }

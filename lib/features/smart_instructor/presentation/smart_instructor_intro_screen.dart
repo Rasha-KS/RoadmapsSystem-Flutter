@@ -30,9 +30,10 @@ class SmartInstructorIntroScreen extends StatelessWidget {
             )
           : RefreshIndicator(
               onRefresh: () async {
-                final messenger = ScaffoldMessenger.of(context);
                 await context.read<SmartInstructorProvider>().loadIntro();
                 if (provider.introError != null) {
+                  if (!context.mounted) return;
+                  final messenger = ScaffoldMessenger.of(context);
                   _showRefreshFailedSnackBar(messenger);
                 }
               },
@@ -83,7 +84,7 @@ class _IntroContent extends StatelessWidget {
             children: [
               const Spacer(flex: 3),
               Text(
-                intro?.title ?? 'مرحبا بك في المساعد الذكي',
+                intro?.title ?? 'مرحبًا بك في المساعد الذكي',
                 style: AppTextStyles.heading3.copyWith(color: AppColors.text_3),
                 textAlign: TextAlign.center,
               ),

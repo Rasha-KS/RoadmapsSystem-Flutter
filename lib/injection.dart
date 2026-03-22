@@ -8,9 +8,11 @@ import 'package:roadmaps/features/announcements/data/announcements_repository.da
 import 'package:roadmaps/features/announcements/domain/get_active_announcements_usecase.dart';
 import 'package:roadmaps/features/announcements/presentation/announcements_provider.dart';
 import 'package:roadmaps/features/auth/data/auth_repository.dart';
+import 'package:roadmaps/features/auth/domain/forgot_password_usecase.dart';
 import 'package:roadmaps/features/auth/domain/github_login_usecase.dart';
 import 'package:roadmaps/features/auth/domain/login_usecase.dart';
 import 'package:roadmaps/features/auth/domain/register_usecase.dart';
+import 'package:roadmaps/features/auth/domain/reset_password_usecase.dart';
 import 'package:roadmaps/features/auth/presentation/auth_provider.dart';
 import 'package:roadmaps/features/community/data/mock_community_repository.dart';
 import 'package:roadmaps/features/community/domain/get_messages_by_room_usecase.dart';
@@ -70,13 +72,14 @@ class Injection {
   static final AuthInterceptor _authInterceptor = AuthInterceptor(
     tokenManager: _tokenManager,
   );
+  static final ApiClient _publicApiClient = ApiClient();
   static final ApiClient _apiClient = ApiClient(client: _authInterceptor);
   static final UserRepository _userRepository = ApiUserRepository(
     apiClient: _apiClient,
     tokenManager: _tokenManager,
   );
   static final AuthRepository _authRepository = AuthRepository(
-    apiClient: _apiClient,
+    apiClient: _publicApiClient,
     tokenManager: _tokenManager,
   );
   static final CurrentUserProvider _currentUserProvider = CurrentUserProvider(
@@ -96,6 +99,8 @@ class Injection {
       loginUseCase: LoginUseCase(_authRepository),
       registerUseCase: RegisterUseCase(_authRepository),
       githubLoginUseCase: GithubLoginUseCase(_authRepository),
+      forgotPasswordUseCase: ForgotPasswordUseCase(_authRepository),
+      resetPasswordUseCase: ResetPasswordUseCase(_authRepository),
       currentUserProvider: _currentUserProvider,
     );
   }
@@ -118,7 +123,10 @@ class Injection {
   }
 
   static ProfileProvider provideProfileProvider() {
-    final repository = ProfileRepository(userRepository: _userRepository);
+    final repository = ProfileRepository(
+      userRepository: _userRepository,
+      apiClient: _apiClient,
+    );
     return ProfileProvider(
       getUserRoadmapsUseCase: GetUserRoadmapsUseCase(repository),
       deleteUserRoadmapUseCase: DeleteUserRoadmapUseCase(repository),

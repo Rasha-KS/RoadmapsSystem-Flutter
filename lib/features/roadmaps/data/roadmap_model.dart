@@ -1,3 +1,5 @@
+import 'package:roadmaps/core/utils/roadmap_display.dart';
+
 import '../domain/roadmap_entity.dart';
 
 class RoadmapModel extends RoadmapEntity {
@@ -13,16 +15,20 @@ class RoadmapModel extends RoadmapEntity {
 
   factory RoadmapModel.fromJson(Map<String, dynamic> json) {
     final isEnrolled = _asBool(json['is_enrolled']);
+    final level = RoadmapDisplay.level(
+      json['level_arabic'] ?? json['level'] ?? json['difficulty'],
+    );
+    final rawStatus = json['status'];
+    final status = rawStatus == null || rawStatus.toString().trim().isEmpty
+        ? (isEnrolled ? 'مشترك' : null)
+        : RoadmapDisplay.status(rawStatus);
 
     return RoadmapModel(
       id: _asInt(json['id']),
       title: _asString(json['title']),
-      level: _asString(
-        json['level_arabic'] ?? json['level'],
-        fallback: 'غير محدد',
-      ),
+      level: level,
       description: _asString(json['description']),
-      status: _asOptionalString(json['status']) ?? (isEnrolled ? 'مشترك' : null),
+      status: status,
       isActive: _asBool(json['is_active'], fallback: true),
       isEnrolled: isEnrolled,
     );
@@ -53,14 +59,6 @@ class RoadmapModel extends RoadmapEntity {
       return text;
     }
     return fallback;
-  }
-
-  static String? _asOptionalString(dynamic value) {
-    final text = value?.toString().trim();
-    if (text == null || text.isEmpty) {
-      return null;
-    }
-    return text;
   }
 
   static bool _asBool(dynamic value, {bool fallback = false}) {

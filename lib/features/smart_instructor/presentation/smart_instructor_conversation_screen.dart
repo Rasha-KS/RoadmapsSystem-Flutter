@@ -97,11 +97,12 @@ class _SmartInstructorConversationScreenState
                     )
                   : RefreshIndicator(
                       onRefresh: () async {
-                        final messenger = ScaffoldMessenger.of(context);
                         await context
                             .read<SmartInstructorProvider>()
                             .loadMessages();
                         if (provider.messagesError != null) {
+                          if (!context.mounted) return;
+                          final messenger = ScaffoldMessenger.of(context);
                           _showRefreshFailedSnackBar(messenger);
                         }
                       },
@@ -355,7 +356,7 @@ class _RefreshableEmptyState extends StatelessWidget {
           height: MediaQuery.of(context).size.height * 0.55,
           child: Center(
             child: Text(
-              'لا يوجد رسائل بعد',
+              'لا توجد رسائل بعد',
               style: AppTextStyles.boldHeading5.copyWith(
                 color: AppColors.text_3,
               ),

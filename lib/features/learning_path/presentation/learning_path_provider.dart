@@ -211,7 +211,10 @@ class LearningPathProvider extends ChangeNotifier {
     await loadPath(_currentRoadmapId, showLoader: false);
   }
 
-  Future<void> resetProgress({int? roadmapId}) async {
+  Future<void> resetProgress({
+    int? roadmapId,
+    bool updateState = true,
+  }) async {
     final id = roadmapId ?? _currentRoadmapId;
     if (id <= 0) {
       notifyListeners();
@@ -223,6 +226,10 @@ class LearningPathProvider extends ChangeNotifier {
     _unitXpByRoadmap[id] = <int, int>{};
     _checkpointAttemptsByRoadmap[id] = <int, int>{};
     _confirmedCheckpointRetakesByRoadmap[id] = <int>{};
+
+    if (!updateState) {
+      return;
+    }
 
     if (_currentRoadmapId == id) {
       await loadPath(id, showLoader: false);

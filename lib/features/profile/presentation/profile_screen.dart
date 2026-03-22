@@ -1,24 +1,58 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:roadmaps/core/constants/ui_texts.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/widgets/action_snackbar.dart';
 import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/lesson_card_1.dart';
+import 'package:roadmaps/core/utils/enrollment_sync.dart';
+import 'package:roadmaps/core/utils/page_refresh.dart';
+import 'package:roadmaps/features/homepage/domain/home_entity.dart';
+import 'package:roadmaps/features/homepage/presentation/home_provider.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_screen.dart';
+import 'package:roadmaps/features/roadmaps/presentation/roadmaps_provider.dart';
 import '../domain/user_roadmap_entity.dart';
 import 'profile_provider.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      refreshProfilePageData(context);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const _ProfileScreenBody();
+  }
+}
+
+class _ProfileScreenBody extends StatelessWidget {
+  const _ProfileScreenBody();
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ProfileProvider>();
-    final hasInitialError = provider.error != null && provider.user == null;
+    final hasInitialLoading =
+        !provider.hasLoadedProfileData && !provider.lastLoadFailed;
+    final hasInitialError =
+        provider.lastLoadFailed && !provider.hasLoadedProfileData;
 
-    if (provider.loading && provider.user == null) {
+    if (hasInitialLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary2),
       );
@@ -27,7 +61,7 @@ class ProfileScreen extends StatelessWidget {
     if (hasInitialError) {
       return _ErrorState(
         onRetry: () {
-          provider.loadProfileData();
+          refreshProfilePageData(context);
         },
       );
     }
@@ -35,9 +69,12 @@ class ProfileScreen extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () async {
         final messenger = ScaffoldMessenger.of(context);
-        await provider.loadProfileData();
-        if (provider.error != null) {
-          _showRefreshFailedSnackBar(messenger);
+        await refreshProfilePageData(context);
+        if (provider.lastLoadFailed) {
+          _showRefreshFailedSnackBar(
+            messenger,
+            message: provider.error ?? AppTexts.profileRefreshError,
+          );
         }
       },
       color: AppColors.primary2,
@@ -97,7 +134,10 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showRefreshFailedSnackBar(ScaffoldMessengerState messenger) {
+  void _showRefreshFailedSnackBar(
+    ScaffoldMessengerState messenger, {
+    required String message,
+  }) {
     messenger.showSnackBar(
       SnackBar(
         shape: const RoundedRectangleBorder(
@@ -107,7 +147,7 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
         content: Text(
-          'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
+          message,
           textAlign: TextAlign.right,
           style: AppTextStyles.body.copyWith(color: AppColors.text_2),
         ),
@@ -134,7 +174,7 @@ class _ErrorState extends StatelessWidget {
             Directionality(
               textDirection: TextDirection.rtl,
               child: Text(
-                'تعذر تحميل بيانات الملف الشخصي',
+                AppTexts.profileLoadError,
                 style: AppTextStyles.heading5.copyWith(color: AppColors.error),
                 textAlign: TextAlign.center,
               ),
@@ -148,7 +188,7 @@ class _ErrorState extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                'إعادة المحاولة',
+                AppTexts.retry,
                 style: AppTextStyles.boldSmallText.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
@@ -170,37 +210,59 @@ class _RoadmapSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        LessonCard1(
+          LessonCard1(
           course: roadmap,
           widthMultiplier: 0.92,
           trimLength: 90,
           onDelete: () => showConfirmActionDialog(
             context: context,
-            title: 'هل أنت متأكد من حذف المسار؟',
-            message: 'سوف يؤدي ذلك إلى إلغاء اشتراكك في المسار',
-            onConfirm: () async {
-              final messenger = ScaffoldMessenger.of(context);
+            title: AppTexts.deleteConfirmTitle,
+            message: AppTexts.deleteConfirmMessage,
+              onConfirm: () async {
               try {
-                
-                final learningPathProvider =
-                    context.read<LearningPathProvider>();
-                await context.read<ProfileProvider>().deleteRoadmap(
+                final homeProvider = context.read<HomeProvider>();
+                final roadmapsProvider = context.read<RoadmapsProvider>();
+                final profileProvider = context.read<ProfileProvider>();
+                await profileProvider.deleteRoadmap(
                   roadmap.enrollmentId,
+                  updateState: false,
                 );
-                await learningPathProvider.resetProgress(
-                  roadmapId: roadmap.roadmapId,
+                profileProvider.removeRoadmapByRoadmapId(roadmap.roadmapId);
+                homeProvider.removeCourseById(
+                  roadmap.roadmapId,
+                  courseData: HomeCourseEntity(
+                    id: roadmap.roadmapId,
+                    title: roadmap.title,
+                    level: roadmap.level,
+                    description: roadmap.description,
+                    status: roadmap.status,
+                  ),
                 );
+                roadmapsProvider.setCourseEnrollment(roadmap.roadmapId, false);
                 if (!context.mounted) return;
+                final messenger = ScaffoldMessenger.of(context);
                 showActionSnackBar(
                   messenger,
-                  message: 'تم حذف المسار بنجاح',
+                  message: AppTexts.deleteSuccess,
                   isSuccess: true,
+                );
+
+                unawaited(
+                  retryUntilSuccess(
+                    () => EnrollmentSync.refreshAll(
+                      homeProvider: homeProvider,
+                      roadmapsProvider: roadmapsProvider,
+                      profileProvider: profileProvider,
+                    ),
+                    label: 'ProfileScreen delete sync',
+                  ),
                 );
               } catch (_) {
                 if (!context.mounted) return;
+                final messenger = ScaffoldMessenger.of(context);
                 showActionSnackBar(
                   messenger,
-                  message: 'فشل حذف المسار. حاول مرة أخرى',
+                  message: AppTexts.deleteFailure,
                   isSuccess: false,
                 );
               }
@@ -208,30 +270,51 @@ class _RoadmapSection extends StatelessWidget {
           ),
           onRefresh: () => showConfirmActionDialog(
             context: context,
-            title: 'هل أنت متأكد من إعادة المسار؟',
-            message: 'سوف يؤدي ذلك إلى إعادتك لنقطة البداية في المسار',
+            title: AppTexts.resetConfirmTitle,
+            message: AppTexts.resetConfirmMessage,
             onConfirm: () async {
-              final messenger = ScaffoldMessenger.of(context);
               try {
+                final homeProvider = context.read<HomeProvider>();
+                final roadmapsProvider = context.read<RoadmapsProvider>();
+                final profileProvider = context.read<ProfileProvider>();
                 final learningPathProvider =
                     context.read<LearningPathProvider>();
-                await context.read<ProfileProvider>().resetRoadmap(
+                await profileProvider.resetRoadmap(
                   roadmap.enrollmentId,
+                  updateState: false,
                 );
-                await learningPathProvider.resetProgress(
-                  roadmapId: roadmap.roadmapId,
-                );
+                profileProvider.resetRoadmapByRoadmapId(roadmap.roadmapId);
+                homeProvider.resetCourseById(roadmap.roadmapId);
                 if (!context.mounted) return;
+                final messenger = ScaffoldMessenger.of(context);
                 showActionSnackBar(
                   messenger,
-                  message: 'تمت إعادة المسار بنجاح',
+                  message: AppTexts.resetSuccess,
                   isSuccess: true,
+                );
+
+                unawaited(
+                  retryUntilSuccess(
+                    () async {
+                      await learningPathProvider.resetProgress(
+                        roadmapId: roadmap.roadmapId,
+                        updateState: true,
+                      );
+                      await EnrollmentSync.refreshAll(
+                        homeProvider: homeProvider,
+                        roadmapsProvider: roadmapsProvider,
+                        profileProvider: profileProvider,
+                      );
+                    },
+                    label: 'ProfileScreen reset sync',
+                  ),
                 );
               } catch (_) {
                 if (!context.mounted) return;
+                final messenger = ScaffoldMessenger.of(context);
                 showActionSnackBar(
                   messenger,
-                  message: 'فشلت إعادة المسار. حاول مرة أخرى',
+                  message: AppTexts.resetFailure,
                   isSuccess: false,
                 );
               }
@@ -258,7 +341,7 @@ class _RoadmapSection extends StatelessWidget {
               Expanded(
                 child: _StatContainer(
                   backgroundColor: AppColors.accent_1,
-                  text: 'نقاط الخبرة   ${roadmap.xpPoints}',
+                  text: 'نقاط الخبرة   ',
                   icon: Icons.local_fire_department_outlined,
                 ),
               ),
@@ -269,7 +352,7 @@ class _RoadmapSection extends StatelessWidget {
                 child: _StatContainer(
                   backgroundColor: AppColors.accent_3,
                   icon: Icons.av_timer_rounded,
-                  text: '%نسبة التقدم  ${roadmap.progressPercentage}',
+                  text: '%نسبة التقدم  ',
                 ),
               ),
             ],

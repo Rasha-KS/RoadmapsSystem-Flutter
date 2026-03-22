@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/navigation/auth_guard.dart';
+import 'package:roadmaps/core/navigation/app_route_observer.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/widgets/app_appbar.dart';
 import 'package:roadmaps/core/widgets/app_bottom_nav.dart';
+import 'package:roadmaps/core/utils/page_refresh.dart';
 import 'package:roadmaps/features/auth/presentation/login_screen.dart';
 import 'package:roadmaps/features/announcements/presentation/announcements_provider.dart';
 import 'package:roadmaps/features/community/presentation/community_provider.dart';
 import 'package:roadmaps/features/community/presentation/community_screen.dart';
-import 'package:roadmaps/features/homepage/presentation/home_provider.dart';
 import 'package:roadmaps/features/homepage/presentation/home_screen.dart';
 import 'package:roadmaps/features/notifications/presentation/notifications_provider.dart';
 import 'package:roadmaps/features/notifications/presentation/notifications_screen.dart';
-import 'package:roadmaps/features/profile/presentation/profile_provider.dart';
 import 'package:roadmaps/features/profile/presentation/profile_screen.dart';
-import 'package:roadmaps/features/roadmaps/presentation/roadmaps_provider.dart';
 import 'package:roadmaps/features/settings/presentation/settings_screen.dart';
 import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_provider.dart';
 import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_screen.dart';
@@ -26,8 +25,9 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with RouteAware {
   int currentIndex = 2;
+  PageRoute<dynamic>? _route;
 
   final List<Widget> pages = [
     const SmartInstructorScreen(),
@@ -36,14 +36,53 @@ class _MainScreenState extends State<MainScreen> {
     const ProfileScreen(),
   ];
 
+  Future<void> _onNavTap(int index) async {
+    setState(() {
+      currentIndex = index;
+    });
+
+    if (index == 2) {
+      await refreshHomePageData(context);
+    } else if (index == 3) {
+      await refreshProfilePageData(context);
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute<dynamic> && route != _route) {
+      _route = route;
+      appRouteObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didPopNext() {
+    final shouldRefreshHome = currentIndex == 2;
+    final shouldRefreshProfile = currentIndex == 3;
+
+    if (shouldRefreshHome) {
+      refreshHomePageData(context);
+    } else if (shouldRefreshProfile) {
+      refreshProfilePageData(context);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_route != null) {
+      appRouteObserver.unsubscribe(this);
+    }
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
       if (!mounted) return;
-      context.read<RoadmapsProvider>().loadRoadmaps();
-      context.read<ProfileProvider>().loadProfileData();
-      context.read<HomeProvider>().loadHome();
       context.read<AnnouncementsProvider>().loadAnnouncements();
       context.read<CommunityProvider>().loadRooms();
       context.read<NotificationsProvider>().loadNotifications();
@@ -98,11 +137,7 @@ class _MainScreenState extends State<MainScreen> {
         ),
         child: buildAppBottomNav(
           currentIndex: currentIndex,
-          onTap: (index) {
-            setState(() {
-              currentIndex = index;
-            });
-          },
+          onTap: (index) => _onNavTap(index),
         ),
       ),
     );

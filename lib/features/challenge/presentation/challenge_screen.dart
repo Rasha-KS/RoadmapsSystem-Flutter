@@ -143,13 +143,14 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         return RefreshIndicator(
           color: AppColors.primary2,
           onRefresh: () async {
-            final messenger = ScaffoldMessenger.of(context);
             await context.read<ChallengeProvider>().loadChallenge(
               widget.learningUnitId,
               forceRefresh: true,
               keepLocalData: true,
             );
             if (provider.state == ChallengeScreenState.error) {
+              if (!context.mounted) return;
+              final messenger = ScaffoldMessenger.of(context);
               _showRefreshFailedSnackBar(messenger);
             }
           },
@@ -226,6 +227,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
 
   Future<void> _onFinish(ChallengeProvider provider) async {
     if (!provider.canFinish) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

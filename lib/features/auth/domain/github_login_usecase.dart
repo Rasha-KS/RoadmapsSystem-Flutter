@@ -6,7 +6,7 @@ class GithubLoginUseCase {
 
   GithubLoginUseCase(this.repository);
 
-  Future<UserEntity> call({required String code}) {
-    return repository.loginWithGithub(code: code);
+  Future<UserEntity> call({required String code, String? state}) {
+    return repository.loginWithGithub(code: code, state: state);
   }
 }

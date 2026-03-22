@@ -6,7 +6,7 @@ import 'package:roadmaps/features/smart_instructor/domain/smart_instructor_messa
 
 class MockSmartInstructorRepository implements SmartInstructorRepository {
   final Map<String, dynamic> _introTable = {
-    'title': 'مرحبا بك في المساعد الذكي',
+    'title': 'مرحبًا بك في المساعد الذكي',
     'subtitle': 'كيف يمكنني مساعدتك؟',
     'cta_label': 'هيا لنبدأ',
   };
@@ -21,7 +21,7 @@ class MockSmartInstructorRepository implements SmartInstructorRepository {
     },
     {
       'id': 2,
-      'text': 'أحتاج خطة لتعلم Flutter خلال شهرين',
+      'text': 'أحتاج خطة لتعلّم Flutter خلال شهرين',
       'attachment_path': null,
       'is_from_user': true,
       'sent_at': DateTime(2026, 2, 19, 11, 31),

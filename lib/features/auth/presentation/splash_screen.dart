@@ -13,7 +13,7 @@ import 'package:roadmaps/features/auth/presentation/register_screen.dart';
 
   Key Features:
   1. Fully responsive: all sizes, and spacings are calculated relative to screen dimensions.
-  2. Displays the app title ("مرحبا بك في أفق") centered on the screen.
+  2. Displays the app title ("مرحبًا بك في أفق") centered on the screen.
   3. Contains two main buttons:
      - Login: navigates the user to LoginScreen
      - Register: navigates the user to RegisterScreen
@@ -62,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen> {
                           Column(
                             children: [
                               Text(
-                                "مرحبا بك في",
+                                "مرحبًا بك في",
                                 textAlign: TextAlign.center,
                                 style: AppTextStyles.heading1.copyWith(
                                   color: AppColors.text_3,

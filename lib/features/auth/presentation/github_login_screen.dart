@@ -20,12 +20,19 @@ class _GithubLoginScreenState extends State<GithubLoginScreen> {
   late final WebViewController _controller;
   bool _isLoading = true;
   bool _handledRedirect = false;
+  late final Uri _expectedCallbackUri = Uri.parse(
+    ApiConstants.url(ApiConstants.githubCallback),
+  );
 
-  static const String _authorizeUrl =
-      'https://github.com/login/oauth/authorize'
-      '?client_id=Ov23liIjYNGNi3P2m2DK'
-      '&redirect_uri=${ApiConstants.baseUrl}${ApiConstants.githubCallback}'
-      '&scope=user:email';
+  Uri get _authorizeUri => Uri.https(
+        'github.com',
+        '/login/oauth/authorize',
+        {
+          'client_id': 'Ov23liIjYNGNi3P2m2DK',
+          'redirect_uri': ApiConstants.url(ApiConstants.githubCallback),
+          'scope': 'user:email',
+        },
+      );
 
   @override
   void initState() {
@@ -36,7 +43,11 @@ class _GithubLoginScreenState extends State<GithubLoginScreen> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (_) => _setLoading(true),
-          onPageFinished: (_) => _setLoading(false),
+          onPageFinished: (_) async {
+            _setLoading(false);
+            final currentUrl = await _controller.currentUrl();
+            _maybeHandleRedirect(currentUrl);
+          },
           onNavigationRequest: (request) {
             if (_handledRedirect) {
               return NavigationDecision.prevent;
@@ -45,20 +56,19 @@ class _GithubLoginScreenState extends State<GithubLoginScreen> {
             if (uri == null) {
               return NavigationDecision.navigate;
             }
-
-            if (uri.toString().startsWith(
-                  ApiConstants.url(ApiConstants.githubCallback),
-                )) {
-              final code = uri.queryParameters['code'];
+            if (_isGithubCallback(uri)) {
               _handledRedirect = true;
-              _handleAuthCode(code);
+              _handleAuthCode(
+                uri.queryParameters['code'],
+                uri.queryParameters['state'],
+              );
               return NavigationDecision.prevent;
             }
             return NavigationDecision.navigate;
           },
         ),
       )
-      ..loadRequest(Uri.parse(_authorizeUrl));
+      ..loadRequest(_authorizeUri);
   }
 
   @override
@@ -80,23 +90,24 @@ class _GithubLoginScreenState extends State<GithubLoginScreen> {
     );
   }
 
-  Future<void> _handleAuthCode(String? code) async {
+  Future<void> _handleAuthCode(String? code, String? state) async {
     if (code == null || code.trim().isEmpty) {
-      _showError('تعذر الحصول على رمز GitHub. حاول مرة أخرى.');
-      if (mounted) Navigator.pop(context);
+      _showErrorAndGoBack('تعذر الحصول على رمز GitHub. حاول مرة أخرى.');
       return;
     }
 
     _setLoading(true);
     final provider = context.read<AuthProvider>();
-    final user = await provider.loginWithGithub(code: code.trim());
+    final user = await provider.loginWithGithub(
+      code: code.trim(),
+      state: state,
+    );
 
     if (!mounted) return;
 
     if (user == null) {
       _setLoading(false);
-      _showError(provider.error ?? 'تعذر تسجيل الدخول عبر GitHub.');
-      Navigator.pop(context);
+      _showErrorAndGoBack(provider.error ?? 'تعذر تسجيل الدخول عبر GitHub.');
       return;
     }
 
@@ -111,9 +122,26 @@ class _GithubLoginScreenState extends State<GithubLoginScreen> {
     );
   }
 
-  void _showError(String message) {
+  void _showErrorAndGoBack(String message) {
     final messenger = ScaffoldMessenger.of(context);
     showActionSnackBar(messenger, message: message, isSuccess: false);
+    Navigator.pop(context);
+  }
+
+  void _maybeHandleRedirect(String? url) {
+    if (url == null || _handledRedirect) return;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    if (!_isGithubCallback(uri)) return;
+    _handledRedirect = true;
+    _handleAuthCode(uri.queryParameters['code'], uri.queryParameters['state']);
+  }
+
+  bool _isGithubCallback(Uri uri) {
+    return uri.scheme == _expectedCallbackUri.scheme &&
+        uri.host == _expectedCallbackUri.host &&
+        uri.port == _expectedCallbackUri.port &&
+        uri.path == _expectedCallbackUri.path;
   }
 
   void _setLoading(bool value) {

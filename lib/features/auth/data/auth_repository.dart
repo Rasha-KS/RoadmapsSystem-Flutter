@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:roadmaps/core/api/api_client.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/auth/token_manager.dart';
@@ -54,15 +55,47 @@ class AuthRepository {
     return auth.user;
   }
 
-  Future<UserEntity> loginWithGithub({required String code}) async {
+  Future<UserEntity> loginWithGithub({required String code, String? state}) async {
     final response = await _apiClient.post(
       ApiConstants.url(ApiConstants.githubLogin),
-      body: {'code': code},
+      body: {
+        'code': code,
+        if (state != null && state.trim().isNotEmpty) 'state': state.trim(),
+        'redirect_uri': ApiConstants.url(ApiConstants.githubCallback),
+      },
     );
+
+    debugPrint('GitHub login response: $response');
 
     final auth = AuthModel.fromResponse(response);
     await _tokenManager.saveToken(auth.token);
     return auth.user;
+  }
+
+  Future<void> forgotPassword({required String email}) async {
+    await _apiClient.post(
+      ApiConstants.url(ApiConstants.forgotPassword),
+      body: {
+        'email': email,
+      },
+    );
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    required String token,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    await _apiClient.post(
+      ApiConstants.url(ApiConstants.resetPassword),
+      body: {
+        'email': email,
+        'token': token,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+      },
+    );
   }
 
   Future<void> clearSession() async {

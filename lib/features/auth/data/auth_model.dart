@@ -14,7 +14,7 @@ class AuthModel {
   });
 
   factory AuthModel.fromResponse(Map<String, dynamic> json) {
-    final success = json['success'] == true;
+    final success = json['success'] == true || json['status'] == 'success';
     if (!success) {
       final message = json['message'];
       throw ApiException(
@@ -25,16 +25,16 @@ class AuthModel {
     }
 
     final data = json['data'];
-    if (data is! Map<String, dynamic>) {
-      throw ParsingException();
-    }
+    final Map<String, dynamic> payload = data is Map<String, dynamic>
+        ? data
+        : json;
 
-    final userJson = data['user'];
+    final userJson = payload['user'];
     if (userJson is! Map<String, dynamic>) {
       throw ParsingException();
     }
 
-    final token = data['token'];
+    final token = payload['token'];
     if (token is! String || token.trim().isEmpty) {
       throw ParsingException();
     }
@@ -42,7 +42,7 @@ class AuthModel {
     return AuthModel(
       user: UserModel.fromJson(userJson),
       token: token.trim(),
-      tokenType: (data['token_type'] as String?) ?? 'Bearer',
+      tokenType: (payload['token_type'] as String?) ?? 'Bearer',
     );
   }
 }

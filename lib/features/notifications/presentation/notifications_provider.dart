@@ -28,6 +28,7 @@ class NotificationsProvider extends ChangeNotifier {
       // Load notifications list and update the notifications UI.
       notifications = await getNotificationsUseCase();
       state = NotificationsState.loaded;
+      await loadUnreadCount();
     } catch (_) {
       state = NotificationsState.connectionError;
     }

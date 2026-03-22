@@ -26,4 +26,34 @@ class UserRoadmapEntity {
     required this.xpPoints,
     required this.progressPercentage,
   });
+
+  UserRoadmapEntity copyWith({
+    int? enrollmentId,
+    int? userId,
+    int? roadmapId,
+    String? title,
+    String? level,
+    String? description,
+    bool? isActive,
+    String? status,
+    DateTime? startedAt,
+    DateTime? completedAt,
+    int? xpPoints,
+    int? progressPercentage,
+  }) {
+    return UserRoadmapEntity(
+      enrollmentId: enrollmentId ?? this.enrollmentId,
+      userId: userId ?? this.userId,
+      roadmapId: roadmapId ?? this.roadmapId,
+      title: title ?? this.title,
+      level: level ?? this.level,
+      description: description ?? this.description,
+      isActive: isActive ?? this.isActive,
+      status: status ?? this.status,
+      startedAt: startedAt ?? this.startedAt,
+      completedAt: completedAt ?? this.completedAt,
+      xpPoints: xpPoints ?? this.xpPoints,
+      progressPercentage: progressPercentage ?? this.progressPercentage,
+    );
+  }
 }

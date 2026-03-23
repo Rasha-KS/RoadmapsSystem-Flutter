@@ -1,4 +1,5 @@
 import 'package:roadmaps/core/entities/user_entity.dart';
+import 'package:roadmaps/core/data/user/user_model.dart';
 
 class ProfileUserModel extends UserEntity {
   ProfileUserModel({
@@ -22,9 +23,9 @@ class ProfileUserModel extends UserEntity {
       lastActivityAt: json['last_activity_at'] as DateTime,
       isNotificationsEnabled:
           (json['is_notifications_enabled'] as bool?) ?? false,
-      profileImageUrl:
-          (json['profile_image_url'] ?? json['profile_image']) as String?,
+      profileImageUrl: UserModel.normalizeProfileImageUrl(
+        (json['profile_image_url'] ?? json['profile_image']) as String?,
+      ),
     );
   }
 }
-

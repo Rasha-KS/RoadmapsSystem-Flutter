@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/entities/user_entity.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
+
 import '../domain/delete_account_usecase.dart';
+import '../domain/change_password_usecase.dart';
 import '../domain/get_settings_data_usecase.dart';
 import '../domain/logout_usecase.dart';
 import '../domain/toggle_notifications_usecase.dart';
-import '../domain/upload_profile_image_usecase.dart';
 import '../domain/update_account_usecase.dart';
+import '../domain/upload_profile_image_usecase.dart';
 
 class SettingsProvider extends ChangeNotifier {
   final GetSettingsDataUseCase getSettingsDataUseCase;
   final ToggleNotificationsUseCase toggleNotificationsUseCase;
   final UpdateAccountUseCase updateAccountUseCase;
+  final ChangePasswordUseCase changePasswordUseCase;
   final UploadProfileImageUseCase uploadProfileImageUseCase;
   final DeleteAccountUseCase deleteAccountUseCase;
   final LogoutUseCase logoutUseCase;
@@ -22,6 +25,7 @@ class SettingsProvider extends ChangeNotifier {
     required this.getSettingsDataUseCase,
     required this.toggleNotificationsUseCase,
     required this.updateAccountUseCase,
+    required this.changePasswordUseCase,
     required this.uploadProfileImageUseCase,
     required this.deleteAccountUseCase,
     required this.logoutUseCase,
@@ -32,9 +36,10 @@ class SettingsProvider extends ChangeNotifier {
 
   UserEntity? get user => currentUserProvider.user;
   bool loading = false;
+  bool togglingNotifications = false;
   String? error;
 
-  Future<void> loadSettings() async {
+  Future<bool> loadSettings() async {
     loading = true;
     error = null;
     notifyListeners();
@@ -42,34 +47,65 @@ class SettingsProvider extends ChangeNotifier {
     try {
       final current = await getSettingsDataUseCase();
       currentUserProvider.setUser(current);
-    } catch (_) {
-      error = 'حدث خطأ أثناء تحميل بيانات الإعدادات';
+      loading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      error = _resolveErrorMessage(
+        e,
+        fallback: 'حدث خطأ أثناء تحميل بيانات الإعدادات.',
+      );
+      loading = false;
+      notifyListeners();
+      return false;
     }
-
-    loading = false;
-    notifyListeners();
   }
 
-  Future<void> toggleNotifications(bool enabled) async {
-    if (user == null) return;
+  Future<bool> toggleNotifications(bool enabled) async {
+    final currentUser = user;
+    if (currentUser == null || togglingNotifications) {
+      error = 'تعذر العثور على بيانات المستخدم الحالية.';
+      notifyListeners();
+      return false;
+    }
+
+    final previousUser = currentUser;
+    togglingNotifications = true;
+    error = null;
+    currentUserProvider.setUser(
+      previousUser.copyWith(isNotificationsEnabled: enabled),
+    );
+    notifyListeners();
 
     try {
       final updated = await toggleNotificationsUseCase(enabled);
       currentUserProvider.setUser(updated);
-      notifyListeners();
-    } catch (_) {
-      error = 'تعذر تحديث حالة الإشعارات';
+      error = null;
+      return true;
+    } catch (e) {
+      currentUserProvider.setUser(previousUser);
+      error = _resolveErrorMessage(e, fallback: 'تعذر تحديث حالة الإشعارات.');
+      return false;
+    } finally {
+      togglingNotifications = false;
       notifyListeners();
     }
   }
 
-  Future<void> updateAccount({
+  Future<bool> updateAccount({
     String? username,
     String? email,
     String? password,
     String? profileImageUrl,
   }) async {
-    if (user == null) return;
+    if (user == null) {
+      error = 'تعذر العثور على بيانات المستخدم الحالية.';
+      notifyListeners();
+      return false;
+    }
+
+    error = null;
+    notifyListeners();
 
     try {
       final updated = await updateAccountUseCase(
@@ -81,25 +117,66 @@ class SettingsProvider extends ChangeNotifier {
       currentUserProvider.setUser(updated);
       error = null;
       notifyListeners();
-    } catch (_) {
-      error = 'تعذر تحديث بيانات الحساب';
+      return true;
+    } catch (e) {
+      error = _resolveErrorMessage(e, fallback: 'تعذر تحديث بيانات الحساب.');
       notifyListeners();
+      return false;
     }
   }
 
-  Future<void> updateProfileImage({required String localFilePath}) async {
-    if (user == null) return;
+  Future<bool> updateProfileImage({required String localFilePath}) async {
+    if (user == null) {
+      error = 'تعذر العثور على بيانات المستخدم الحالية.';
+      notifyListeners();
+      return false;
+    }
+
+    error = null;
+    notifyListeners();
 
     try {
-      final uploadedUrl =
-          await uploadProfileImageUseCase(localFilePath: localFilePath);
-      final updated = await updateAccountUseCase(profileImageUrl: uploadedUrl);
+      final updated = await uploadProfileImageUseCase(
+        localFilePath: localFilePath,
+      );
       currentUserProvider.setUser(updated);
       error = null;
       notifyListeners();
-    } catch (_) {
-      error = 'تعذر تحديث الصورة الشخصية';
+      return true;
+    } catch (e) {
+      error = _resolveErrorMessage(e, fallback: 'تعذر تحديث الصورة الشخصية.');
       notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String newPasswordConfirmation,
+  }) async {
+    if (user == null) {
+      error = 'تعذر العثور على بيانات المستخدم الحالية.';
+      notifyListeners();
+      return false;
+    }
+
+    error = null;
+    notifyListeners();
+
+    try {
+      await changePasswordUseCase(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        newPasswordConfirmation: newPasswordConfirmation,
+      );
+      error = null;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      error = _resolveErrorMessage(e, fallback: 'تعذر تغيير كلمة المرور.');
+      notifyListeners();
+      return false;
     }
   }
 
@@ -109,8 +186,8 @@ class SettingsProvider extends ChangeNotifier {
       await currentUserProvider.deleteUser();
       error = null;
       notifyListeners();
-    } catch (_) {
-      error = 'تعذر حذف الحساب';
+    } catch (e) {
+      error = _resolveErrorMessage(e, fallback: 'تعذر حذف الحساب.');
       notifyListeners();
     }
   }
@@ -122,7 +199,7 @@ class SettingsProvider extends ChangeNotifier {
       success = true;
       error = null;
     } catch (e) {
-      error = e is ApiException ? e.message : 'تعذر تسجيل الخروج';
+      error = _resolveErrorMessage(e, fallback: 'تعذر تسجيل الخروج.');
     } finally {
       await currentUserProvider.deleteUser();
       notifyListeners();
@@ -130,8 +207,74 @@ class SettingsProvider extends ChangeNotifier {
     return success;
   }
 
+  void clearError() {
+    if (error == null) return;
+    error = null;
+    notifyListeners();
+  }
+
   void _onCurrentUserChanged() {
     notifyListeners();
+  }
+
+  String _resolveErrorMessage(Object error, {required String fallback}) {
+    if (error is ApiException) {
+      final message = error.message.trim();
+      if (message.isEmpty) return fallback;
+
+      final lower = message.toLowerCase();
+      final mentionsPasswordConfirmation =
+          lower.contains('new_password_confirmation') ||
+          lower.contains('password confirmation') ||
+          lower.contains('password_confirmation');
+      if (mentionsPasswordConfirmation && lower.contains('required')) {
+        return 'طھط£ظƒظٹط¯ ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± ظ…ط·ظ„ظˆط¨.';
+      }
+      if (lower.contains('is notifications enabled field is required') ||
+          lower.contains('notifications enabled field is required')) {
+        return 'حقل تفعيل الإشعارات مطلوب.';
+      }
+      if (lower.contains('patch method is not supported') &&
+          lower.contains('update-account')) {
+        return 'الخادم يتطلب استخدام PUT لتعديل الحساب.';
+      }
+      if (lower.contains('supported methods: put') &&
+          lower.contains('update-account')) {
+        return 'الخادم يتطلب استخدام PUT لتعديل الحساب.';
+      }
+      if (lower.contains('username') && lower.contains('required')) {
+        return 'اسم المستخدم مطلوب.';
+      }
+      if (lower.contains('current password') &&
+          (lower.contains('incorrect') ||
+              lower.contains('invalid') ||
+              lower.contains('wrong') ||
+              lower.contains('does not match'))) {
+        return 'كلمة المرور الحالية غير صحيحة.';
+      }
+      if (lower.contains('current password') && lower.contains('required')) {
+        return 'كلمة المرور الحالية مطلوبة.';
+      }
+      if ((lower.contains('new password') ||
+              lower.contains('new_password') ||
+              lower.contains('password')) &&
+          lower.contains('required')) {
+        return 'كلمة المرور الجديدة مطلوبة.';
+      }
+      if ((lower.contains('confirmation') && lower.contains('match')) ||
+          lower.contains('password confirmation') ||
+          lower.contains('password_confirmation') ||
+          lower.contains('confirmed') ||
+          lower.contains('same as')) {
+        return 'تأكيد كلمة المرور غير مطابق.';
+      }
+      if (RegExp(r'[a-z]').hasMatch(lower)) {
+        return fallback;
+      }
+      return message;
+    }
+
+    return fallback;
   }
 
   @override

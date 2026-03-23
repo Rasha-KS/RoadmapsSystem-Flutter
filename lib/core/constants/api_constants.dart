@@ -24,12 +24,19 @@ class ApiConstants {
   // Notifications
   static const String notifications = "/notifications";
   static const String notificationsUnreadCount = "/notifications/unread-count";
+  static const String myNotifications = "/me/notifications";
+
+  // Settings
+  static const String updateAccount = "/update-account";
+  static const String changePassword = "/change-password";
+  static const String updateProfilePicture = "/update-profile-picture";
 
   // Roadmaps
   static const String roadmaps = "/roadmaps";
   static String roadmapDetails(int roadmapId) => "/roadmaps/$roadmapId";
   static String enrollRoadmap(int roadmapId) => "/roadmaps/$roadmapId/enroll";
-  static String unenrollRoadmap(int roadmapId) => "/roadmaps/$roadmapId/unenroll";
+  static String unenrollRoadmap(int roadmapId) =>
+      "/roadmaps/$roadmapId/unenroll";
 
   static String url(String path) => "$baseUrl$path";
 }

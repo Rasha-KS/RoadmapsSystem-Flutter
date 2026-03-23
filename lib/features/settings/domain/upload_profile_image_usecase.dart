@@ -1,3 +1,5 @@
+import 'package:roadmaps/core/entities/user_entity.dart';
+
 import '../data/settings_repository.dart';
 
 class UploadProfileImageUseCase {
@@ -5,7 +7,7 @@ class UploadProfileImageUseCase {
 
   UploadProfileImageUseCase(this.repository);
 
-  Future<String> call({required String localFilePath}) {
+  Future<UserEntity> call({required String localFilePath}) {
     return repository.uploadProfileImage(localFilePath: localFilePath);
   }
 }

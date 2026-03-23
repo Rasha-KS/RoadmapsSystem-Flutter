@@ -84,6 +84,7 @@ class _ProfileScreenBody extends StatelessWidget {
           _buildHeader(
             username: provider.user?.username ?? '',
             profileImageUrl: provider.user?.profileImageUrl,
+            profileImageUpdatedAt: provider.user?.updatedAt,
           ),
           const SizedBox(height: 10),
           Divider(color: AppColors.secondary1, thickness: 1),
@@ -102,6 +103,7 @@ class _ProfileScreenBody extends StatelessWidget {
   Widget _buildHeader({
     required String username,
     required String? profileImageUrl,
+    required DateTime? profileImageUpdatedAt,
   }) {
     return Padding(
       padding: EdgeInsets.only(top: 20, right: 20, left: 20),
@@ -118,16 +120,9 @@ class _ProfileScreenBody extends StatelessWidget {
 
           const SizedBox(width: 30),
 
-          CircleAvatar(
-            radius: 40,
-            backgroundColor: AppColors.accent_3,
-            backgroundImage:
-                (profileImageUrl != null && profileImageUrl.isNotEmpty)
-                ? NetworkImage(profileImageUrl)
-                : null,
-            child: (profileImageUrl == null || profileImageUrl.isEmpty)
-                ? Icon(Icons.person, color: AppColors.primary, size: 30)
-                : null,
+          _ProfileAvatar(
+            imageUrl: profileImageUrl,
+            updatedAt: profileImageUpdatedAt,
           ),
         ],
       ),
@@ -155,6 +150,150 @@ class _ProfileScreenBody extends StatelessWidget {
         duration: const Duration(milliseconds: 1000),
       ),
     );
+  }
+}
+
+class _ProfileAvatar extends StatefulWidget {
+  const _ProfileAvatar({required this.imageUrl, required this.updatedAt});
+
+  final String? imageUrl;
+  final DateTime? updatedAt;
+
+  @override
+  State<_ProfileAvatar> createState() => _ProfileAvatarState();
+}
+
+class _ProfileAvatarState extends State<_ProfileAvatar> {
+  static const double _avatarSize = 80;
+
+  late List<String> _candidateUrls;
+  var _activeCandidateIndex = 0;
+  bool _switchScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resetCandidates();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProfileAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageUrl != widget.imageUrl ||
+        oldWidget.updatedAt != widget.updatedAt) {
+      _resetCandidates();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: _avatarSize,
+      height: _avatarSize,
+      decoration: const BoxDecoration(
+        color: AppColors.accent_3,
+        shape: BoxShape.circle,
+      ),
+      child: ClipOval(
+        child: _candidateUrls.isEmpty
+            ? _buildFallback()
+            : Image.network(
+                _candidateUrls[_activeCandidateIndex],
+                key: ValueKey(_candidateUrls[_activeCandidateIndex]),
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) {
+                  _tryNextCandidate();
+                  return _buildFallback();
+                },
+              ),
+      ),
+    );
+  }
+
+  Widget _buildFallback() {
+    return const Center(
+      child: Icon(Icons.person, color: AppColors.primary, size: 30),
+    );
+  }
+
+  void _resetCandidates() {
+    _candidateUrls = _buildCandidateUrls(
+      widget.imageUrl,
+      updatedAt: widget.updatedAt,
+    );
+    _activeCandidateIndex = 0;
+    _switchScheduled = false;
+  }
+
+  void _tryNextCandidate() {
+    if (_switchScheduled ||
+        _activeCandidateIndex >= _candidateUrls.length - 1) {
+      return;
+    }
+
+    _switchScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _activeCandidateIndex++;
+        _switchScheduled = false;
+      });
+    });
+  }
+
+  List<String> _buildCandidateUrls(
+    String? imageUrl, {
+    required DateTime? updatedAt,
+  }) {
+    final normalizedUrl = _appendCacheVersion(imageUrl, updatedAt: updatedAt);
+    if (normalizedUrl == null) {
+      return const <String>[];
+    }
+
+    final candidates = <String>[normalizedUrl];
+    final parsed = Uri.tryParse(normalizedUrl);
+    if (parsed == null) {
+      return candidates;
+    }
+
+    final path = parsed.path;
+    final isProfilePicturePath = path.contains('/profile_pictures/');
+    final alreadyStoragePath = path.startsWith('/storage/');
+    if (!isProfilePicturePath || alreadyStoragePath) {
+      return candidates;
+    }
+
+    final alternateUri = parsed.replace(path: '/storage$path');
+    final alternateUrl = alternateUri.toString();
+    if (!candidates.contains(alternateUrl)) {
+      candidates.add(alternateUrl);
+    }
+    return candidates;
+  }
+
+  String? _appendCacheVersion(
+    String? imageUrl, {
+    required DateTime? updatedAt,
+  }) {
+    final trimmedUrl = imageUrl?.trim();
+    if (trimmedUrl == null || trimmedUrl.isEmpty) {
+      return null;
+    }
+
+    if (updatedAt == null) {
+      return trimmedUrl;
+    }
+
+    final parsed = Uri.tryParse(trimmedUrl);
+    if (parsed == null) {
+      return trimmedUrl;
+    }
+
+    final queryParameters = <String, String>{
+      ...parsed.queryParameters,
+      'v': updatedAt.toUtc().millisecondsSinceEpoch.toString(),
+    };
+    return parsed.replace(queryParameters: queryParameters).toString();
   }
 }
 
@@ -210,7 +349,7 @@ class _RoadmapSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-          LessonCard1(
+        LessonCard1(
           course: roadmap,
           widthMultiplier: 0.92,
           trimLength: 90,
@@ -218,7 +357,7 @@ class _RoadmapSection extends StatelessWidget {
             context: context,
             title: AppTexts.deleteConfirmTitle,
             message: AppTexts.deleteConfirmMessage,
-              onConfirm: () async {
+            onConfirm: () async {
               try {
                 final homeProvider = context.read<HomeProvider>();
                 final roadmapsProvider = context.read<RoadmapsProvider>();
@@ -277,8 +416,8 @@ class _RoadmapSection extends StatelessWidget {
                 final homeProvider = context.read<HomeProvider>();
                 final roadmapsProvider = context.read<RoadmapsProvider>();
                 final profileProvider = context.read<ProfileProvider>();
-                final learningPathProvider =
-                    context.read<LearningPathProvider>();
+                final learningPathProvider = context
+                    .read<LearningPathProvider>();
                 await profileProvider.resetRoadmap(
                   roadmap.enrollmentId,
                   updateState: false,
@@ -294,20 +433,17 @@ class _RoadmapSection extends StatelessWidget {
                 );
 
                 unawaited(
-                  retryUntilSuccess(
-                    () async {
-                      await learningPathProvider.resetProgress(
-                        roadmapId: roadmap.roadmapId,
-                        updateState: true,
-                      );
-                      await EnrollmentSync.refreshAll(
-                        homeProvider: homeProvider,
-                        roadmapsProvider: roadmapsProvider,
-                        profileProvider: profileProvider,
-                      );
-                    },
-                    label: 'ProfileScreen reset sync',
-                  ),
+                  retryUntilSuccess(() async {
+                    await learningPathProvider.resetProgress(
+                      roadmapId: roadmap.roadmapId,
+                      updateState: true,
+                    );
+                    await EnrollmentSync.refreshAll(
+                      homeProvider: homeProvider,
+                      roadmapsProvider: roadmapsProvider,
+                      profileProvider: profileProvider,
+                    );
+                  }, label: 'ProfileScreen reset sync'),
                 );
               } catch (_) {
                 if (!context.mounted) return;

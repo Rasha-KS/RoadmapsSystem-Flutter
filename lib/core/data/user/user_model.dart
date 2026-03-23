@@ -1,4 +1,5 @@
 import 'package:roadmaps/core/api/api_exceptions.dart';
+import 'package:roadmaps/core/constants/api_constants.dart';
 import 'package:roadmaps/core/entities/user_entity.dart';
 
 class UserModel extends UserEntity {
@@ -23,9 +24,8 @@ class UserModel extends UserEntity {
 
     final createdAt = _asDate(json['created_at']);
     final updatedAt = _asDate(json['updated_at']);
-    final lastActiveAt = _asDate(
-          json['last_active_at'] ?? json['last_activity_at'],
-        ) ??
+    final lastActiveAt =
+        _asDate(json['last_active_at'] ?? json['last_activity_at']) ??
         createdAt ??
         updatedAt;
 
@@ -48,11 +48,44 @@ class UserModel extends UserEntity {
       lastLoginAt: _asDate(json['last_login_at']),
       isNotificationsEnabled:
           _asBool(json['is_notifications_enabled']) ?? false,
-      profileImageUrl: (json['profile_picture'] ??
-              json['profile_image_url'] ??
-              json['profile_image'])
-          as String?,
+      profileImageUrl: normalizeProfileImageUrl(
+        (json['profile_picture'] ??
+                json['profile_image_url'] ??
+                json['profile_image'])
+            as String?,
+      ),
     );
+  }
+
+  static String? normalizeProfileImageUrl(String? value) {
+    if (value == null) return null;
+
+    final text = value.trim();
+    if (text.isEmpty) return null;
+
+    final parsed = Uri.tryParse(text);
+    if (parsed != null &&
+        (parsed.scheme == 'http' || parsed.scheme == 'https') &&
+        parsed.host.isNotEmpty) {
+      return parsed.toString();
+    }
+
+    final baseUri = Uri.parse(ApiConstants.baseUrl);
+    final rootUri = Uri(
+      scheme: baseUri.scheme,
+      host: baseUri.host,
+      port: baseUri.hasPort ? baseUri.port : null,
+    );
+
+    if (parsed != null && parsed.scheme == 'file') {
+      final normalizedPath = parsed.path.startsWith('/')
+          ? parsed.path
+          : '/${parsed.path}';
+      return rootUri.resolve(normalizedPath).toString();
+    }
+
+    final normalizedPath = text.startsWith('/') ? text : '/$text';
+    return rootUri.resolve(normalizedPath).toString();
   }
 
   static int? _asInt(dynamic value) {

@@ -53,6 +53,7 @@ import 'package:roadmaps/features/roadmaps/data/roadmap_repository.dart';
 import 'package:roadmaps/features/roadmaps/domain/get_roadmaps_usecase.dart';
 import 'package:roadmaps/features/roadmaps/presentation/roadmaps_provider.dart';
 import 'package:roadmaps/features/settings/data/settings_repository.dart';
+import 'package:roadmaps/features/settings/domain/change_password_usecase.dart';
 import 'package:roadmaps/features/settings/domain/delete_account_usecase.dart';
 import 'package:roadmaps/features/settings/domain/get_settings_data_usecase.dart';
 import 'package:roadmaps/features/settings/domain/logout_usecase.dart';
@@ -159,6 +160,7 @@ class Injection {
       getSettingsDataUseCase: GetSettingsDataUseCase(repository),
       toggleNotificationsUseCase: ToggleNotificationsUseCase(repository),
       updateAccountUseCase: UpdateAccountUseCase(repository),
+      changePasswordUseCase: ChangePasswordUseCase(repository),
       uploadProfileImageUseCase: UploadProfileImageUseCase(repository),
       deleteAccountUseCase: DeleteAccountUseCase(repository),
       logoutUseCase: LogoutUseCase(repository),

@@ -45,6 +45,8 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     } else if (index == 3) {
       await refreshProfilePageData(context);
     }
+
+    await _refreshUnreadCount();
   }
 
   @override
@@ -67,6 +69,8 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     } else if (shouldRefreshProfile) {
       refreshProfilePageData(context);
     }
+
+    _refreshUnreadCount();
   }
 
   @override
@@ -85,8 +89,12 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
       context.read<AnnouncementsProvider>().loadAnnouncements();
       context.read<CommunityProvider>().loadRooms();
       context.read<NotificationsProvider>().loadNotifications();
-      context.read<NotificationsProvider>().loadUnreadCount();
     });
+  }
+
+  Future<void> _refreshUnreadCount() async {
+    if (!mounted) return;
+    await context.read<NotificationsProvider>().loadUnreadCount();
   }
 
   @override

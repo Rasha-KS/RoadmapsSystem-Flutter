@@ -43,6 +43,13 @@ class NotificationsRepository {
     return parsed;
   }
 
+  Future<void> readAllNotifications() async {
+    final response = await _apiClient.post(
+      ApiConstants.url(ApiConstants.notificationsReadAll),
+    );
+    _ensureSuccess(response, fallbackMessage: 'تعذر تعليم الإشعارات كمقروءة.');
+  }
+
   void _ensureSuccess(
     Map<String, dynamic> response, {
     String fallbackMessage = 'تعذر تحميل البيانات.',

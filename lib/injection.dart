@@ -43,6 +43,7 @@ import 'package:roadmaps/features/lessons/presentation/lessons_provider.dart';
 import 'package:roadmaps/features/notifications/data/notifications_repository.dart';
 import 'package:roadmaps/features/notifications/domain/get_notifications_usecase.dart';
 import 'package:roadmaps/features/notifications/domain/get_unread_count_usecase.dart';
+import 'package:roadmaps/features/notifications/domain/read_all_notifications_usecase.dart';
 import 'package:roadmaps/features/notifications/presentation/notifications_provider.dart';
 import 'package:roadmaps/features/profile/data/profile_repository.dart';
 import 'package:roadmaps/features/profile/domain/delete_user_roadmap_usecase.dart';
@@ -209,6 +210,7 @@ class Injection {
     return NotificationsProvider(
       GetNotificationsUseCase(repository),
       GetUnreadCountUseCase(repository),
+      ReadAllNotificationsUseCase(repository),
     );
   }
 

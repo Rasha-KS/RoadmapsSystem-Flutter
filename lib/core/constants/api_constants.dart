@@ -25,6 +25,11 @@ class ApiConstants {
   static const String notifications = "/notifications";
   static const String notificationsUnreadCount = "/notifications/unread-count";
 
+  // Smart Instructor
+  static const String chatbotSessions = "/chatbot/sessions";
+  static String chatbotSessionMessages(int sessionId) =>"/chatbot/sessions/$sessionId/messages";
+  static String chatbotSession(int sessionId) => "/chatbot/sessions/$sessionId";
+
   // Roadmaps
   static const String roadmaps = "/roadmaps";
   static String roadmapDetails(int roadmapId) => "/roadmaps/$roadmapId";

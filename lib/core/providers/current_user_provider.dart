@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:roadmaps/core/domain/repositories/user_repository.dart';
 import 'package:roadmaps/core/entities/user_entity.dart';
+import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 
-class CurrentUserProvider extends ChangeNotifier {
+class CurrentUserProvider extends SafeChangeNotifier {
   CurrentUserProvider({required UserRepository userRepository})
       : _userRepository = userRepository;
 

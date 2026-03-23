@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import 'package:roadmaps/features/challenge/domain/challenge_entity.dart';
 import 'package:roadmaps/features/challenge/domain/get_challenge_by_learning_unit_usecase.dart';
 import 'package:roadmaps/features/challenge/domain/run_challenge_code_usecase.dart';
@@ -7,7 +7,7 @@ enum ChallengeScreenState { initial, loading, loaded, error }
 
 enum ChallengeRunState { idle, running, success, failure }
 
-class ChallengeProvider extends ChangeNotifier {
+class ChallengeProvider extends SafeChangeNotifier {
   final GetChallengeByLearningUnitUseCase _getChallengeByLearningUnitUseCase;
   final RunChallengeCodeUseCase _runChallengeCodeUseCase;
 

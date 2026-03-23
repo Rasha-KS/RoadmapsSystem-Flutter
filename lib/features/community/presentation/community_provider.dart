@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
+import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import 'package:roadmaps/features/community/domain/chat_message_entity.dart';
 import 'package:roadmaps/features/community/domain/chat_room_entity.dart';
 import 'package:roadmaps/features/community/domain/get_messages_by_room_usecase.dart';
@@ -7,7 +7,7 @@ import 'package:roadmaps/features/community/domain/get_user_community_rooms_usec
 import 'package:roadmaps/features/community/domain/send_image_message_usecase.dart';
 import 'package:roadmaps/features/community/domain/send_message_usecase.dart';
 
-class CommunityProvider extends ChangeNotifier {
+class CommunityProvider extends SafeChangeNotifier {
   CommunityProvider({
     required this.getUserCommunityRoomsUseCase,
     required this.getMessagesByRoomUseCase,

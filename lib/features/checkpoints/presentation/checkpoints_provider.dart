@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:roadmaps/core/constants/xp_rules.dart';
+import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import 'package:roadmaps/features/checkpoints/domain/checkpoint_entity.dart';
 import 'package:roadmaps/features/checkpoints/domain/get_checkpoint_usecase.dart';
 
-class CheckpointsProvider extends ChangeNotifier {
+class CheckpointsProvider extends SafeChangeNotifier {
   final GetCheckpointUseCase _getCheckpointUseCase;
 
   CheckpointsProvider(this._getCheckpointUseCase);

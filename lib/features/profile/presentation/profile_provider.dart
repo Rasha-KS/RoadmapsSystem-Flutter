@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:roadmaps/core/entities/user_entity.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
+import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import '../domain/delete_user_roadmap_usecase.dart';
 import '../domain/get_user_roadmaps_usecase.dart';
 import '../domain/reset_user_roadmap_usecase.dart';
 import '../domain/user_roadmap_entity.dart';
 
-class ProfileProvider extends ChangeNotifier {
+class ProfileProvider extends SafeChangeNotifier {
   final GetUserRoadmapsUseCase getUserRoadmapsUseCase;
   final DeleteUserRoadmapUseCase deleteUserRoadmapUseCase;
   final ResetUserRoadmapUseCase resetUserRoadmapUseCase;

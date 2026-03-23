@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
+import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import '../domain/delete_my_roadmap_usecase.dart';
 import '../domain/enroll_roadmap_usecase.dart';
 import '../domain/get_home_data_usecase.dart';
@@ -9,7 +10,7 @@ import '../domain/reset_my_roadmap_usecase.dart';
 
 enum HomeState { loading, loaded, connectionError }
 
-class HomeProvider extends ChangeNotifier {
+class HomeProvider extends SafeChangeNotifier {
   final GetHomeDataUseCase getHomeDataUseCase;
   final GetRoadmapDetailsUseCase getRoadmapDetailsUseCase;
   final DeleteMyCourseUseCase deleteMyCourseUseCase;

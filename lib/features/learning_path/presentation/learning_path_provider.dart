@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import '../domain/learning_unit_entity.dart';
 import '../domain/get_learning_path_usecase.dart';
 
 enum LearningPathState { loading, loaded, connectionError }
 
-class LearningPathProvider extends ChangeNotifier {
+class LearningPathProvider extends SafeChangeNotifier {
   final GetLearningPathUseCase useCase;
 
   LearningPathProvider(this.useCase);

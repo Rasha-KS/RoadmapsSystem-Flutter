@@ -14,6 +14,7 @@ class SharedChatInputBar extends StatefulWidget {
     this.showInsideSendButton = false,
     this.showSeparateImageButton = false,
     this.isSending = false,
+    this.allowAttachment = true,
   });
 
   const SharedChatInputBar.smartInstructor({
@@ -24,9 +25,10 @@ class SharedChatInputBar extends StatefulWidget {
     required this.onPickAttachment,
     required this.onSendPressed,
     this.hintText = 'اسأل عن أي شيء',
-    this.showInsideSendButton = true,
-    this.showSeparateImageButton = true,
+    this.showInsideSendButton = false,
+    this.showSeparateImageButton = false,
     this.isSending = false,
+    this.allowAttachment = false,
   });
 
   final bool hasPendingAttachment;
@@ -38,6 +40,7 @@ class SharedChatInputBar extends StatefulWidget {
   final bool showInsideSendButton;
   final bool showSeparateImageButton;
   final bool isSending;
+  final bool allowAttachment;
 
   @override
   State<SharedChatInputBar> createState() => _SharedChatInputBarState();
@@ -47,7 +50,8 @@ class _SharedChatInputBarState extends State<SharedChatInputBar> {
   final TextEditingController _controller = TextEditingController();
 
   bool get _canSend {
-    return _controller.text.trim().isNotEmpty || widget.hasPendingAttachment;
+    return _controller.text.trim().isNotEmpty ||
+        (widget.allowAttachment && widget.hasPendingAttachment);
   }
 
   @override
@@ -70,7 +74,9 @@ class _SharedChatInputBarState extends State<SharedChatInputBar> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (widget.hasPendingAttachment && widget.pendingAttachmentName != null)
+        if (widget.allowAttachment &&
+            widget.hasPendingAttachment &&
+            widget.pendingAttachmentName != null)
           Padding(
             padding: const EdgeInsets.all(12),
             child: Container(
@@ -181,7 +187,7 @@ class _SharedChatInputBarState extends State<SharedChatInputBar> {
                 width: 54,
                 height: 54,
                 decoration: BoxDecoration(
-                  color: widget.showSeparateImageButton
+                  color: widget.allowAttachment && widget.showSeparateImageButton
                       ? AppColors.secondary4
                       : (_canSend ? AppColors.primary1 : AppColors.secondary4),
                   shape: BoxShape.circle,
@@ -189,31 +195,46 @@ class _SharedChatInputBarState extends State<SharedChatInputBar> {
                 ),
                 child: IconButton(
                   padding: EdgeInsets.zero,
-                  onPressed: () async {
-                    if (widget.isSending) return;
-                    if (widget.showSeparateImageButton) {
-                      await widget.onPickAttachment();
-                      if (!mounted) return;
-                      setState(() {});
-                      return;
-                    }
+                  onPressed: widget.isSending ||
+                          (!widget.allowAttachment && !_canSend)
+                      ? null
+                      : () async {
+                          if (!widget.allowAttachment) {
+                            if (_canSend) {
+                              await _send();
+                            }
+                            return;
+                          }
 
-                    if (_canSend) {
-                      await _send();
-                      return;
-                    }
+                          if (widget.showSeparateImageButton) {
+                            await widget.onPickAttachment();
+                            if (!mounted) return;
+                            setState(() {});
+                            return;
+                          }
 
-                    await widget.onPickAttachment();
-                    if (!mounted) return;
-                    setState(() {});
-                  },
+                          if (_canSend) {
+                            await _send();
+                            return;
+                          }
+
+                          await widget.onPickAttachment();
+                          if (!mounted) return;
+                          setState(() {});
+                        },
                   icon: Icon(
-                    widget.showSeparateImageButton
-                        ? Icons.photo_camera_outlined
-                        : (_canSend ? Icons.send : Icons.camera_alt_outlined),
-                    color: _canSend && !widget.showSeparateImageButton
-                        ? Colors.white
-                        : AppColors.primary,
+                    !widget.allowAttachment
+                        ? Icons.send_rounded
+                        : widget.showSeparateImageButton
+                            ? Icons.photo_camera_outlined
+                            : (_canSend ? Icons.send : Icons.camera_alt_outlined),
+                    color: !_canSend && !widget.allowAttachment
+                        ? AppColors.primary
+                        : _canSend &&
+                                (!widget.showSeparateImageButton ||
+                                    !widget.allowAttachment)
+                            ? Colors.white
+                            : AppColors.primary,
                     size: 21,
                   ),
                 ),

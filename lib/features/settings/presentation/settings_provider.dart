@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/entities/user_entity.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
+import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import '../domain/delete_account_usecase.dart';
 import '../domain/get_settings_data_usecase.dart';
 import '../domain/logout_usecase.dart';
@@ -9,7 +9,7 @@ import '../domain/toggle_notifications_usecase.dart';
 import '../domain/upload_profile_image_usecase.dart';
 import '../domain/update_account_usecase.dart';
 
-class SettingsProvider extends ChangeNotifier {
+class SettingsProvider extends SafeChangeNotifier {
   final GetSettingsDataUseCase getSettingsDataUseCase;
   final ToggleNotificationsUseCase toggleNotificationsUseCase;
   final UpdateAccountUseCase updateAccountUseCase;

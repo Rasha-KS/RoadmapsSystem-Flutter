@@ -15,7 +15,6 @@ import 'package:roadmaps/features/notifications/presentation/notifications_provi
 import 'package:roadmaps/features/notifications/presentation/notifications_screen.dart';
 import 'package:roadmaps/features/profile/presentation/profile_screen.dart';
 import 'package:roadmaps/features/settings/presentation/settings_screen.dart';
-import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_provider.dart';
 import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -87,7 +86,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
       context.read<CommunityProvider>().loadRooms();
       context.read<NotificationsProvider>().loadNotifications();
       context.read<NotificationsProvider>().loadUnreadCount();
-      context.read<SmartInstructorProvider>().loadIntro();
     });
   }
 

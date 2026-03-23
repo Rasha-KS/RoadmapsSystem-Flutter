@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import '../domain/get_notifications_usecase.dart';
 import '../domain/get_unread_count_usecase.dart';
 import '../domain/notification_entity.dart';
 
 enum NotificationsState { loading, loaded, connectionError }
 
-class NotificationsProvider extends ChangeNotifier {
+class NotificationsProvider extends SafeChangeNotifier {
   final GetNotificationsUseCase getNotificationsUseCase;
   final GetUnreadCountUseCase getUnreadCountUseCase;
 

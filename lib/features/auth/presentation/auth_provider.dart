@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/entities/user_entity.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
+import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import '../domain/forgot_password_usecase.dart';
 import '../domain/github_login_usecase.dart';
 import '../domain/login_usecase.dart';
 import '../domain/register_usecase.dart';
 import '../domain/reset_password_usecase.dart';
 
-class AuthProvider extends ChangeNotifier {
+class AuthProvider extends SafeChangeNotifier {
   AuthProvider({
     required this.loginUseCase,
     required this.registerUseCase,

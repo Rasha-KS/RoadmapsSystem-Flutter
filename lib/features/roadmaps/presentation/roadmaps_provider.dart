@@ -1,12 +1,12 @@
 
-import 'package:flutter/material.dart';
+import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 
 import '../domain/get_roadmaps_usecase.dart';
 import '../domain/roadmap_entity.dart';
 
 enum PageState { loading, loaded, connectionError }
 
-class RoadmapsProvider extends ChangeNotifier {
+class RoadmapsProvider extends SafeChangeNotifier {
   final GetRoadmapsUseCase useCase;
 
   RoadmapsProvider(this.useCase);

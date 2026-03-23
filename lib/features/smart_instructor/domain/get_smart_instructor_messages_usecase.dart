@@ -6,7 +6,9 @@ class GetSmartInstructorMessagesUseCase {
 
   GetSmartInstructorMessagesUseCase(this.repository);
 
-  Future<List<SmartInstructorMessageEntity>> call() {
-    return repository.getMessages();
+  Future<List<SmartInstructorMessageEntity>> call({
+    required int sessionId,
+  }) {
+    return repository.getMessages(sessionId: sessionId);
   }
 }

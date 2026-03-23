@@ -6,7 +6,10 @@ class SendSmartInstructorMessageUseCase {
 
   SendSmartInstructorMessageUseCase(this.repository);
 
-  Future<SmartInstructorMessageEntity> call({required String content}) {
-    return repository.sendUserMessage(content: content);
+  Future<List<SmartInstructorMessageEntity>> call({
+    required int sessionId,
+    required String content,
+  }) {
+    return repository.sendMessage(sessionId: sessionId, content: content);
   }
 }

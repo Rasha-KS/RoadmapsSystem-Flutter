@@ -1,12 +1,12 @@
 // features/announcements/presentation/announcements_provider.dart
-import 'package:flutter/material.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
+import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import '../domain/announcement_entity.dart';
 import '../domain/get_active_announcements_usecase.dart';
 
 enum AnnouncementsState { loading, loaded, connectionError }
 
-class AnnouncementsProvider extends ChangeNotifier {
+class AnnouncementsProvider extends SafeChangeNotifier {
   final GetActiveAnnouncementsUseCase useCase;
   AnnouncementsProvider(this.useCase);
 

@@ -153,7 +153,7 @@ class SettingsProvider extends SafeChangeNotifier {
     }
   }
 
-  Future<bool> changePassword({
+  Future<String?> changePassword({
     required String currentPassword,
     required String newPassword,
     required String newPasswordConfirmation,
@@ -161,25 +161,25 @@ class SettingsProvider extends SafeChangeNotifier {
     if (user == null) {
       error = 'تعذر العثور على بيانات المستخدم الحالية.';
       notifyListeners();
-      return false;
+      return null;
     }
 
     error = null;
     notifyListeners();
 
     try {
-      await changePasswordUseCase(
+      final successMessage = await changePasswordUseCase(
         currentPassword: currentPassword,
         newPassword: newPassword,
         newPasswordConfirmation: newPasswordConfirmation,
       );
       error = null;
       notifyListeners();
-      return true;
+      return successMessage;
     } catch (e) {
       error = _resolveErrorMessage(e, fallback: 'تعذر تغيير كلمة المرور.');
       notifyListeners();
-      return false;
+      return null;
     }
   }
 

@@ -5,7 +5,7 @@ class ChangePasswordUseCase {
 
   ChangePasswordUseCase(this.repository);
 
-  Future<void> call({
+  Future<String> call({
     required String currentPassword,
     required String newPassword,
     required String newPasswordConfirmation,

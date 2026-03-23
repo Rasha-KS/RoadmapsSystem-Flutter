@@ -62,7 +62,7 @@ class SettingsRepository {
     );
   }
 
-  Future<void> changePassword({
+  Future<String> changePassword({
     required String currentPassword,
     required String newPassword,
     required String newPasswordConfirmation,
@@ -88,8 +88,8 @@ class SettingsRepository {
       ApiConstants.url(ApiConstants.updateAccount),
       body: {
         'current_password': normalizedCurrentPassword,
-        'new_password': newPassword,
-        'new_password_confirmation': newPasswordConfirmation,
+        'password': newPassword,
+        'password_confirmation': newPasswordConfirmation,
       },
     );
     _ensureSuccess(
@@ -98,6 +98,11 @@ class SettingsRepository {
       requireExplicitSuccess: true,
       missingSuccessMessage:
           'لم يؤكد الخادم نجاح تغيير كلمة المرور. يرجى المحاولة مرة أخرى.',
+    );
+    return _extractRequiredSuccessMessage(
+      response,
+      fallbackMessage:
+          'لم يرسل الخادم رسالة نجاح لتأكيد تغيير كلمة المرور. يرجى المحاولة مرة أخرى.',
     );
   }
 
@@ -239,5 +244,25 @@ class SettingsRepository {
             : fallbackMessage,
       );
     }
+  }
+
+  String _extractRequiredSuccessMessage(
+    Map<String, dynamic> response, {
+    required String fallbackMessage,
+  }) {
+    final data = response['data'];
+    final candidates = <dynamic>[
+      response['message'],
+      if (data is String) data,
+      if (data is Map<String, dynamic>) data['message'],
+    ];
+
+    for (final candidate in candidates) {
+      if (candidate is String && candidate.trim().isNotEmpty) {
+        return candidate.trim();
+      }
+    }
+
+    throw ApiException(fallbackMessage);
   }
 }

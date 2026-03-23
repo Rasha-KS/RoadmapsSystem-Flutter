@@ -559,7 +559,7 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
         });
 
         final provider = context.read<SettingsProvider>();
-        final success = await provider.changePassword(
+        final successMessage = await provider.changePassword(
           currentPassword: currentPassword,
           newPassword: newPassword,
           newPasswordConfirmation: confirmNewPassword,
@@ -570,7 +570,7 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
           _updatingPassword = false;
         });
 
-        if (!success) {
+        if (successMessage == null) {
           _showStatusSnack(
             provider.error ?? 'تعذر تغيير كلمة المرور.',
             isError: true,
@@ -594,7 +594,7 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
           _isConfirmNewPasswordHidden = true;
         });
 
-        _showStatusSnack('تم تغيير كلمة المرور بنجاح.', isError: false);
+        _showStatusSnack(successMessage, isError: false);
       },
     );
   }

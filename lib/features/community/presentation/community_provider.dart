@@ -1,3 +1,4 @@
+import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import 'package:roadmaps/features/community/domain/chat_message_entity.dart';
@@ -30,16 +31,28 @@ class CommunityProvider extends SafeChangeNotifier {
   int? activeRoomId;
 
   final Map<int, List<ChatMessageEntity>> _messagesByRoom = {};
+  final Map<int, String?> _messagesErrorsByRoom = {};
   final Set<int> _loadingMessagesRooms = {};
+  final Set<int> _sendingRooms = {};
 
   List<ChatRoomEntity> get rooms => List.unmodifiable(_rooms);
 
   List<ChatMessageEntity> messagesForRoom(int roomId) {
-    return List.unmodifiable(_messagesByRoom[roomId] ?? []);
+    return List.unmodifiable(
+      _messagesByRoom[roomId] ?? const <ChatMessageEntity>[],
+    );
   }
 
   bool isRoomMessagesLoading(int roomId) {
     return _loadingMessagesRooms.contains(roomId);
+  }
+
+  bool isSendingMessage(int roomId) {
+    return _sendingRooms.contains(roomId);
+  }
+
+  String? roomMessagesError(int roomId) {
+    return _messagesErrorsByRoom[roomId];
   }
 
   Future<void> loadRooms() async {
@@ -50,12 +63,15 @@ class CommunityProvider extends SafeChangeNotifier {
     try {
       _rooms = await getUserCommunityRoomsUseCase();
       _ensureActiveRoomStillValid();
-    } catch (_) {
-      roomsError = 'تعذر تحميل المجتمعات';
+    } catch (error) {
+      roomsError = _resolveErrorMessage(
+        error,
+        fallback: 'تعذر تحميل المجتمعات.',
+      );
+    } finally {
+      loadingRooms = false;
+      notifyListeners();
     }
-
-    loadingRooms = false;
-    notifyListeners();
   }
 
   Future<void> openRoom(int roomId) async {
@@ -66,13 +82,21 @@ class CommunityProvider extends SafeChangeNotifier {
 
   Future<void> loadMessages(int roomId) async {
     _loadingMessagesRooms.add(roomId);
+    _messagesErrorsByRoom.remove(roomId);
     notifyListeners();
 
-    final data = await getMessagesByRoomUseCase(roomId);
-    _messagesByRoom[roomId] = data;
-
-    _loadingMessagesRooms.remove(roomId);
-    notifyListeners();
+    try {
+      final data = await getMessagesByRoomUseCase(roomId);
+      _messagesByRoom[roomId] = data;
+    } catch (error) {
+      _messagesErrorsByRoom[roomId] = _resolveErrorMessage(
+        error,
+        fallback: 'تعذر تحميل الرسائل.',
+      );
+    } finally {
+      _loadingMessagesRooms.remove(roomId);
+      notifyListeners();
+    }
   }
 
   Future<void> sendTextMessage({
@@ -82,8 +106,11 @@ class CommunityProvider extends SafeChangeNotifier {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
 
-    final currentUserId = currentUserProvider.userId;
-    if (currentUserId == null) return;
+    final currentUser = currentUserProvider.user;
+    final currentUserId = currentUser?.id;
+    if (currentUserId == null) {
+      return;
+    }
 
     final temporaryId = -DateTime.now().microsecondsSinceEpoch;
     final optimistic = ChatMessageEntity(
@@ -92,26 +119,154 @@ class CommunityProvider extends SafeChangeNotifier {
       userId: currentUserId,
       content: trimmed,
       sentAt: DateTime.now(),
+      senderName: currentUser?.username,
+      senderAvatarUrl: currentUser?.profileImageUrl,
+      status: ChatMessageStatus.sending,
       isLocal: true,
     );
 
-    final roomMessages = <ChatMessageEntity>[
-      ...(_messagesByRoom[roomId] ?? <ChatMessageEntity>[]),
+    _messagesByRoom[roomId] = <ChatMessageEntity>[
+      ...(_messagesByRoom[roomId] ?? const <ChatMessageEntity>[]),
       optimistic,
     ];
-    _messagesByRoom[roomId] = roomMessages;
+    _messagesErrorsByRoom.remove(roomId);
+    _sendingRooms.add(roomId);
     notifyListeners();
 
-    final sent = await sendMessageUseCase(roomId: roomId, content: trimmed);
-    _replaceOptimistic(roomId: roomId, temporaryId: temporaryId, sent: sent);
+    try {
+      final sent = await sendMessageUseCase(
+        roomId: roomId,
+        userId: currentUserId,
+        content: trimmed,
+      );
+      _replaceMessage(
+        roomId: roomId,
+        messageId: temporaryId,
+        updatedMessage: sent.copyWith(
+          chatRoomId: sent.chatRoomId == 0 ? roomId : sent.chatRoomId,
+          userId: sent.userId == 0 ? currentUserId : sent.userId,
+          content: (sent.content == null || sent.content!.trim().isEmpty)
+              ? trimmed
+              : sent.content,
+          senderName: sent.senderName ?? currentUser?.username,
+          senderAvatarUrl:
+              sent.senderAvatarUrl ?? currentUser?.profileImageUrl,
+          status: ChatMessageStatus.sent,
+          failureMessage: null,
+          isLocal: false,
+        ),
+      );
+    } catch (error) {
+      _replaceMessage(
+        roomId: roomId,
+        messageId: temporaryId,
+        updatedMessage: optimistic.copyWith(
+          status: ChatMessageStatus.failed,
+          failureMessage: _resolveErrorMessage(
+            error,
+            fallback: 'تعذر إرسال الرسالة.',
+          ),
+        ),
+      );
+    } finally {
+      _sendingRooms.remove(roomId);
+      notifyListeners();
+    }
+  }
+
+  Future<void> retryMessage({
+    required int roomId,
+    required int messageId,
+  }) async {
+    if (_sendingRooms.contains(roomId)) return;
+
+    final target = _findMessage(roomId: roomId, messageId: messageId);
+    final text = target?.content?.trim();
+    if (target == null || text == null || text.isEmpty) {
+      return;
+    }
+
+    final currentUser = currentUserProvider.user;
+    final currentUserId = currentUser?.id ?? target.userId;
+    final retrying = target.copyWith(
+      status: ChatMessageStatus.sending,
+      failureMessage: null,
+      senderName: target.senderName ?? currentUser?.username,
+      senderAvatarUrl:
+          target.senderAvatarUrl ?? currentUser?.profileImageUrl,
+    );
+
+    _replaceMessage(
+      roomId: roomId,
+      messageId: messageId,
+      updatedMessage: retrying,
+    );
+    _sendingRooms.add(roomId);
+    notifyListeners();
+
+    try {
+      final sent = await sendMessageUseCase(
+        roomId: roomId,
+        userId: currentUserId,
+        content: text,
+      );
+      _replaceMessage(
+        roomId: roomId,
+        messageId: messageId,
+        updatedMessage: sent.copyWith(
+          chatRoomId: sent.chatRoomId == 0 ? roomId : sent.chatRoomId,
+          userId: sent.userId == 0 ? currentUserId : sent.userId,
+          content: (sent.content == null || sent.content!.trim().isEmpty)
+              ? text
+              : sent.content,
+          senderName: sent.senderName ?? currentUser?.username,
+          senderAvatarUrl:
+              sent.senderAvatarUrl ?? currentUser?.profileImageUrl,
+          status: ChatMessageStatus.sent,
+          failureMessage: null,
+          isLocal: false,
+        ),
+      );
+    } catch (error) {
+      _replaceMessage(
+        roomId: roomId,
+        messageId: messageId,
+        updatedMessage: retrying.copyWith(
+          status: ChatMessageStatus.failed,
+          failureMessage: _resolveErrorMessage(
+            error,
+            fallback: 'تعذر إرسال الرسالة.',
+          ),
+        ),
+      );
+    } finally {
+      _sendingRooms.remove(roomId);
+      notifyListeners();
+    }
+  }
+
+  void cancelFailedMessage({
+    required int roomId,
+    required int messageId,
+  }) {
+    final target = _findMessage(roomId: roomId, messageId: messageId);
+    if (target == null || target.status != ChatMessageStatus.failed) {
+      return;
+    }
+
+    _removeMessage(roomId: roomId, messageId: messageId);
+    notifyListeners();
   }
 
   Future<void> sendImageMessage({
     required int roomId,
     required String attachmentPath,
   }) async {
-    final currentUserId = currentUserProvider.userId;
-    if (currentUserId == null) return;
+    final currentUser = currentUserProvider.user;
+    final currentUserId = currentUser?.id;
+    if (currentUserId == null) {
+      throw const ApiException('تعذر تحديد المستخدم الحالي.');
+    }
 
     final temporaryId = -DateTime.now().microsecondsSinceEpoch;
     final optimistic = ChatMessageEntity(
@@ -120,38 +275,90 @@ class CommunityProvider extends SafeChangeNotifier {
       userId: currentUserId,
       sentAt: DateTime.now(),
       attachmentPath: attachmentPath,
+      senderName: currentUser?.username,
+      senderAvatarUrl: currentUser?.profileImageUrl,
+      status: ChatMessageStatus.sending,
       isLocal: true,
     );
 
-    final roomMessages = <ChatMessageEntity>[
-      ...(_messagesByRoom[roomId] ?? <ChatMessageEntity>[]),
+    _messagesByRoom[roomId] = <ChatMessageEntity>[
+      ...(_messagesByRoom[roomId] ?? const <ChatMessageEntity>[]),
       optimistic,
     ];
-    _messagesByRoom[roomId] = roomMessages;
+    _messagesErrorsByRoom.remove(roomId);
+    _sendingRooms.add(roomId);
     notifyListeners();
 
-    final sent = await sendImageMessageUseCase(
-      roomId: roomId,
-      attachmentPath: attachmentPath,
-    );
-
-    _replaceOptimistic(roomId: roomId, temporaryId: temporaryId, sent: sent);
+    try {
+      final sent = await sendImageMessageUseCase(
+        roomId: roomId,
+        userId: currentUserId,
+        attachmentPath: attachmentPath,
+      );
+      _replaceMessage(
+        roomId: roomId,
+        messageId: temporaryId,
+        updatedMessage: sent.copyWith(
+          chatRoomId: sent.chatRoomId == 0 ? roomId : sent.chatRoomId,
+          userId: sent.userId == 0 ? currentUserId : sent.userId,
+          attachmentPath: sent.attachmentPath ?? attachmentPath,
+          senderName: sent.senderName ?? currentUser?.username,
+          senderAvatarUrl:
+              sent.senderAvatarUrl ?? currentUser?.profileImageUrl,
+          status: ChatMessageStatus.sent,
+          failureMessage: null,
+        ),
+      );
+    } catch (error) {
+      _replaceMessage(
+        roomId: roomId,
+        messageId: temporaryId,
+        updatedMessage: optimistic.copyWith(
+          status: ChatMessageStatus.failed,
+          failureMessage: _resolveErrorMessage(
+            error,
+            fallback: 'تعذر إرسال الصورة.',
+          ),
+        ),
+      );
+      rethrow;
+    } finally {
+      _sendingRooms.remove(roomId);
+      notifyListeners();
+    }
   }
 
-  void _replaceOptimistic({
+  void _replaceMessage({
     required int roomId,
-    required int temporaryId,
-    required ChatMessageEntity sent,
+    required int messageId,
+    required ChatMessageEntity updatedMessage,
   }) {
-    final updated = (_messagesByRoom[roomId] ?? <ChatMessageEntity>[]).map((message) {
-      if (message.id == temporaryId) {
-        return sent;
-      }
-      return message;
-    }).toList(growable: false);
+    _messagesByRoom[roomId] = (_messagesByRoom[roomId] ??
+            const <ChatMessageEntity>[])
+        .map((message) => message.id == messageId ? updatedMessage : message)
+        .toList(growable: false);
+  }
 
-    _messagesByRoom[roomId] = updated;
-    notifyListeners();
+  void _removeMessage({
+    required int roomId,
+    required int messageId,
+  }) {
+    _messagesByRoom[roomId] = (_messagesByRoom[roomId] ??
+            const <ChatMessageEntity>[])
+        .where((message) => message.id != messageId)
+        .toList(growable: false);
+  }
+
+  ChatMessageEntity? _findMessage({
+    required int roomId,
+    required int messageId,
+  }) {
+    for (final message in _messagesByRoom[roomId] ?? const <ChatMessageEntity>[]) {
+      if (message.id == messageId) {
+        return message;
+      }
+    }
+    return null;
   }
 
   void _ensureActiveRoomStillValid() {
@@ -164,6 +371,21 @@ class CommunityProvider extends SafeChangeNotifier {
 
   void _onCurrentUserChanged() {
     notifyListeners();
+  }
+
+  String _resolveErrorMessage(Object error, {required String fallback}) {
+    if (error is ApiException) {
+      final message = error.message.trim();
+      if (message.isNotEmpty) {
+        return message;
+      }
+    }
+
+    final message = error.toString().trim();
+    if (message.isNotEmpty && !message.startsWith('Exception')) {
+      return message;
+    }
+    return fallback;
   }
 
   @override

@@ -2,9 +2,7 @@ import '../domain/chat_message_entity.dart';
 import '../domain/chat_room_entity.dart';
 
 abstract class CommunityRepository {
-  Future<List<int>> getUserEnrolledRoadmapIds(int userId);
-
-  Future<List<ChatRoomEntity>> getChatRoomsByRoadmapIds(List<int> roadmapIds);
+  Future<List<ChatRoomEntity>> getUserCommunityRooms();
 
   Future<List<ChatMessageEntity>> getMessagesByRoom(int roomId);
 

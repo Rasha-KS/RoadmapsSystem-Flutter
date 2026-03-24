@@ -14,7 +14,7 @@ import 'package:roadmaps/features/auth/domain/login_usecase.dart';
 import 'package:roadmaps/features/auth/domain/register_usecase.dart';
 import 'package:roadmaps/features/auth/domain/reset_password_usecase.dart';
 import 'package:roadmaps/features/auth/presentation/auth_provider.dart';
-import 'package:roadmaps/features/community/data/mock_community_repository.dart';
+import 'package:roadmaps/features/community/data/community_api_repository.dart';
 import 'package:roadmaps/features/community/domain/get_messages_by_room_usecase.dart';
 import 'package:roadmaps/features/community/domain/get_user_community_rooms_usecase.dart';
 import 'package:roadmaps/features/community/domain/send_image_message_usecase.dart';
@@ -170,21 +170,18 @@ class Injection {
   }
 
   static CommunityProvider provideCommunityProvider() {
-    final repository = MockCommunityRepository();
+    final repository = CommunityApiRepository(apiClient: _apiClient);
 
     return CommunityProvider(
       getUserCommunityRoomsUseCase: GetUserCommunityRoomsUseCase(
         communityRepository: repository,
-        userRepository: _userRepository,
       ),
       getMessagesByRoomUseCase: GetMessagesByRoomUseCase(repository),
       sendMessageUseCase: SendMessageUseCase(
         repository: repository,
-        userRepository: _userRepository,
       ),
       sendImageMessageUseCase: SendImageMessageUseCase(
         repository: repository,
-        userRepository: _userRepository,
       ),
       currentUserProvider: _currentUserProvider,
     );

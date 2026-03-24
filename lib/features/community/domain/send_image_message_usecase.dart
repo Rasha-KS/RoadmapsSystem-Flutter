@@ -1,22 +1,21 @@
-import 'package:roadmaps/core/domain/repositories/user_repository.dart';
 import 'package:roadmaps/features/community/domain/chat_message_entity.dart';
 import 'package:roadmaps/features/community/data/community_repository.dart';
 
 class SendImageMessageUseCase {
   final CommunityRepository repository;
-  final UserRepository userRepository;
 
-  SendImageMessageUseCase({required this.repository, required this.userRepository});
+  SendImageMessageUseCase({
+    required this.repository,
+  });
 
   Future<ChatMessageEntity> call({
     required int roomId,
+    required int userId,
     required String attachmentPath,
   }) async {
-    final user = await userRepository.getCurrentUser();
-
     return repository.sendMessage(
       roomId: roomId,
-      userId: user.id,
+      userId: userId,
       attachmentPath: attachmentPath,
       isLocal: true,
     );

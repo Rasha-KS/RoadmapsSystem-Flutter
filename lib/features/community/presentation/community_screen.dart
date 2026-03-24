@@ -55,6 +55,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   )
                 : hasInitialError
                 ? _ErrorState(
+                    message:
+                        provider.roomsError ?? 'تعذر تحميل المجتمعات',
                     onRetry: () {
                       provider.loadRooms();
                     },
@@ -65,7 +67,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       if (provider.roomsError != null) {
                         if (!context.mounted) return;
                         final messenger = ScaffoldMessenger.of(context);
-                        _showRefreshFailedSnackBar(messenger);
+                        _showRefreshFailedSnackBar(
+                          messenger,
+                          provider.roomsError!,
+                        );
                       }
                     },
                     color: AppColors.primary2,
@@ -132,7 +137,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  void _showRefreshFailedSnackBar(ScaffoldMessengerState messenger) {
+  void _showRefreshFailedSnackBar(
+    ScaffoldMessengerState messenger,
+    String message,
+  ) {
     messenger.showSnackBar(
       SnackBar(
         shape: const RoundedRectangleBorder(
@@ -142,7 +150,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ),
         ),
         content: Text(
-          'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
+          message,
           textAlign: TextAlign.right,
           style: AppTextStyles.body.copyWith(color: AppColors.text_2),
         ),
@@ -154,9 +162,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
 }
 
 class _ErrorState extends StatelessWidget {
+  final String message;
   final VoidCallback onRetry;
 
-  const _ErrorState({required this.onRetry});
+  const _ErrorState({
+    required this.message,
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +181,7 @@ class _ErrorState extends StatelessWidget {
             Directionality(
               textDirection: TextDirection.rtl,
               child: Text(
-                'تعذر تحميل المجتمعات',
+                message,
                 style: AppTextStyles.heading5.copyWith(color: AppColors.error),
                 textAlign: TextAlign.center,
               ),
@@ -183,7 +195,7 @@ class _ErrorState extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                'المجتمعات',
+                'إعادة المحاولة',
                 style: AppTextStyles.boldSmallText.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
@@ -258,7 +270,7 @@ class CommunityRoomTile extends StatelessWidget {
                     child: Text(
                       roomName,
                       textAlign: TextAlign.right,
-                      style: AppTextStyles.heading4.copyWith(
+                      style: AppTextStyles.heading5.copyWith(
                         color: AppColors.primary1,
                       ),
                     ),

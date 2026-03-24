@@ -37,6 +37,11 @@ class ApiConstants {
   static String chatbotSessionMessages(int sessionId) =>"/chatbot/sessions/$sessionId/messages";
   static String chatbotSession(int sessionId) => "/chatbot/sessions/$sessionId";
 
+  // Community
+  static const String myCommunity = "/me/community";
+  static String communityMessages(int chatRoomId) =>
+      "/community/$chatRoomId/messages";
+
   // Roadmaps
   static const String roadmaps = "/roadmaps";
   static String roadmapDetails(int roadmapId) => "/roadmaps/$roadmapId";

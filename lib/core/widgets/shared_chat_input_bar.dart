@@ -63,9 +63,10 @@ class _SharedChatInputBarState extends State<SharedChatInputBar> {
   Future<void> _send() async {
     if (!_canSend || widget.isSending) return;
     final text = _controller.text.trim();
+    _controller.clear();
+    setState(() {});
     await widget.onSendPressed(text);
     if (!mounted) return;
-    _controller.clear();
     setState(() {});
   }
 

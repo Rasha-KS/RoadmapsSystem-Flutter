@@ -1,41 +1,11 @@
+import 'package:roadmaps/features/community/data/community_repository.dart';
 import 'package:roadmaps/features/community/domain/chat_message_entity.dart';
 import 'package:roadmaps/features/community/domain/chat_room_entity.dart';
-import 'package:roadmaps/features/community/data/community_repository.dart';
 
 import 'chat_message_model.dart';
 import 'chat_room_model.dart';
 
 class MockCommunityRepository implements CommunityRepository {
-  final List<Map<String, dynamic>> _roadmapEnrollmentsTable = [
-    {
-      'id': 101,
-      'user_id': 1,
-      'roadmap_id': 1,
-      'started_at': DateTime(2026, 1, 1),
-      'completed_at': null,
-      'xp_points': 50,
-      'status': 'in_progress',
-    },
-    {
-      'id': 102,
-      'user_id': 1,
-      'roadmap_id': 2,
-      'started_at': DateTime(2026, 1, 25),
-      'completed_at': null,
-      'xp_points': 50,
-      'status': 'in_progress',
-    },
-    {
-      'id': 103,
-      'user_id': 1,
-      'roadmap_id': 4,
-      'started_at': DateTime(2026, 2, 1),
-      'completed_at': null,
-      'xp_points': 20,
-      'status': 'in_progress',
-    },
-  ];
-
   final List<Map<String, dynamic>> _chatRoomsTable = [
     {
       'id': 1,
@@ -71,6 +41,7 @@ class MockCommunityRepository implements CommunityRepository {
       'content': 'مرحبًا بك في مجتمع Flutter',
       'sent_at': DateTime(2026, 2, 10, 10, 30),
       'attachment_path': null,
+      'username': 'Abdo_A',
     },
     {
       'id': 2,
@@ -79,6 +50,7 @@ class MockCommunityRepository implements CommunityRepository {
       'content': 'شكرًا، سعيد بالانضمام إليكم',
       'sent_at': DateTime(2026, 2, 10, 11, 05),
       'attachment_path': null,
+      'username': 'Rasha_Ks',
     },
     {
       'id': 3,
@@ -87,25 +59,16 @@ class MockCommunityRepository implements CommunityRepository {
       'content': 'Python tips thread',
       'sent_at': DateTime(2026, 2, 13, 14, 20),
       'attachment_path': null,
+      'username': 'Ali',
     },
   ];
 
   @override
-  Future<List<int>> getUserEnrolledRoadmapIds(int userId) async {
-    await Future.delayed(const Duration(milliseconds: 120));
-    return _roadmapEnrollmentsTable
-        .where((item) => item['user_id'] == userId)
-        .map((item) => item['roadmap_id'] as int)
-        .toList();
-  }
-
-  @override
-  Future<List<ChatRoomEntity>> getChatRoomsByRoadmapIds(List<int> roadmapIds) async {
+  Future<List<ChatRoomEntity>> getUserCommunityRooms() async {
     await Future.delayed(const Duration(milliseconds: 160));
-    final ids = roadmapIds.toSet();
 
     return _chatRoomsTable
-        .where((item) => ids.contains(item['roadmap_id']) && item['is_active'] == true)
+        .where((item) => item['is_active'] == true)
         .map(ChatRoomModel.fromJson)
         .toList();
   }
@@ -116,7 +79,7 @@ class MockCommunityRepository implements CommunityRepository {
 
     return _chatMessagesTable
         .where((item) => item['chat_room_id'] == roomId)
-        .map(ChatMessageModel.fromJson)
+        .map((item) => ChatMessageModel.fromJson(item, fallbackRoomId: roomId))
         .toList()
       ..sort((a, b) => a.sentAt.compareTo(b.sentAt));
   }
@@ -129,7 +92,6 @@ class MockCommunityRepository implements CommunityRepository {
     String? attachmentPath,
     bool isLocal = false,
   }) async {
-    // Local path now; backend will later return uploaded URL in the same field.
     await Future.delayed(const Duration(milliseconds: 250));
 
     final nextId = _chatMessagesTable.isEmpty
@@ -144,9 +106,10 @@ class MockCommunityRepository implements CommunityRepository {
       'sent_at': DateTime.now(),
       'attachment_path': attachmentPath,
       'is_local': isLocal,
+      'username': 'You',
     };
 
     _chatMessagesTable.add(record);
-    return ChatMessageModel.fromJson(record);
+    return ChatMessageModel.fromJson(record, fallbackRoomId: roomId);
   }
 }

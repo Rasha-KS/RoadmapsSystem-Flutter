@@ -223,6 +223,13 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Image.asset(
+                    passed ? 'assets/images/happy.png' : 'assets/images/sad.png',
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(height: 10),
                   Text(
                     'النتيجة',
                     style: AppTextStyles.heading4.copyWith(

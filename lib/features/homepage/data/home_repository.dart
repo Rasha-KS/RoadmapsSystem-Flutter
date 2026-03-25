@@ -1,6 +1,7 @@
 import 'package:roadmaps/core/api/api_client.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/constants/api_constants.dart';
+import 'package:roadmaps/core/utils/enrollment_reset.dart';
 import 'package:roadmaps/core/utils/roadmap_display.dart';
 
 import '../domain/home_entity.dart';
@@ -53,15 +54,27 @@ class HomeRepository {
   }
 
   Future<void> resetMyCourse(int courseId) async {
-    final response = await _apiClient.post(
-      ApiConstants.url(ApiConstants.enrollRoadmap(courseId)),
-    );
-    if (_isAlreadyEnrolled(response)) {
-      return;
-    }
-    _ensureSuccess(
-      response,
-      fallbackMessage: 'تعذر إعادة ضبط المسار.',
+    await EnrollmentReset.perform(
+      deleteEnrollment: () => _apiClient.delete(
+        ApiConstants.url(ApiConstants.unenrollRoadmap(courseId)),
+      ),
+      enrollAgain: () => _apiClient.post(
+        ApiConstants.url(ApiConstants.enrollRoadmap(courseId)),
+      ),
+      handleDeleteResponse: (response) {
+        if (_isNotEnrolled(response)) return;
+        _ensureSuccess(
+          response,
+          fallbackMessage: 'تعذر إلغاء الاشتراك في المسار.',
+        );
+      },
+      handleEnrollResponse: (response) {
+        if (_isAlreadyEnrolled(response)) return;
+        _ensureSuccess(
+          response,
+          fallbackMessage: 'تعذر إعادة ضبط المسار.',
+        );
+      },
     );
   }
 

@@ -263,6 +263,13 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        Image.asset(
+                          'assets/images/happy.png',
+                          width: 78,
+                          height: 78,
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(height: 10),
                         Text(
                           'تهانينا !',
                           style: AppTextStyles.heading2.copyWith(
@@ -577,12 +584,13 @@ class _CodeEditorCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Icon(
+                    Image.asset(
                       isSuccess
-                          ? Icons.check_circle_outline_rounded
-                          : Icons.highlight_off_rounded,
-                      color: isSuccess ? AppColors.text_3 : AppColors.text_2,
-                      size: 35,
+                          ? 'assets/images/happy.png'
+                          : 'assets/images/sad.png',
+                      width: 34,
+                      height: 34,
+                      fit: BoxFit.contain,
                     ),
                   ],
                 ),

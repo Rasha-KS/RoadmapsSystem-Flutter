@@ -348,17 +348,7 @@ class MessageBubble extends StatelessWidget {
         : message.senderAvatarUrl;
 
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      return SizedBox(
-        width: 40,
-        height: 40,
-        child: ClipOval(
-          child: Image.network(
-            avatarUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => _buildAvatarFallback(),
-          ),
-        ),
-      );
+      return _ChatAvatar(imageUrl: avatarUrl);
     }
 
     return _buildAvatarFallback();
@@ -408,6 +398,136 @@ class MessageBubble extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ChatAvatar extends StatefulWidget {
+  const _ChatAvatar({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  State<_ChatAvatar> createState() => _ChatAvatarState();
+}
+
+class _ChatAvatarState extends State<_ChatAvatar> {
+  late List<String> _candidateUrls;
+  var _activeCandidateIndex = 0;
+  bool _switchScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resetCandidates();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ChatAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageUrl != widget.imageUrl) {
+      _resetCandidates();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_candidateUrls.isEmpty) {
+      return _buildFallback();
+    }
+
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: ClipOval(
+        child: Image.network(
+          _candidateUrls[_activeCandidateIndex],
+          key: ValueKey(_candidateUrls[_activeCandidateIndex]),
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) {
+            _tryNextCandidate();
+            return _buildFallback();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFallback() {
+    return const CircleAvatar(
+      radius: 20,
+      backgroundColor: AppColors.secondary2,
+      child: Icon(Icons.person, size: 20, color: AppColors.primary),
+    );
+  }
+
+  void _resetCandidates() {
+    _candidateUrls = _buildCandidateUrls(widget.imageUrl);
+    _activeCandidateIndex = 0;
+    _switchScheduled = false;
+  }
+
+  void _tryNextCandidate() {
+    if (_switchScheduled ||
+        _activeCandidateIndex >= _candidateUrls.length - 1) {
+      return;
+    }
+
+    _switchScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _activeCandidateIndex++;
+        _switchScheduled = false;
+      });
+    });
+  }
+
+  List<String> _buildCandidateUrls(String imageUrl) {
+    final trimmedUrl = imageUrl.trim();
+    if (trimmedUrl.isEmpty) {
+      return const <String>[];
+    }
+
+    final candidates = <String>[trimmedUrl];
+    final parsed = Uri.tryParse(trimmedUrl);
+    if (parsed == null) {
+      return candidates;
+    }
+
+    final path = parsed.path;
+    final isProfilePicturePath = path.contains('/profile_pictures/');
+    if (!isProfilePicturePath) {
+      return candidates;
+    }
+
+    if (!path.startsWith('/storage/')) {
+      final storageUrl = parsed.replace(path: '/storage$path').toString();
+      if (!candidates.contains(storageUrl)) {
+        candidates.add(storageUrl);
+      }
+    }
+
+    if (!path.startsWith('/api/v1/')) {
+      final apiPath = path.startsWith('/')
+          ? '/api/v1$path'
+          : '/api/v1/$path';
+      final apiUrl = parsed.replace(path: apiPath).toString();
+      if (!candidates.contains(apiUrl)) {
+        candidates.add(apiUrl);
+      }
+
+      if (!path.startsWith('/storage/')) {
+        final apiStoragePath = path.startsWith('/')
+            ? '/api/v1/storage$path'
+            : '/api/v1/storage/$path';
+        final apiStorageUrl = parsed.replace(path: apiStoragePath).toString();
+        if (!candidates.contains(apiStorageUrl)) {
+          candidates.add(apiStorageUrl);
+        }
+      }
+    }
+
+    return candidates;
   }
 }
 

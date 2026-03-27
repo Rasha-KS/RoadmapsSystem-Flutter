@@ -168,7 +168,6 @@ class _ProfileAvatarState extends State<_ProfileAvatar> {
   late List<String> _candidateUrls;
   var _activeCandidateIndex = 0;
   bool _switchScheduled = false;
-  bool _precacheScheduled = false;
 
   @override
   void initState() {
@@ -183,12 +182,6 @@ class _ProfileAvatarState extends State<_ProfileAvatar> {
         oldWidget.updatedAt != widget.updatedAt) {
       _resetCandidates();
     }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _schedulePrecache();
   }
 
   @override
@@ -229,7 +222,6 @@ class _ProfileAvatarState extends State<_ProfileAvatar> {
     );
     _activeCandidateIndex = 0;
     _switchScheduled = false;
-    _precacheScheduled = false;
   }
 
   void _tryNextCandidate() {
@@ -246,21 +238,6 @@ class _ProfileAvatarState extends State<_ProfileAvatar> {
         _switchScheduled = false;
       });
     });
-  }
-
-  void _schedulePrecache() {
-    if (_precacheScheduled || _candidateUrls.isEmpty || !mounted) {
-      return;
-    }
-
-    _precacheScheduled = true;
-    final url = _candidateUrls[_activeCandidateIndex];
-    unawaited(
-      precacheImage(
-        NetworkImage(url),
-        context,
-      ).catchError((_) {}),
-    );
   }
 
   List<String> _buildCandidateUrls(

@@ -10,7 +10,7 @@ class SmartInstructorIntroScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         children: [

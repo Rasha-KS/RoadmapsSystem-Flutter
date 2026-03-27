@@ -442,36 +442,46 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> with RouteAware {
                                   );
                                 }
                               },
-                              child: Stack(
-                                children: [
-                                  ListView(
-                                    physics: const AlwaysScrollableScrollPhysics(),
-                                    children: [
-                                      ...roadmaps.map(
-                                        (course) => _buildRoadmapTile(
-                                          context,
-                                          course,
-                                          enrolled: roadmapsProvider.isCourseEnrolled(course.id),
+                              child: roadmaps.isEmpty
+                                  ? ListView(
+                                      physics: const AlwaysScrollableScrollPhysics(),
+                                      children: const [
+                                        SizedBox(height: 110),
+                                        _EmptyRoadmapsState(),
+                                      ],
+                                    )
+                                  : Stack(
+                                      children: [
+                                        ListView(
+                                          physics:
+                                              const AlwaysScrollableScrollPhysics(),
+                                          children: [
+                                            ...roadmaps.map(
+                                              (course) => _buildRoadmapTile(
+                                                context,
+                                                course,
+                                                enrolled: roadmapsProvider
+                                                    .isCourseEnrolled(course.id),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  if (isRefreshing)
-                                    Positioned.fill(
-                                      child: IgnorePointer(
-                                        child: Container(
-                                          color: AppColors.background
-                                              .withValues(alpha: 0.35),
-                                          child: const Center(
-                                            child: CircularProgressIndicator(
-                                              color: AppColors.primary2,
+                                        if (isRefreshing)
+                                          Positioned.fill(
+                                            child: IgnorePointer(
+                                              child: Container(
+                                                color: AppColors.background
+                                                    .withValues(alpha: 0.35),
+                                                child: const Center(
+                                                  child: CircularProgressIndicator(
+                                                    color: AppColors.primary2,
+                                                  ),
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ),
+                                      ],
                                     ),
-                                ],
-                              ),
                             ),
                     ),
                   ),
@@ -503,6 +513,35 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> with RouteAware {
         ),
         backgroundColor: AppColors.backGroundError,
         duration: const Duration(milliseconds: 1000),
+      ),
+    );
+  }
+}
+
+class _EmptyRoadmapsState extends StatelessWidget {
+  const _EmptyRoadmapsState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.route_outlined,
+              size: 72,
+              color: AppColors.primary1,
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'لا يوجد مسارات لعرضها',
+              style: AppTextStyles.heading4.copyWith(color: AppColors.text_5),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

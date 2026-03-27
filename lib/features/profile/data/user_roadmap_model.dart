@@ -45,7 +45,7 @@ class UserRoadmapModel extends UserRoadmapEntity {
       xpPoints: _asInt(json['xp_points'], fallback: 0),
       progressPercentage: _asInt(
         json['progress_percentage'],
-        fallback: completedAt != null ? 100 : 0,
+        fallback: 0,
       ),
     );
   }

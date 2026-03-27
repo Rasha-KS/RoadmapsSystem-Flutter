@@ -22,9 +22,16 @@ class CurrentUserProvider extends SafeChangeNotifier {
     notifyListeners();
 
     try {
-      _currentUser = await _userRepository.getCurrentUser();
+      final cachedUser = await _userRepository.getCachedCurrentUser();
+      if (cachedUser != null) {
+        _currentUser = cachedUser;
+        notifyListeners();
+      }
+
+      final freshUser = await _userRepository.getCurrentUser();
+      _currentUser = freshUser;
+      _error = null;
     } catch (e) {
-      _currentUser = null;
       _error = e.toString();
     }
 

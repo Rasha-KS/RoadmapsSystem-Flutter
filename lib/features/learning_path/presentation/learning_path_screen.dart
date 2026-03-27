@@ -15,6 +15,7 @@ import 'package:roadmaps/features/main_screen.dart';
 import 'package:roadmaps/features/learning_path/domain/learning_unit_entity.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
 import 'package:roadmaps/features/lessons/presentation/lessons_screen.dart';
+import 'package:roadmaps/features/profile/presentation/profile_provider.dart';
 
 class LearningPathScreen extends StatefulWidget {
   final int roadmapId;
@@ -60,14 +61,16 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
               child: Column(
                 children: [
                   _HeaderCard(
-                    title: widget.roadmapTitle,
+                    title: provider.roadmapTitle.isNotEmpty
+                        ? provider.roadmapTitle
+                        : widget.roadmapTitle,
                     units: provider.units,
                     userXp: provider.userXp,
                   ),
                   const SizedBox(height: 20),
                   Expanded(
                     child: hasInitialLoading
-                        ? const Center(
+                      ? const Center(
                             child: CircularProgressIndicator(
                               color: AppColors.primary2,
                             ),
@@ -77,7 +80,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                             onRetry: () async {
                               await context
                                   .read<LearningPathProvider>()
-                                  .loadPath(widget.roadmapId);
+                                  .refreshPath();
                             },
                           )
                         : _buildRoadmapList(provider),
@@ -105,7 +108,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       color: AppColors.primary2,
       onRefresh: () async {
         final messenger = ScaffoldMessenger.of(context);
-        await provider.loadPath(widget.roadmapId, showLoader: false);
+        await provider.refreshPath();
         if (provider.state == LearningPathState.connectionError) {
           _showRefreshFailedSnackBar(messenger);
         }
@@ -116,16 +119,20 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         itemBuilder: (context, index) {
           final unit = provider.units[index];
           final bool alignLeft = index.isEven;
+          final lessonNumber = _lessonNumberForIndex(provider.units, index);
+          final String? displayTitle = unit.type == LearningUnitType.lesson
+              ? 'درس $lessonNumber'
+              : null;
 
           return Column(
             children: [
               Align(
-                alignment: alignLeft
-                    ? Alignment.centerLeft
-                    : Alignment.centerRight,
+                alignment:
+                    alignLeft ? Alignment.centerLeft : Alignment.centerRight,
                 child: RoadmapNode(
                   unit: unit,
-                  onTap: () => _onUnitTap(provider, unit),
+                  displayTitle: displayTitle,
+                  onTap: () => _onUnitTap(provider, unit, lessonNumber),
                 ),
               ),
               if (index < provider.units.length - 1)
@@ -147,6 +154,16 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         },
       ),
     );
+  }
+
+  int _lessonNumberForIndex(List<LearningUnitEntity> units, int currentIndex) {
+    var lessonCount = 0;
+    for (var i = 0; i <= currentIndex && i < units.length; i++) {
+      if (units[i].type == LearningUnitType.lesson) {
+        lessonCount++;
+      }
+    }
+    return lessonCount == 0 ? 1 : lessonCount;
   }
 
   void _showRefreshFailedSnackBar(ScaffoldMessengerState messenger) {
@@ -172,8 +189,9 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   Future<void> _onUnitTap(
     LearningPathProvider provider,
     LearningUnitEntity unit,
+    int lessonNumber,
   ) async {
-    if (unit.status == LearningUnitStatus.locked) {
+    if (unit.isLocked) {
       final bool isLockedChallenge = unit.type == LearningUnitType.challenge;
       final bool isLockedCheckPonit = unit.type == LearningUnitType.quiz;
       final bool isLockedLesson = unit.type == LearningUnitType.lesson;
@@ -186,8 +204,8 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
             ),
           ),
           content: Text(
-            isLockedChallenge && (provider.userXp < unit.requiredXp)
-                ? 'نقاط خبرتك الحالية ${provider.userXp}. لفتح التحدي تحتاج ${unit.requiredXp}.'
+            isLockedChallenge
+                ? 'هذا التحدي مقفل حاليًا.'
                 : isLockedCheckPonit
                 ? 'هذا الاختبار مقفل، أكمل الدرس السابق.'
                 : isLockedLesson
@@ -232,32 +250,6 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         return;
       }
 
-      if (provider.userXp < challenge.minXp) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.fixed,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(30),
-                topRight: Radius.circular(30),
-              ),
-            ),
-            content: Directionality(
-              textDirection: TextDirection.rtl,
-              child: Text(
-                textAlign: TextAlign.right,
-                'XP الحالي: ${provider.userXp}, '
-                'لفتح هذا التحدي يلزم ${challenge.minXp}',
-                style: AppTextStyles.body,
-              ),
-            ),
-            backgroundColor: AppColors.backGroundError,
-            duration: const Duration(milliseconds: 1500),
-          ),
-        );
-        return;
-      }
-
       final userId = context.read<CurrentUserProvider>().userId ?? 1;
       final ChallengeFinishAction? finishAction = await Navigator.of(context)
           .push<ChallengeFinishAction>(
@@ -273,6 +265,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       if (finishAction == null) return;
 
       await provider.completeUnit(unitId: unit.id, earnedXp: 0);
+      _syncProfileProgress(provider);
       if (!mounted) return;
 
       if (finishAction == ChallengeFinishAction.goHome) {
@@ -288,13 +281,15 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     }
 
     if (unit.type == LearningUnitType.lesson) {
-      final int lessonNumber = _lessonNumberForUnit(provider.units, unit.id);
       final bool? shouldComplete = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
           builder: (_) => LessonsScreen(
-            learningUnitId: unit.id.toString(),
-            lessonNumber: lessonNumber,
+            lessonId: unit.entityId,
             roadmapTitle: widget.roadmapTitle,
+            lessonTitle: unit.title,
+            lessonDescription: unit.description ?? '',
+            lessonNumber: lessonNumber,
+            isLessonCompleted: unit.status == LearningUnitStatus.completed,
           ),
         ),
       );
@@ -400,30 +395,10 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       return;
     }
 
-    if (unit.status == LearningUnitStatus.completed) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(30),
-              topRight: Radius.circular(30),
-            ),
-          ),
-          content: Text(
-            textAlign: TextAlign.right,
-            'هذا الدرس مكتمل.',
-            style: AppTextStyles.body.copyWith(color: AppColors.text_5),
-          ),
-          duration: Duration(milliseconds: 1000),
-          backgroundColor: AppColors.warning,
-        ),
-      );
-      return;
-    }
-
-    final int earnedXp = _earnedXpForUnit(unit.type);
-    await provider.completeUnit(unitId: unit.id, earnedXp: earnedXp);
-    if (!mounted) return;
+      final int earnedXp = _earnedXpForUnit(unit.type);
+      await provider.completeUnit(unitId: unit.id, earnedXp: earnedXp);
+      _syncProfileProgress(provider);
+      if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -441,6 +416,15 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         backgroundColor: AppColors.backGroundSuccess,
         duration: Duration(milliseconds: 1500),
       ),
+    );
+  }
+
+  void _syncProfileProgress(LearningPathProvider provider) {
+    if (!mounted) return;
+    final profileProvider = context.read<ProfileProvider>();
+    profileProvider.updateRoadmapProgress(
+      roadmapId: widget.roadmapId,
+      progressPercentage: (provider.completionRatio * 100).round(),
     );
   }
 
@@ -471,17 +455,6 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     }
   }
 
-  int _lessonNumberForUnit(List<LearningUnitEntity> units, int unitId) {
-    final int unitIndex = units.indexWhere((element) => element.id == unitId);
-    if (unitIndex == -1) return 1;
-
-    final int lessonCount = units
-        .take(unitIndex + 1)
-        .where((element) => element.type == LearningUnitType.lesson)
-        .length;
-
-    return lessonCount <= 0 ? 1 : lessonCount;
-  }
 }
 
 class _ErrorState extends StatelessWidget {
@@ -558,11 +531,17 @@ class _HeaderCard extends StatelessWidget {
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: AppTextStyles.heading4.copyWith(color: AppColors.text_5),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: AppTextStyles.heading4.copyWith(
+                    color: AppColors.text_5,
+                  ),
+                ),
               ),
               IconButton(
                 onPressed: () => Navigator.of(context).maybePop(),

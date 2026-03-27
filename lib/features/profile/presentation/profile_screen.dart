@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,7 +6,6 @@ import 'package:roadmaps/core/constants/ui_texts.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/widgets/action_snackbar.dart';
-import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/lesson_card_1.dart';
 import 'package:roadmaps/core/utils/enrollment_sync.dart';
 import 'package:roadmaps/core/utils/page_refresh.dart';
@@ -169,6 +168,7 @@ class _ProfileAvatarState extends State<_ProfileAvatar> {
   late List<String> _candidateUrls;
   var _activeCandidateIndex = 0;
   bool _switchScheduled = false;
+  bool _precacheScheduled = false;
 
   @override
   void initState() {
@@ -183,6 +183,12 @@ class _ProfileAvatarState extends State<_ProfileAvatar> {
         oldWidget.updatedAt != widget.updatedAt) {
       _resetCandidates();
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _schedulePrecache();
   }
 
   @override
@@ -223,6 +229,8 @@ class _ProfileAvatarState extends State<_ProfileAvatar> {
     );
     _activeCandidateIndex = 0;
     _switchScheduled = false;
+    _precacheScheduled = false;
+    _schedulePrecache();
   }
 
   void _tryNextCandidate() {
@@ -239,6 +247,21 @@ class _ProfileAvatarState extends State<_ProfileAvatar> {
         _switchScheduled = false;
       });
     });
+  }
+
+  void _schedulePrecache() {
+    if (_precacheScheduled || _candidateUrls.isEmpty || !mounted) {
+      return;
+    }
+
+    _precacheScheduled = true;
+    final url = _candidateUrls[_activeCandidateIndex];
+    unawaited(
+      precacheImage(
+        NetworkImage(url),
+        context,
+      ).catchError((_) {}),
+    );
   }
 
   List<String> _buildCandidateUrls(
@@ -353,109 +376,98 @@ class _RoadmapSection extends StatelessWidget {
           course: roadmap,
           widthMultiplier: 0.92,
           trimLength: 90,
-          onDelete: () => showConfirmActionDialog(
-            context: context,
-            title: AppTexts.deleteConfirmTitle,
-            message: AppTexts.deleteConfirmMessage,
-            onConfirm: () async {
-              try {
-                final homeProvider = context.read<HomeProvider>();
-                final roadmapsProvider = context.read<RoadmapsProvider>();
-                final profileProvider = context.read<ProfileProvider>();
-                await profileProvider.deleteRoadmap(
-                  roadmap.enrollmentId,
-                  updateState: false,
-                );
-                profileProvider.removeRoadmapByRoadmapId(roadmap.roadmapId);
-                homeProvider.removeCourseById(
-                  roadmap.roadmapId,
-                  courseData: HomeCourseEntity(
-                    id: roadmap.roadmapId,
-                    title: roadmap.title,
-                    level: roadmap.level,
-                    description: roadmap.description,
-                    status: roadmap.status,
-                  ),
-                );
-                roadmapsProvider.setCourseEnrollment(roadmap.roadmapId, false);
-                if (!context.mounted) return;
-                final messenger = ScaffoldMessenger.of(context);
-                showActionSnackBar(
-                  messenger,
-                  message: AppTexts.deleteSuccess,
-                  isSuccess: true,
-                );
+          onDelete: () async {
+            try {
+              final homeProvider = context.read<HomeProvider>();
+              final roadmapsProvider = context.read<RoadmapsProvider>();
+              final profileProvider = context.read<ProfileProvider>();
+              await profileProvider.deleteRoadmap(
+                roadmap.enrollmentId,
+                updateState: false,
+              );
+              profileProvider.removeRoadmapByRoadmapId(roadmap.roadmapId);
+              homeProvider.removeCourseById(
+                roadmap.roadmapId,
+                courseData: HomeCourseEntity(
+                  id: roadmap.roadmapId,
+                  title: roadmap.title,
+                  level: roadmap.level,
+                  description: roadmap.description,
+                  status: roadmap.status,
+                ),
+              );
+              roadmapsProvider.setCourseEnrollment(roadmap.roadmapId, false);
+              if (!context.mounted) return;
+              final messenger = ScaffoldMessenger.of(context);
+              showActionSnackBar(
+                messenger,
+                message: AppTexts.deleteSuccess,
+                isSuccess: true,
+              );
 
-                unawaited(
-                  retryUntilSuccess(
-                    () => EnrollmentSync.refreshAll(
-                      homeProvider: homeProvider,
-                      roadmapsProvider: roadmapsProvider,
-                      profileProvider: profileProvider,
-                    ),
-                    label: 'ProfileScreen delete sync',
+              unawaited(
+                retryUntilSuccess(
+                  () => EnrollmentSync.refreshAll(
+                    homeProvider: homeProvider,
+                    roadmapsProvider: roadmapsProvider,
+                    profileProvider: profileProvider,
                   ),
-                );
-              } catch (_) {
-                if (!context.mounted) return;
-                final messenger = ScaffoldMessenger.of(context);
-                showActionSnackBar(
-                  messenger,
-                  message: AppTexts.deleteFailure,
-                  isSuccess: false,
-                );
-              }
-            },
-          ),
-          onRefresh: () => showConfirmActionDialog(
-            context: context,
-            title: AppTexts.resetConfirmTitle,
-            message: AppTexts.resetConfirmMessage,
-            onConfirm: () async {
-              try {
-                final homeProvider = context.read<HomeProvider>();
-                final roadmapsProvider = context.read<RoadmapsProvider>();
-                final profileProvider = context.read<ProfileProvider>();
-                final learningPathProvider = context
-                    .read<LearningPathProvider>();
-                await profileProvider.resetRoadmap(
-                  roadmap.enrollmentId,
-                  updateState: false,
-                );
-                profileProvider.resetRoadmapByRoadmapId(roadmap.roadmapId);
-                homeProvider.resetCourseById(roadmap.roadmapId);
-                if (!context.mounted) return;
-                final messenger = ScaffoldMessenger.of(context);
-                showActionSnackBar(
-                  messenger,
-                  message: AppTexts.resetSuccess,
-                  isSuccess: true,
-                );
+                  label: 'ProfileScreen delete sync',
+                ),
+              );
+            } catch (_) {
+              if (!context.mounted) return;
+              final messenger = ScaffoldMessenger.of(context);
+              showActionSnackBar(
+                messenger,
+                message: AppTexts.deleteFailure,
+                isSuccess: false,
+              );
+            }
+          },
+          onRefresh: () async {
+            try {
+              final homeProvider = context.read<HomeProvider>();
+              final roadmapsProvider = context.read<RoadmapsProvider>();
+              final profileProvider = context.read<ProfileProvider>();
+              final learningPathProvider = context.read<LearningPathProvider>();
+              await profileProvider.resetRoadmap(
+                roadmap.enrollmentId,
+                updateState: false,
+              );
+              profileProvider.resetRoadmapByRoadmapId(roadmap.roadmapId);
+              homeProvider.resetCourseById(roadmap.roadmapId);
+              if (!context.mounted) return;
+              final messenger = ScaffoldMessenger.of(context);
+              showActionSnackBar(
+                messenger,
+                message: AppTexts.resetSuccess,
+                isSuccess: true,
+              );
 
-                unawaited(
-                  retryUntilSuccess(() async {
-                    await learningPathProvider.resetProgress(
-                      roadmapId: roadmap.roadmapId,
-                      updateState: true,
-                    );
-                    await EnrollmentSync.refreshAll(
-                      homeProvider: homeProvider,
-                      roadmapsProvider: roadmapsProvider,
-                      profileProvider: profileProvider,
-                    );
-                  }, label: 'ProfileScreen reset sync'),
-                );
-              } catch (_) {
-                if (!context.mounted) return;
-                final messenger = ScaffoldMessenger.of(context);
-                showActionSnackBar(
-                  messenger,
-                  message: AppTexts.resetFailure,
-                  isSuccess: false,
-                );
-              }
-            },
-          ),
+              unawaited(
+                retryUntilSuccess(() async {
+                  await learningPathProvider.resetProgress(
+                    roadmapId: roadmap.roadmapId,
+                    updateState: true,
+                  );
+                  await EnrollmentSync.refreshAll(
+                    homeProvider: homeProvider,
+                    roadmapsProvider: roadmapsProvider,
+                    profileProvider: profileProvider,
+                  );
+                }, label: 'ProfileScreen reset sync'),
+              );
+            } catch (_) {
+              if (!context.mounted) return;
+              final messenger = ScaffoldMessenger.of(context);
+              showActionSnackBar(
+                messenger,
+                message: AppTexts.resetFailure,
+                isSuccess: false,
+              );
+            }
+          },
           onTap: () async {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -477,7 +489,8 @@ class _RoadmapSection extends StatelessWidget {
               Expanded(
                 child: _StatContainer(
                   backgroundColor: AppColors.accent_1,
-                  text: 'نقاط الخبرة   ',
+                  label: 'نقاط الخبرة',
+                  text: roadmap.xpPoints.toString(),
                   icon: Icons.local_fire_department_outlined,
                 ),
               ),
@@ -487,8 +500,9 @@ class _RoadmapSection extends StatelessWidget {
               Expanded(
                 child: _StatContainer(
                   backgroundColor: AppColors.accent_3,
+                  label: 'نسبة التقدم',
                   icon: Icons.av_timer_rounded,
-                  text: '%نسبة التقدم  ',
+                  text: '${roadmap.progressPercentage}%',
                 ),
               ),
             ],
@@ -503,11 +517,13 @@ class _RoadmapSection extends StatelessWidget {
 
 class _StatContainer extends StatelessWidget {
   final Color backgroundColor;
+  final String label;
   final String text;
   final IconData icon;
 
   const _StatContainer({
     required this.backgroundColor,
+    required this.label,
     required this.text,
     required this.icon,
   });
@@ -522,14 +538,27 @@ class _StatContainer extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(icon, color: AppColors.primary2, size: 21),
-
+          const SizedBox(width: 8),
           Text(
             text,
             style: AppTextStyles.body.copyWith(
               color: AppColors.text_1,
               fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              textAlign: TextAlign.right,
+              style: AppTextStyles.smallText.copyWith(
+                color: AppColors.text_1,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -537,3 +566,4 @@ class _StatContainer extends StatelessWidget {
     );
   }
 }
+

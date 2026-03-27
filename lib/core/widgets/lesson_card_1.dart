@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:see_more/see_more.dart';
+import 'package:roadmaps/core/constants/ui_texts.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
-import 'package:roadmaps/core/constants/ui_texts.dart';
 import 'package:roadmaps/core/utils/roadmap_display.dart';
+import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
+import 'package:see_more/see_more.dart';
 
 class LessonCard1 extends StatefulWidget {
   final dynamic course;
@@ -40,6 +41,28 @@ class _LessonCard1State extends State<LessonCard1> {
         setState(() => _isBusy = false);
       }
     }
+  }
+
+  Future<void> _showDeleteConfirmDialog() async {
+    await showConfirmActionDialog(
+      context: context,
+      title: AppTexts.deleteConfirmTitle,
+      message: AppTexts.deleteConfirmMessage,
+      onConfirm: () async {
+        await _runBusyAction(widget.onDelete);
+      },
+    );
+  }
+
+  Future<void> _showResetConfirmDialog() async {
+    await showConfirmActionDialog(
+      context: context,
+      title: AppTexts.resetConfirmTitle,
+      message: AppTexts.resetConfirmMessage,
+      onConfirm: () async {
+        await _runBusyAction(widget.onRefresh);
+      },
+    );
   }
 
   @override
@@ -82,11 +105,7 @@ class _LessonCard1State extends State<LessonCard1> {
                           color: AppColors.text_2,
                           size: 22,
                         ),
-                        onPressed: _isBusy
-                            ? null
-                            : () async {
-                                await _runBusyAction(widget.onDelete);
-                              },
+                        onPressed: _isBusy ? null : _showDeleteConfirmDialog,
                       ),
                       IconButton(
                         icon: const Icon(
@@ -94,11 +113,7 @@ class _LessonCard1State extends State<LessonCard1> {
                           color: AppColors.text_2,
                           size: 22,
                         ),
-                        onPressed: _isBusy
-                            ? null
-                            : () async {
-                                await _runBusyAction(widget.onRefresh);
-                              },
+                        onPressed: _isBusy ? null : _showResetConfirmDialog,
                       ),
                       const SizedBox(width: 12),
                       Expanded(

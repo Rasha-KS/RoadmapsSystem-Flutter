@@ -12,4 +12,20 @@ class HomeCourseEntity {
     required this.description,
      this.status
   });
+
+  HomeCourseEntity copyWith({
+    int? id,
+    String? title,
+    String? level,
+    String? description,
+    String? status,
+  }) {
+    return HomeCourseEntity(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      level: level ?? this.level,
+      description: description ?? this.description,
+      status: status ?? this.status,
+    );
+  }
 }

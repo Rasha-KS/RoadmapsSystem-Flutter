@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
+import 'package:roadmaps/core/cache/lesson_content_cache.dart';
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import '../domain/delete_my_roadmap_usecase.dart';
 import '../domain/enroll_roadmap_usecase.dart';
@@ -16,6 +17,7 @@ class HomeProvider extends SafeChangeNotifier {
   final DeleteMyCourseUseCase deleteMyCourseUseCase;
   final ResetMyCourseUseCase resetMyCourseUseCase;
   final EnrollCourseUseCase enrollCourseUseCase;
+  final LessonContentCache _lessonContentCache = LessonContentCache.instance;
 
   HomeProvider({
     required this.getHomeDataUseCase,
@@ -83,6 +85,7 @@ class HomeProvider extends SafeChangeNotifier {
     bool updateState = true,
   }) async {
     await deleteMyCourseUseCase(courseId);
+    await _lessonContentCache.clearAll();
     if (!updateState) return;
     myCourses = myCourses.where((course) => course.id != courseId).toList();
     if (courseData != null &&
@@ -123,6 +126,7 @@ class HomeProvider extends SafeChangeNotifier {
     bool updateState = true,
   }) async {
     await resetMyCourseUseCase(courseId);
+    await _lessonContentCache.clearAll();
     if (!updateState) return;
     myCourses = myCourses.map((course) {
       if (course.id != courseId) return course;
@@ -143,6 +147,7 @@ class HomeProvider extends SafeChangeNotifier {
     bool updateState = true,
   }) async {
     await enrollCourseUseCase(courseId);
+    await _lessonContentCache.clearAll();
     if (!updateState) return;
 
     final index = recommended.indexWhere((course) => course.id == courseId);
@@ -185,6 +190,29 @@ class HomeProvider extends SafeChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  void updateCourseStatus({
+    required int courseId,
+    required String? status,
+  }) {
+    var changed = false;
+
+    recommended = recommended.map((course) {
+      if (course.id != courseId) return course;
+      changed = true;
+      return course.copyWith(status: status);
+    }).toList();
+
+    myCourses = myCourses.map((course) {
+      if (course.id != courseId) return course;
+      changed = true;
+      return course.copyWith(status: status);
+    }).toList();
+
+    if (changed) {
+      notifyListeners();
+    }
   }
 
   Future<HomeCourseEntity> fetchRoadmapDetails(int roadmapId) {

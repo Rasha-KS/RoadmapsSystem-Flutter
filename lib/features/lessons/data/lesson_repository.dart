@@ -1,85 +1,134 @@
+import 'package:roadmaps/core/api/api_client.dart';
+import 'package:roadmaps/core/api/api_exceptions.dart';
+import 'package:roadmaps/core/auth/token_manager.dart';
+import 'package:roadmaps/core/constants/api_constants.dart';
+import 'package:roadmaps/core/cache/lesson_content_cache.dart';
 import 'package:roadmaps/features/lessons/data/lesson_model.dart';
+import 'package:roadmaps/features/lessons/domain/lesson_entity.dart';
+import 'package:roadmaps/features/lessons/domain/resource_entity.dart';
+import 'package:roadmaps/features/lessons/domain/sub_lesson_entity.dart';
 
 class LessonRepository {
-  Future<LessonModel> getLesson(String learningUnitId) async {
-    await Future.delayed(const Duration(milliseconds: 650));
-    return _buildLesson(learningUnitId);
-  }
+  LessonRepository({
+    required ApiClient apiClient,
+    required TokenManager tokenManager,
+  })  : _apiClient = apiClient,
+        _tokenManager = tokenManager;
 
-  LessonModel _buildLesson(String learningUnitId) {
-    final int unitNumber = int.tryParse(learningUnitId) ?? 1;
-    final String prefix = 'unit_$unitNumber';
+  final ApiClient _apiClient;
+  final TokenManager _tokenManager;
+  final LessonContentCache _cache = LessonContentCache.instance;
 
-    String topicAt(int offset) => _topics[(unitNumber - 1 + offset) % _topics.length];
-
-    return LessonModel(
-      id: learningUnitId,
-      title: 'أساسيات البرمجة',
-      subLessons: [
-        SubLessonModel(
-          id: '${prefix}_sub_1',
-          title: topicAt(0),
-          introductionTitle: 'المقدمة',
-          introductionDescription:
-              'في هذا الجزء نتعرف على ${topicAt(0)} وكيفية استخدامها في تطبيقات C++ العملية.',
-          resources: [
-            const ResourceModel(
-              id: 'resource_youtube_1',
-              type: 'youtube',
-              title: 'قناة أحمد عمر',
-              link: 'https://www.youtube.com/watch?v=0W6V7xYQxVw',
-            ),
-            const ResourceModel(
-              id: 'resource_book_1',
-              type: 'book',
-              title: 'أساسيات البرمجة بلغة C++',
-              link:
-                  'https://www.pearson.com/en-us/subject-catalog/p/c-how-to-program/P200000003006',
-            ),
-          ],
-        ),
-        SubLessonModel(
-          id: '${prefix}_sub_2',
-          title: topicAt(1),
-          introductionTitle: 'المقدمة',
-          introductionDescription:
-              'يشرح هذا الدرس ${topicAt(1)} مع أمثلة مبسطة تساعدك على كتابة كود أكثر وضوحا.',
-          resources: const [
-            ResourceModel(
-              id: 'resource_youtube_2',
-              type: 'youtube',
-              title: 'قناة Elzero Web School',
-              link: 'https://www.youtube.com/watch?v=Y8Tko2YC5hA',
-            ),
-          ],
-        ),
-        SubLessonModel(
-          id: '${prefix}_sub_3',
-          title: topicAt(2),
-          introductionTitle: 'المقدمة',
-          introductionDescription:
-              'الجزء الأخير من هذه الوحدة يركز على ${topicAt(2)} مع نقاط مهمة للمراجعة.',
-          resources: const [
-            ResourceModel(
-              id: 'resource_book_2',
-              type: 'book',
-              title: 'C++ Primer, Fifth Edition',
-              link:
-                  'https://www.oreilly.com/library/view/c-primer-fifth/9780133053043/',
-            ),
-          ],
-        ),
-      ],
+  Future<LessonEntity?> getLesson(String learningUnitId) async {
+    final response = await _apiClient.get(
+      ApiConstants.url(ApiConstants.unitLessons(int.parse(learningUnitId))),
+      headers: await _authHeaders(),
+      timeout: const Duration(seconds: 60),
     );
+    _ensureSuccess(response, fallbackMessage: 'تعذر تحميل الدرس.');
+
+    final lessons = _extractList(response['data']);
+    if (lessons.isEmpty) {
+      return null;
+    }
+
+    return LessonModel.fromJson(lessons.first).toEntity();
   }
 
-  static const List<String> _topics = <String>[
-    'المتغيرات وأنواع البيانات',
-    'الجمل الشرطية',
-    'الحلقات التكرارية',
-    'الدوال',
-    'المصفوفات',
-    'المؤشرات',
-    'البرمجة كائنية التوجه',
-  ];
+  Future<List<SubLessonEntity>> getSubLessons(int lessonId) async {
+    try {
+      final cached = await _cache.readSubLessons(lessonId);
+      if (cached != null) {
+        return cached;
+      }
+    } catch (_) {}
+
+    final response = await _apiClient.get(
+      ApiConstants.url(ApiConstants.lessonSubLessons(lessonId)),
+      headers: await _authHeaders(),
+      timeout: const Duration(seconds: 60),
+    );
+    _ensureSuccess(response, fallbackMessage: 'تعذر تحميل الدروس الفرعية.');
+
+    final items = _extractList(response['data']);
+    final subLessons = items
+        .map(SubLessonModel.fromJson)
+        .map((item) => item.toEntity())
+        .toList(growable: false);
+    try {
+      await _cache.writeSubLessons(lessonId, subLessons);
+    } catch (_) {}
+    return subLessons;
+  }
+
+  Future<List<ResourceEntity>> getLessonResources(int subLessonId) async {
+    try {
+      final cached = await _cache.readResources(subLessonId);
+      if (cached != null) {
+        return cached;
+      }
+    } catch (_) {}
+
+    final response = await _apiClient.get(
+      ApiConstants.url(ApiConstants.subLessonResources(subLessonId)),
+      headers: await _authHeaders(),
+      timeout: const Duration(seconds: 60),
+    );
+    _ensureSuccess(response, fallbackMessage: 'تعذر تحميل المصادر.');
+
+    final items = _extractList(response['data']);
+    final resources = items
+        .map(ResourceModel.fromJson)
+        .map((item) => item.toEntity())
+        .toList(growable: false);
+    try {
+      await _cache.writeResources(subLessonId, resources);
+    } catch (_) {}
+    return resources;
+  }
+
+  Future<void> completeLesson(int lessonId) async {
+    final response = await _apiClient.post(
+      ApiConstants.url(ApiConstants.completeLesson(lessonId)),
+      headers: await _authHeaders(),
+      timeout: const Duration(seconds: 60),
+    );
+    _ensureSuccess(response, fallbackMessage: 'تعذر إكمال الدرس.');
+  }
+
+  List<Map<String, dynamic>> _extractList(dynamic payload) {
+    if (payload is List) {
+      return payload.whereType<Map<String, dynamic>>().toList();
+    }
+    if (payload is Map<String, dynamic>) {
+      final data = payload['data'];
+      if (data is List) {
+        return data.whereType<Map<String, dynamic>>().toList();
+      }
+    }
+    throw const ParsingException();
+  }
+
+  void _ensureSuccess(
+    Map<String, dynamic> response, {
+    required String fallbackMessage,
+  }) {
+    if (response.containsKey('success') && response['success'] != true) {
+      final message = response['message']?.toString().trim();
+      throw ApiException(
+        message == null || message.isEmpty ? fallbackMessage : message,
+      );
+    }
+  }
+
+  Future<Map<String, String>> _authHeaders() async {
+    final token = await _tokenManager.getToken();
+    if (token == null || token.trim().isEmpty) {
+      return const <String, String>{};
+    }
+
+    return <String, String>{
+      'Authorization': 'Bearer ${token.trim()}',
+    };
+  }
 }

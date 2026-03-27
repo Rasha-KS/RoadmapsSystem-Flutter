@@ -1,5 +1,5 @@
 import 'package:roadmaps/features/learning_path/data/learning_path_repository.dart';
-import 'package:roadmaps/features/learning_path/domain/learning_unit_entity.dart';
+import 'package:roadmaps/features/learning_path/domain/learning_path_entity.dart';
 
 
 class GetLearningPathUseCase {
@@ -7,27 +7,7 @@ class GetLearningPathUseCase {
 
   GetLearningPathUseCase(this.repository);
 
-  Future<List<LearningUnitEntity>> call({
-    required int roadmapId,
-    required int userXp,
-    required Set<int> completedUnitIds,
-  }) {
-    return repository.getLearningPath(
-      roadmapId: roadmapId,
-      userXp: userXp,
-      completedUnitIds: completedUnitIds,
-    );
-  }
-
-  Future<Map<String, dynamic>> asJson({
-    required int roadmapId,
-    required int userXp,
-    required Set<int> completedUnitIds,
-  }) {
-    return repository.getLearningPathJson(
-      roadmapId: roadmapId,
-      userXp: userXp,
-      completedUnitIds: completedUnitIds,
-    );
+  Future<LearningPathEntity> call({required int roadmapId}) {
+    return repository.getLearningPath(roadmapId: roadmapId);
   }
 }

@@ -38,7 +38,9 @@ import 'package:roadmaps/features/learning_path/data/learning_path_repository.da
 import 'package:roadmaps/features/learning_path/domain/get_learning_path_usecase.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
 import 'package:roadmaps/features/lessons/data/lesson_repository.dart';
-import 'package:roadmaps/features/lessons/domain/get_lesson_usecase.dart';
+import 'package:roadmaps/features/lessons/domain/get_sub_lessons_usecase.dart';
+import 'package:roadmaps/features/lessons/domain/complete_lesson_usecase.dart';
+import 'package:roadmaps/features/lessons/domain/prefetch_lesson_content_usecase.dart';
 import 'package:roadmaps/features/lessons/presentation/lessons_provider.dart';
 import 'package:roadmaps/features/notifications/data/notifications_repository.dart';
 import 'package:roadmaps/features/notifications/domain/get_notifications_usecase.dart';
@@ -71,6 +73,9 @@ import 'package:roadmaps/features/smart_instructor/domain/send_smart_instructor_
 import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_provider.dart';
 
 class Injection {
+  static ProfileProvider? _profileProvider;
+  static HomeProvider? _homeProvider;
+  static RoadmapsProvider? _roadmapsProvider;
   static final TokenManager _tokenManager = TokenManager();
   static final AuthInterceptor _authInterceptor = AuthInterceptor(
     tokenManager: _tokenManager,
@@ -109,6 +114,11 @@ class Injection {
   }
 
   static HomeProvider provideHomeProvider() {
+    final existing = _homeProvider;
+    if (existing != null) {
+      return existing;
+    }
+
     final repository = HomeRepository(apiClient: _apiClient);
     final getHomeDataUseCase = GetHomeDataUseCase(repository);
     final getRoadmapDetailsUseCase = GetRoadmapDetailsUseCase(repository);
@@ -116,32 +126,51 @@ class Injection {
     final resetMyCourseUseCase = ResetMyCourseUseCase(repository);
     final enrollCourseUseCase = EnrollCourseUseCase(repository);
 
-    return HomeProvider(
+    final homeProvider = HomeProvider(
       getHomeDataUseCase: getHomeDataUseCase,
       getRoadmapDetailsUseCase: getRoadmapDetailsUseCase,
       deleteMyCourseUseCase: deleteMyCourseUseCase,
       resetMyCourseUseCase: resetMyCourseUseCase,
       enrollCourseUseCase: enrollCourseUseCase,
     );
+    _homeProvider = homeProvider;
+    return homeProvider;
   }
 
   static ProfileProvider provideProfileProvider() {
+    final existing = _profileProvider;
+    if (existing != null) {
+      return existing;
+    }
+
     final repository = ProfileRepository(
       userRepository: _userRepository,
       apiClient: _apiClient,
     );
-    return ProfileProvider(
+    final profileProvider = ProfileProvider(
       getUserRoadmapsUseCase: GetUserRoadmapsUseCase(repository),
+      getLearningPathUseCase: GetLearningPathUseCase(
+        LearningPathRepository(apiClient: _apiClient),
+      ),
       deleteUserRoadmapUseCase: DeleteUserRoadmapUseCase(repository),
       resetUserRoadmapUseCase: ResetUserRoadmapUseCase(repository),
       currentUserProvider: _currentUserProvider,
     );
+    _profileProvider = profileProvider;
+    return profileProvider;
   }
 
   static RoadmapsProvider provideRoadmapsProvider() {
+    final existing = _roadmapsProvider;
+    if (existing != null) {
+      return existing;
+    }
+
     final roadmapsRepository = RoadmapRepository(apiClient: _apiClient);
     final useCase = GetRoadmapsUseCase(roadmapsRepository);
-    return RoadmapsProvider(useCase);
+    final roadmapsProvider = RoadmapsProvider(useCase);
+    _roadmapsProvider = roadmapsProvider;
+    return roadmapsProvider;
   }
 
   static AnnouncementsProvider provideAnnouncementsProvider() {
@@ -188,13 +217,30 @@ class Injection {
   }
 
   static LearningPathProvider provideLearningPathProvider() {
-    final repository = LearningPathRepository();
-    return LearningPathProvider(GetLearningPathUseCase(repository));
+    final repository = LearningPathRepository(apiClient: _apiClient);
+    final lessonRepository = LessonRepository(
+      apiClient: _apiClient,
+      tokenManager: _tokenManager,
+    );
+    return LearningPathProvider(
+      GetLearningPathUseCase(repository),
+      PrefetchLessonContentUseCase(lessonRepository),
+      profileProvider: provideProfileProvider(),
+      homeProvider: provideHomeProvider(),
+      roadmapsProvider: provideRoadmapsProvider(),
+    );
   }
 
   static LessonsProvider provideLessonsProvider() {
-    final repository = LessonRepository();
-    return LessonsProvider(GetLessonUseCase(repository));
+    final repository = LessonRepository(
+      apiClient: _apiClient,
+      tokenManager: _tokenManager,
+    );
+    return LessonsProvider(
+      GetSubLessonsUseCase(repository),
+      CompleteLessonUseCase(repository),
+      PrefetchLessonContentUseCase(repository),
+    );
   }
 
   static CheckpointsProvider provideCheckpointsProvider() {

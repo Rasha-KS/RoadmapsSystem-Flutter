@@ -1,6 +1,7 @@
-﻿import 'package:roadmaps/core/api/api_client.dart';
+import 'package:roadmaps/core/api/api_client.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/auth/token_manager.dart';
+import 'package:roadmaps/core/cache/user_profile_cache.dart';
 import 'package:roadmaps/core/constants/api_constants.dart';
 import 'package:roadmaps/core/data/user/user_model.dart';
 import 'package:roadmaps/core/domain/repositories/user_repository.dart';
@@ -15,13 +16,30 @@ class ApiUserRepository implements UserRepository {
 
   final ApiClient _apiClient;
   final TokenManager _tokenManager;
+  final UserProfileCache _profileCache = UserProfileCache.instance;
 
   UserEntity? _cachedUser;
+
+  @override
+  Future<UserEntity?> getCachedCurrentUser() async {
+    final cached = _cachedUser;
+    if (cached != null) {
+      return cached;
+    }
+
+    final stored = await _profileCache.readCurrentUser();
+    _cachedUser = stored;
+    return stored;
+  }
 
   @override
   Future<UserEntity> getCurrentUser() async {
     final token = await _tokenManager.getToken();
     if (token == null || token.isEmpty) {
+      final cached = await getCachedCurrentUser();
+      if (cached != null) {
+        return cached;
+      }
       throw ApiException('لم يتم تسجيل الدخول بعد.');
     }
 
@@ -50,7 +68,20 @@ class ApiUserRepository implements UserRepository {
 
       final user = UserModel.fromJson(payload);
       _cachedUser = user;
+      await _profileCache.writeCurrentUserIfChanged(user);
       return user;
+    } on NetworkException {
+      final cached = await getCachedCurrentUser();
+      if (cached != null) {
+        return cached;
+      }
+      rethrow;
+    } on ParsingException {
+      final cached = await getCachedCurrentUser();
+      if (cached != null) {
+        return cached;
+      }
+      rethrow;
     } on UnauthorizedException {
       await _tokenManager.clearToken();
       rethrow;
@@ -80,6 +111,7 @@ class ApiUserRepository implements UserRepository {
     );
 
     _cachedUser = updated;
+    await _profileCache.writeCurrentUserIfChanged(updated);
     return updated;
   }
 
@@ -87,7 +119,6 @@ class ApiUserRepository implements UserRepository {
   Future<void> deleteCurrentUser() async {
     _cachedUser = null;
     await _tokenManager.clearToken();
+    await _profileCache.clearCurrentUser();
   }
 }
-
-

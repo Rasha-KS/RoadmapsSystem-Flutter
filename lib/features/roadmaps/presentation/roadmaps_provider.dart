@@ -63,6 +63,35 @@ class RoadmapsProvider extends SafeChangeNotifier {
     notifyListeners();
   }
 
+  void updateRoadmapStatus({
+    required int roadmapId,
+    required String? status,
+  }) {
+    var changed = false;
+
+    roadmaps = roadmaps.map((course) {
+      if (course.id != roadmapId) return course;
+      changed = true;
+      return course.copyWith(
+        status: status,
+        clearStatus: status == null,
+      );
+    }).toList();
+
+    myCourses = myCourses.map((course) {
+      if (course.id != roadmapId) return course;
+      changed = true;
+      return course.copyWith(
+        status: status,
+        clearStatus: status == null,
+      );
+    }).toList();
+
+    if (changed) {
+      notifyListeners();
+    }
+  }
+
   Future<void> loadRoadmaps({Set<int>? enrolledCourseIds}) async {
     state = PageState.loading;
     notifyListeners();

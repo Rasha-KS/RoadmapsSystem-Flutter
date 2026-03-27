@@ -1,15 +1,17 @@
-enum ResourceType { youtube, book }
+enum ResourceType { article, video, book, other }
 
 class ResourceEntity {
-  final String id;
-  final ResourceType type;
+  final int id;
   final String title;
+  final ResourceType type;
+  final String language;
   final String link;
 
   const ResourceEntity({
     required this.id,
-    required this.type,
     required this.title,
+    required this.type,
+    required this.language,
     required this.link,
   });
 }

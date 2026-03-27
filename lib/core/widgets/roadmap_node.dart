@@ -3,20 +3,46 @@ import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/features/learning_path/domain/learning_unit_entity.dart';
 
-class RoadmapNode extends StatelessWidget {
+class RoadmapNode extends StatefulWidget {
   final LearningUnitEntity unit;
-  final VoidCallback onTap;
+  final Future<void> Function() onTap;
+  final String? displayTitle;
 
-  const RoadmapNode({super.key, required this.unit, required this.onTap});
+  const RoadmapNode({
+    super.key,
+    required this.unit,
+    required this.onTap,
+    this.displayTitle,
+  });
+
+  @override
+  State<RoadmapNode> createState() => _RoadmapNodeState();
+}
+
+class _RoadmapNodeState extends State<RoadmapNode> {
+  bool _isBusy = false;
+
+  Future<void> _runTapAction() async {
+    if (_isBusy) return;
+    setState(() => _isBusy = true);
+    try {
+      await widget.onTap();
+    } finally {
+      if (mounted) {
+        setState(() => _isBusy = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final bool isLocked = unit.status == LearningUnitStatus.locked;
-    final Color backgroundColor = _backgroundForStatus(unit.status);
+    final bool isLocked = widget.unit.status == LearningUnitStatus.locked;
+    final Color backgroundColor = _backgroundForStatus(widget.unit.status);
     final Color textColor = isLocked ? AppColors.text_3 : AppColors.text_2;
+    final bool isBusy = _isBusy && !isLocked;
 
     return TweenAnimationBuilder<double>(
-      key: ValueKey('${unit.id}-${unit.status.name}'),
+      key: ValueKey('${widget.unit.id}-${widget.unit.status.name}'),
       tween: Tween<double>(begin: 0.9, end: 1),
       duration: const Duration(milliseconds: 320),
       curve: Curves.easeOutCubic,
@@ -29,65 +55,87 @@ class RoadmapNode extends StatelessWidget {
           ),
         );
       },
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOut,
-            width: 190,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: backgroundColor,
+      child: Stack(
+        children: [
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              onTap: isLocked ? widget.onTap : _runTapAction,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.35),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.14),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                _UnitIcon(status: unit.status, type: unit.type),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        unit.title,
-                        textAlign: TextAlign.right,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.body.copyWith(
-                          color: textColor,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _statusLabel(unit.status),
-                        textAlign: TextAlign.right,
-                        style: AppTextStyles.smallText.copyWith(
-                          color: textColor.withValues(alpha: 0.85),
-                        ),
-                      ),
-                    ],
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOut,
+                width: 190,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.35),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.14),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-              ],
+                child: Row(
+                  children: [
+                    _UnitIcon(status: widget.unit.status, type: widget.unit.type),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.displayTitle ?? widget.unit.title,
+                            textAlign: TextAlign.right,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.body.copyWith(
+                              color: textColor,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _statusLabel(widget.unit.status),
+                            textAlign: TextAlign.right,
+                            style: AppTextStyles.smallText.copyWith(
+                              color: textColor.withValues(alpha: 0.85),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+          if (isBusy)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2.2),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -130,15 +178,11 @@ class _UnitIcon extends StatelessWidget {
       height: 24,
       width: 24,
       decoration: BoxDecoration(
-        color: isCompleted
-            ? AppColors.success
-            : AppColors.background,
+        color: isCompleted ? AppColors.success : AppColors.background,
         shape: BoxShape.circle,
       ),
       child: Icon(
-        isCompleted
-            ? Icons.check_rounded
-            : (isLocked ? Icons.lock : _iconByType(type)),
+        isCompleted ? Icons.check_rounded : (isLocked ? Icons.lock : _iconByType(type)),
         size: 15,
         color: isCompleted
             ? const Color.fromRGBO(72, 140, 92, 1)

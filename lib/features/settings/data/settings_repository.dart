@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 
 import 'package:roadmaps/core/api/api_client.dart';
@@ -30,11 +30,11 @@ class SettingsRepository {
         'is_notifications_enabled': enabled,
       },
     );
-    _ensureSuccess(response, fallbackMessage: 'تعذر تحديث حالة الإشعارات.');
+    _ensureSuccess(response, fallbackMessage: 'ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ« Ø­Ø§Ù„Ø© Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª.');
     return _resolveUpdatedUser(
       response,
       refreshFailureMessage:
-          'تم حفظ حالة الإشعارات، لكن تعذر تحديث البيانات حالياً. اسحب لتحديث الصفحة.',
+          'ØªÙ… Ø­ÙØ¸ Ø­Ø§Ù„Ø© Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§ØªØŒ Ù„ÙƒÙ† ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø­Ø§Ù„ÙŠØ§Ù‹. Ø§Ø³Ø­Ø¨ Ù„ØªØ­Ø¯ÙŠØ« Ø§Ù„ØµÙØ­Ø©.',
     );
   }
 
@@ -47,18 +47,18 @@ class SettingsRepository {
     final _ = (email, password, profileImageUrl);
     final normalizedUsername = username?.trim();
     if (normalizedUsername == null || normalizedUsername.isEmpty) {
-      throw const ApiException('يرجى إدخال اسم مستخدم صالح.');
+      throw const ApiException('ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ø³Ù… Ù…Ø³ØªØ®Ø¯Ù… ØµØ§Ù„Ø­.');
     }
 
     final response = await _apiClient.put(
       ApiConstants.url(ApiConstants.updateAccount),
       body: {'username': normalizedUsername},
     );
-    _ensureSuccess(response, fallbackMessage: 'تعذر تحديث بيانات الحساب.');
+    _ensureSuccess(response, fallbackMessage: 'ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ« Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø­Ø³Ø§Ø¨.');
     return _resolveUpdatedUser(
       response,
       refreshFailureMessage:
-          'تم حفظ التعديل، لكن تعذر تحديث البيانات حالياً. اسحب لتحديث الصفحة.',
+          'ØªÙ… Ø­ÙØ¸ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„ØŒ Ù„ÙƒÙ† ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø­Ø§Ù„ÙŠØ§Ù‹. Ø§Ø³Ø­Ø¨ Ù„ØªØ­Ø¯ÙŠØ« Ø§Ù„ØµÙØ­Ø©.',
     );
   }
 
@@ -69,19 +69,19 @@ class SettingsRepository {
   }) async {
     final normalizedCurrentPassword = currentPassword.trim();
     if (normalizedCurrentPassword.isEmpty) {
-      throw const ApiException('يرجى إدخال كلمة المرور الحالية.');
+      throw const ApiException('ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø­Ø§Ù„ÙŠØ©.');
     }
 
     if (newPassword.isEmpty) {
-      throw const ApiException('يرجى إدخال كلمة المرور الجديدة.');
+      throw const ApiException('ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©.');
     }
 
     if (newPasswordConfirmation.isEmpty) {
-      throw const ApiException('يرجى تأكيد كلمة المرور الجديدة.');
+      throw const ApiException('ÙŠØ±Ø¬Ù‰ ØªØ£ÙƒÙŠØ¯ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©.');
     }
 
     if (newPassword != newPasswordConfirmation) {
-      throw const ApiException('كلمة المرور غير متطابقة.');
+      throw const ApiException('ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± Ù…ØªØ·Ø§Ø¨Ù‚Ø©.');
     }
 
     final response = await _apiClient.put(
@@ -94,34 +94,34 @@ class SettingsRepository {
     );
     _ensureSuccess(
       response,
-      fallbackMessage: 'تعذر تغيير كلمة المرور.',
+      fallbackMessage: 'ØªØ¹Ø°Ø± ØªØºÙŠÙŠØ± ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±.',
       requireExplicitSuccess: true,
       missingSuccessMessage:
-          'لم يؤكد الخادم نجاح تغيير كلمة المرور. يرجى المحاولة مرة أخرى.',
+          'Ù„Ù… ÙŠØ¤ÙƒØ¯ Ø§Ù„Ø®Ø§Ø¯Ù… Ù†Ø¬Ø§Ø­ ØªØºÙŠÙŠØ± ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.',
     );
     return _extractRequiredSuccessMessage(
       response,
       fallbackMessage:
-          'لم يرسل الخادم رسالة نجاح لتأكيد تغيير كلمة المرور. يرجى المحاولة مرة أخرى.',
+          'Ù„Ù… ÙŠØ±Ø³Ù„ Ø§Ù„Ø®Ø§Ø¯Ù… Ø±Ø³Ø§Ù„Ø© Ù†Ø¬Ø§Ø­ Ù„ØªØ£ÙƒÙŠØ¯ ØªØºÙŠÙŠØ± ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.',
     );
   }
 
   Future<UserEntity> uploadProfileImage({required String localFilePath}) async {
     final normalizedPath = localFilePath.trim();
     if (normalizedPath.isEmpty) {
-      throw const ApiException('يرجى اختيار صورة صحيحة.');
+      throw const ApiException('ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± ØµÙˆØ±Ø© ØµØ­ÙŠØ­Ø©.');
     }
 
     final file = File(normalizedPath);
     if (!await file.exists()) {
-      throw const ApiException('تعذر العثور على الصورة المحددة.');
+      throw const ApiException('ØªØ¹Ø°Ø± Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„ØµÙˆØ±Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©.');
     }
 
     final fileSizeInBytes = await file.length();
     const maxFileSizeInBytes = 2 * 1024 * 1024;
     if (fileSizeInBytes > maxFileSizeInBytes) {
       throw const ApiException(
-        'حجم الصورة أكبر من 2 ميغابايت. اختر صورة أصغر ثم حاول مرة أخرى.',
+        'Ø­Ø¬Ù… Ø§Ù„ØµÙˆØ±Ø© Ø£ÙƒØ¨Ø± Ù…Ù† 2 Ù…ÙŠØºØ§Ø¨Ø§ÙŠØª. Ø§Ø®ØªØ± ØµÙˆØ±Ø© Ø£ØµØºØ± Ø«Ù… Ø­Ø§ÙˆÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.',
       );
     }
 
@@ -135,15 +135,19 @@ class SettingsRepository {
       );
     } on NetworkException {
       throw const ApiException(
-        'تعذر رفع الصورة حالياً. تحقق من الاتصال وحاول مرة أخرى.',
+        'تعذر رفع الصورة حاليًا. تحقق من الاتصال وحاول مرة أخرى.',
+      );
+    } on TimeoutApiException {
+      throw const ApiException(
+        'استغرق رفع الصورة وقتًا أطول من المعتاد. حاول مرة أخرى.',
       );
     }
 
-    _ensureSuccess(response, fallbackMessage: 'تعذر تحديث الصورة الشخصية.');
+    _ensureSuccess(response, fallbackMessage: 'ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ« Ø§Ù„ØµÙˆØ±Ø© Ø§Ù„Ø´Ø®ØµÙŠØ©.');
     return _resolveUpdatedUser(
       response,
       refreshFailureMessage:
-          'تم رفع الصورة بنجاح، لكن تعذر تحديث البيانات حالياً. اسحب لتحديث الصفحة.',
+          'ØªÙ… Ø±ÙØ¹ Ø§Ù„ØµÙˆØ±Ø© Ø¨Ù†Ø¬Ø§Ø­ØŒ Ù„ÙƒÙ† ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø­Ø§Ù„ÙŠØ§Ù‹. Ø§Ø³Ø­Ø¨ Ù„ØªØ­Ø¯ÙŠØ« Ø§Ù„ØµÙØ­Ø©.',
     );
   }
 
@@ -161,7 +165,7 @@ class SettingsRepository {
       throw ApiException(
         message is String && message.trim().isNotEmpty
             ? message.trim()
-            : 'تعذر تسجيل الخروج.',
+            : 'ØªØ¹Ø°Ø± ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬.',
       );
     }
   }
@@ -184,13 +188,18 @@ class SettingsRepository {
         if (attempt < 2) {
           await Future.delayed(const Duration(milliseconds: 900));
         }
+      } on TimeoutApiException catch (error) {
+        lastError = error;
+        if (attempt < 2) {
+          await Future.delayed(const Duration(milliseconds: 900));
+        }
       } on ApiException catch (error) {
         lastError = error;
         break;
       }
     }
 
-    if (lastError is NetworkException) {
+    if (lastError is NetworkException || lastError is TimeoutApiException) {
       throw ApiException(refreshFailureMessage);
     }
 
@@ -266,3 +275,4 @@ class SettingsRepository {
     throw ApiException(fallbackMessage);
   }
 }
+

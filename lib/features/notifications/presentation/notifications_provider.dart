@@ -1,3 +1,4 @@
+import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import '../domain/get_notifications_usecase.dart';
 import '../domain/get_unread_count_usecase.dart';
@@ -19,6 +20,7 @@ class NotificationsProvider extends SafeChangeNotifier {
 
   List<NotificationEntity> notifications = [];
   NotificationsState state = NotificationsState.loading;
+  String? error;
   int unreadCount = 0;
   bool _awaitingUnreadSync = false;
 
@@ -26,6 +28,7 @@ class NotificationsProvider extends SafeChangeNotifier {
 
   Future<void> loadNotifications() async {
     state = NotificationsState.loading;
+    error = null;
     notifyListeners();
 
     try {
@@ -38,8 +41,9 @@ class NotificationsProvider extends SafeChangeNotifier {
       if (!markedAsRead) {
         await loadUnreadCount();
       }
-    } catch (_) {
+    } catch (error) {
       state = NotificationsState.connectionError;
+      this.error = _friendlyError(error);
     }
 
     notifyListeners();
@@ -61,6 +65,19 @@ class NotificationsProvider extends SafeChangeNotifier {
       // Keep the last known count to avoid flashing the UI.
     }
     notifyListeners();
+  }
+
+  String _friendlyError(Object error) {
+    if (error is TimeoutApiException) {
+      return 'استغرق تحميل الإشعارات وقتًا أطول من المعتاد. حاول مرة أخرى.';
+    }
+    if (error is NetworkException) {
+      return 'تعذر الاتصال حالياً. تحقق من الشبكة وحاول مرة أخرى.';
+    }
+    if (error is ApiException) {
+      return error.message;
+    }
+    return 'تعذر تحميل الإشعارات.';
   }
 
   Future<bool> markAllAsRead() async {

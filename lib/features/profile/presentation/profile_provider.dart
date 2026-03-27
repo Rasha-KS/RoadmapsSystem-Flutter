@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:async';
 
 import 'package:roadmaps/core/entities/user_entity.dart';
+import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/cache/lesson_content_cache.dart';
 import 'package:roadmaps/core/cache/user_profile_cache.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
@@ -60,8 +61,8 @@ class ProfileProvider extends SafeChangeNotifier {
       }
 
       await _syncProfileData();
-    } catch (_) {
-      error = 'حدث خطأ أثناء تحميل بيانات الملف الشخصي';
+    } catch (e) {
+      error = _friendlyError(e);
       lastLoadFailed = true;
     }
 
@@ -132,6 +133,19 @@ class ProfileProvider extends SafeChangeNotifier {
     );
 
     return updatedRoadmaps;
+  }
+
+  String _friendlyError(Object error) {
+    if (error is TimeoutApiException) {
+      return 'استغرق تحميل الملف الشخصي وقتًا أطول من المعتاد. حاول مرة أخرى.';
+    }
+    if (error is NetworkException) {
+      return 'تعذر الاتصال حالياً. تحقق من الشبكة وحاول مرة أخرى.';
+    }
+    if (error is ApiException) {
+      return error.message;
+    }
+    return 'حدث خطأ أثناء تحميل بيانات الملف الشخصي.';
   }
 
   void updateRoadmapProgress({

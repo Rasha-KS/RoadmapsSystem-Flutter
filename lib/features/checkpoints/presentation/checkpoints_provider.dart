@@ -1,3 +1,4 @@
+import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/constants/xp_rules.dart';
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import 'package:roadmaps/features/checkpoints/domain/checkpoint_entity.dart';
@@ -79,8 +80,8 @@ class CheckpointsProvider extends SafeChangeNotifier {
         learningPathId: learningPathId,
         checkpointId: checkpointId,
       );
-    } catch (_) {
-      errorMessage = 'تعذر تحميل الاختبار. حاول مرة أخرى.';
+    } catch (error) {
+      errorMessage = _friendlyError(error);
       checkpoint = null;
     }
 
@@ -96,5 +97,18 @@ class CheckpointsProvider extends SafeChangeNotifier {
   void resetAnswers() {
     selectedOptionByQuestionId.clear();
     notifyListeners();
+  }
+
+  String _friendlyError(Object error) {
+    if (error is TimeoutApiException) {
+      return 'استغرق تحميل الاختبار وقتًا أطول من المعتاد. حاول مرة أخرى.';
+    }
+    if (error is NetworkException) {
+      return 'تعذر الاتصال حالياً. تحقق من الشبكة وحاول مرة أخرى.';
+    }
+    if (error is ApiException) {
+      return error.message;
+    }
+    return 'تعذر تحميل الاختبار. حاول مرة أخرى.';
   }
 }

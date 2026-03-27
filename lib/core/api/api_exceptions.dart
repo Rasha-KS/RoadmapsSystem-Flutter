@@ -15,7 +15,13 @@ class ApiException implements Exception {
 
 class NetworkException extends ApiException {
   const NetworkException([
-    super.message = 'تعذر الاتصال بالإنترنت. حاول مرة أخرى.',
+    super.message = 'تعذر الاتصال حالياً. تحقق من الشبكة وحاول مرة أخرى.',
+  ]);
+}
+
+class TimeoutApiException extends ApiException {
+  const TimeoutApiException([
+    super.message = 'استغرق الطلب وقتًا أطول من المعتاد. حاول مرة أخرى.',
   ]);
 }
 

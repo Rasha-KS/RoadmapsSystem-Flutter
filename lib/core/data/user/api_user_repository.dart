@@ -76,6 +76,12 @@ class ApiUserRepository implements UserRepository {
         return cached;
       }
       rethrow;
+    } on TimeoutApiException {
+      final cached = await getCachedCurrentUser();
+      if (cached != null) {
+        return cached;
+      }
+      rethrow;
     } on ParsingException {
       final cached = await getCachedCurrentUser();
       if (cached != null) {

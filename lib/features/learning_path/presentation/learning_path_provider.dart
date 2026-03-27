@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import 'package:roadmaps/core/cache/lesson_content_cache.dart';
+import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/features/homepage/presentation/home_provider.dart';
 import 'package:roadmaps/features/roadmaps/domain/roadmap_entity.dart';
 import 'package:roadmaps/features/roadmaps/presentation/roadmaps_provider.dart';
@@ -117,7 +118,7 @@ class LearningPathProvider extends SafeChangeNotifier {
     } catch (error) {
       _path = null;
       _state = LearningPathState.connectionError;
-      _errorMessage = error.toString();
+      _errorMessage = _normalizeError(error);
     }
 
     notifyListeners();
@@ -271,5 +272,18 @@ class LearningPathProvider extends SafeChangeNotifier {
       roadmapId: targetRoadmapId,
       status: normalizedStatus,
     );
+  }
+
+  String _normalizeError(Object error) {
+    if (error is TimeoutApiException) {
+      return 'استغرق تحميل المسار وقتًا أطول من المعتاد. حاول مرة أخرى.';
+    }
+    if (error is NetworkException) {
+      return 'تعذر الاتصال حالياً. تحقق من الشبكة وحاول مرة أخرى.';
+    }
+    if (error is ApiException) {
+      return error.message;
+    }
+    return 'تعذر تحميل المسار. حاول مرة أخرى.';
   }
 }

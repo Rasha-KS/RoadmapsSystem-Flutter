@@ -409,6 +409,8 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> with RouteAware {
                             )
                           : hasInitialError
                           ? _ErrorState(
+                              message: roadmapsProvider.errorMessage ??
+                                  AppTexts.roadmapsLoadError,
                               onRetry: () async {
                                 await refreshRoadmapsPageData(context);
                               },
@@ -492,7 +494,7 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> with RouteAware {
           ),
         ),
         content: Text(
-          message,
+          'تعذر التحديث حالياً. تحقق من الشبكة وحاول مرة أخرى.',
           textAlign: TextAlign.right,
           style: AppTextStyles.body.copyWith(color: AppColors.text_2),
         ),
@@ -533,9 +535,10 @@ class _EmptyRoadmapsState extends StatelessWidget {
 }
 
 class _ErrorState extends StatelessWidget {
+  final String message;
   final Future<void> Function() onRetry;
 
-  const _ErrorState({required this.onRetry});
+  const _ErrorState({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -548,7 +551,7 @@ class _ErrorState extends StatelessWidget {
             Directionality(
               textDirection: TextDirection.rtl,
               child: Text(
-                AppTexts.roadmapsLoadError,
+                message,
                 style: AppTextStyles.heading5.copyWith(color: AppColors.error),
                 textAlign: TextAlign.center,
               ),

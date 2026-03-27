@@ -58,6 +58,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       )
                     : hasInitialError
                     ? _ErrorState(
+                        message: provider.error ??
+                            'تعذر تحميل الإشعارات. حاول مرة أخرى.',
                         onRetry: () {
                           context
                               .read<NotificationsProvider>()
@@ -102,7 +104,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ),
         content: Text(
-          'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
+          'تعذر التحديث حالياً. تحقق من الشبكة وحاول مرة أخرى.',
           textAlign: TextAlign.right,
           style: AppTextStyles.body.copyWith(color: AppColors.text_2),
         ),
@@ -274,9 +276,10 @@ class _RefreshableEmptyState extends StatelessWidget {
 }
 
 class _ErrorState extends StatelessWidget {
+  final String message;
   final VoidCallback onRetry;
 
-  const _ErrorState({required this.onRetry});
+  const _ErrorState({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -289,7 +292,7 @@ class _ErrorState extends StatelessWidget {
             Directionality(
               textDirection: TextDirection.rtl,
               child: Text(
-                'تعذر تحميل الإشعارات',
+                message,
                 style: AppTextStyles.heading5.copyWith(color: AppColors.error),
                 textAlign: TextAlign.center,
               ),

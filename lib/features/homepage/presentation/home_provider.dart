@@ -221,7 +221,10 @@ class HomeProvider extends SafeChangeNotifier {
 
   String _friendlyLoadError(Object error) {
     if (error is NetworkException) {
-      return 'تعذر الاتصال بالخادم. تحقق من الإنترنت وحاول مرة أخرى.';
+      return 'تعذر الاتصال حالياً. تحقق من الشبكة وحاول مرة أخرى.';
+    }
+    if (error is TimeoutApiException) {
+      return 'استغرق تحميل الصفحة وقتًا أطول من المعتاد. حاول مرة أخرى.';
     }
     if (error is UnauthorizedException) {
       return 'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.';

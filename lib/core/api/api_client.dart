@@ -11,33 +11,30 @@ class ApiClient {
   ApiClient({http.Client? client}) : _client = client ?? http.Client();
 
   final http.Client _client;
+  static const Duration _defaultTimeout = Duration(seconds: 30);
+  static const int _maxAttempts = 3;
+  static const Duration _retryDelay = Duration(milliseconds: 750);
 
   Future<Map<String, dynamic>> get(
     String url, {
     Map<String, String>? headers,
-    Duration timeout = const Duration(seconds: 20),
+    Duration timeout = _defaultTimeout,
   }) async {
-    try {
+    return _executeWithRetry(() async {
       final response = await _client
           .get(Uri.parse(url), headers: _mergeHeaders(headers))
           .timeout(timeout);
       return _handleResponse(url, response);
-    } on TimeoutException {
-      throw _timeoutException();
-    } on SocketException {
-      throw const NetworkException();
-    } on http.ClientException {
-      throw const NetworkException();
-    }
+    });
   }
 
   Future<Map<String, dynamic>> post(
     String url, {
     Map<String, dynamic>? body,
     Map<String, String>? headers,
-    Duration timeout = const Duration(seconds: 20),
+    Duration timeout = _defaultTimeout,
   }) async {
-    try {
+    return _executeWithRetry(() async {
       final response = await _client
           .post(
             Uri.parse(url),
@@ -46,22 +43,16 @@ class ApiClient {
           )
           .timeout(timeout);
       return _handleResponse(url, response);
-    } on TimeoutException {
-      throw _timeoutException();
-    } on SocketException {
-      throw const NetworkException();
-    } on http.ClientException {
-      throw const NetworkException();
-    }
+    });
   }
 
   Future<Map<String, dynamic>> patch(
     String url, {
     Map<String, dynamic>? body,
     Map<String, String>? headers,
-    Duration timeout = const Duration(seconds: 20),
+    Duration timeout = _defaultTimeout,
   }) async {
-    try {
+    return _executeWithRetry(() async {
       final response = await _client
           .patch(
             Uri.parse(url),
@@ -70,22 +61,16 @@ class ApiClient {
           )
           .timeout(timeout);
       return _handleResponse(url, response);
-    } on TimeoutException {
-      throw _timeoutException();
-    } on SocketException {
-      throw const NetworkException();
-    } on http.ClientException {
-      throw const NetworkException();
-    }
+    });
   }
 
   Future<Map<String, dynamic>> put(
     String url, {
     Map<String, dynamic>? body,
     Map<String, String>? headers,
-    Duration timeout = const Duration(seconds: 20),
+    Duration timeout = _defaultTimeout,
   }) async {
-    try {
+    return _executeWithRetry(() async {
       final response = await _client
           .put(
             Uri.parse(url),
@@ -94,13 +79,7 @@ class ApiClient {
           )
           .timeout(timeout);
       return _handleResponse(url, response);
-    } on TimeoutException {
-      throw _timeoutException();
-    } on SocketException {
-      throw const NetworkException();
-    } on http.ClientException {
-      throw const NetworkException();
-    }
+    });
   }
 
   Future<Map<String, dynamic>> postMultipart(
@@ -109,32 +88,28 @@ class ApiClient {
     required String filePath,
     Map<String, String>? fields,
     Map<String, String>? headers,
-    Duration timeout = const Duration(seconds: 20),
+    Duration timeout = _defaultTimeout,
   }) async {
     try {
-      final request = http.MultipartRequest('POST', Uri.parse(url));
-      request.headers.addAll({
-        'Accept': 'application/json',
-        if (headers != null) ...headers,
-      });
-      if (fields != null) {
-        request.fields.addAll(fields);
-      }
-      request.files.add(await http.MultipartFile.fromPath(fileField, filePath));
+      return await _executeWithRetry(() async {
+        final request = http.MultipartRequest('POST', Uri.parse(url));
+        request.headers.addAll({
+          'Accept': 'application/json',
+          if (headers != null) ...headers,
+        });
+        if (fields != null) {
+          request.fields.addAll(fields);
+        }
+        request.files.add(await http.MultipartFile.fromPath(fileField, filePath));
 
-      final streamedResponse = await _client.send(request).timeout(timeout);
-      final response = await http.Response.fromStream(streamedResponse);
-      return _handleResponse(url, response);
-    } on TimeoutException {
-      throw _timeoutException();
+        final streamedResponse = await _client.send(request).timeout(timeout);
+        final response = await http.Response.fromStream(streamedResponse);
+        return _handleResponse(url, response);
+      });
     } on FileSystemException {
       throw const ApiException(
         'تعذر قراءة الصورة المحددة. حاول اختيار صورة أخرى.',
       );
-    } on SocketException {
-      throw const NetworkException();
-    } on http.ClientException {
-      throw const NetworkException();
     }
   }
 
@@ -142,9 +117,9 @@ class ApiClient {
     String url, {
     Map<String, dynamic>? body,
     Map<String, String>? headers,
-    Duration timeout = const Duration(seconds: 20),
+    Duration timeout = _defaultTimeout,
   }) async {
-    try {
+    return _executeWithRetry(() async {
       final response = await _client
           .delete(
             Uri.parse(url),
@@ -153,13 +128,7 @@ class ApiClient {
           )
           .timeout(timeout);
       return _handleResponse(url, response);
-    } on TimeoutException {
-      throw _timeoutException();
-    } on SocketException {
-      throw const NetworkException();
-    } on http.ClientException {
-      throw const NetworkException();
-    }
+    });
   }
 
   Map<String, String> _mergeHeaders(Map<String, String>? headers) {
@@ -276,7 +245,42 @@ class ApiClient {
   }
 
   ApiException _timeoutException() {
-    return const NetworkException('انتهت مهلة الاتصال. حاول مرة أخرى.');
+    return const TimeoutApiException();
+  }
+
+  ApiException _networkException() {
+    return const NetworkException();
+  }
+
+  Future<T> _executeWithRetry<T>(Future<T> Function() action) async {
+    Object? lastError;
+
+    for (var attempt = 1; attempt <= _maxAttempts; attempt++) {
+      try {
+        return await action();
+      } on TimeoutException catch (error) {
+        lastError = error;
+      } on SocketException catch (error) {
+        lastError = error;
+      } on http.ClientException catch (error) {
+        lastError = error;
+      }
+
+      if (attempt < _maxAttempts) {
+        await Future<void>.delayed(
+          Duration(milliseconds: _retryDelay.inMilliseconds * attempt),
+        );
+      }
+    }
+
+    if (lastError is TimeoutException) {
+      throw _timeoutException();
+    }
+    if (lastError is SocketException || lastError is http.ClientException) {
+      throw _networkException();
+    }
+
+    throw const NetworkException();
   }
 
   String _defaultMessage(int statusCode) {

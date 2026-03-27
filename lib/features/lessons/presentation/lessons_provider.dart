@@ -86,6 +86,12 @@ class LessonsProvider extends SafeChangeNotifier {
   }
 
   String _normalizeError(Object error) {
+    if (error is TimeoutApiException) {
+      return 'استغرق تحميل الدرس وقتًا أطول من المعتاد. حاول مرة أخرى.';
+    }
+    if (error is NetworkException) {
+      return 'تعذر الاتصال حالياً. تحقق من الشبكة وحاول مرة أخرى.';
+    }
     if (error is ApiException) {
       return error.message;
     }

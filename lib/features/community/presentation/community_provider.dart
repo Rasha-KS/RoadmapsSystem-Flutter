@@ -374,6 +374,12 @@ class CommunityProvider extends SafeChangeNotifier {
   }
 
   String _resolveErrorMessage(Object error, {required String fallback}) {
+    if (error is TimeoutApiException) {
+      return 'استغرق الاتصال بالمجتمع وقتًا أطول من المعتاد. حاول مرة أخرى.';
+    }
+    if (error is NetworkException) {
+      return 'تعذر الاتصال حالياً. تحقق من الشبكة وحاول مرة أخرى.';
+    }
     if (error is ApiException) {
       final message = error.message.trim();
       if (message.isNotEmpty) {

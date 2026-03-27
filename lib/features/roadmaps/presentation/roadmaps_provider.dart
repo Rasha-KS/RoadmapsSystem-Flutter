@@ -1,4 +1,5 @@
 
+import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 
 import '../domain/get_roadmaps_usecase.dart';
@@ -15,6 +16,7 @@ class RoadmapsProvider extends SafeChangeNotifier {
   final Set<int> _enrolledCourseIds = {};
   Set<int> get enrolledCourseIds => Set.unmodifiable(_enrolledCourseIds);
   PageState state = PageState.loading;
+  String? errorMessage;
 
   bool isCourseEnrolled(int courseId) => _enrolledCourseIds.contains(courseId);
 
@@ -94,6 +96,7 @@ class RoadmapsProvider extends SafeChangeNotifier {
 
   Future<void> loadRoadmaps({Set<int>? enrolledCourseIds}) async {
     state = PageState.loading;
+    errorMessage = null;
     notifyListeners();
 
     try {
@@ -121,8 +124,22 @@ class RoadmapsProvider extends SafeChangeNotifier {
       state = PageState.loaded;
     } catch (e) {
       state = PageState.connectionError;
+      errorMessage = _friendlyError(e);
     }
 
     notifyListeners();
+  }
+
+  String _friendlyError(Object error) {
+    if (error is TimeoutApiException) {
+      return 'استغرق تحميل المسارات وقتًا أطول من المعتاد. حاول مرة أخرى.';
+    }
+    if (error is NetworkException) {
+      return 'تعذر الاتصال حالياً. تحقق من الشبكة وحاول مرة أخرى.';
+    }
+    if (error is ApiException) {
+      return error.message;
+    }
+    return 'تعذر تحميل المسارات.';
   }
 }

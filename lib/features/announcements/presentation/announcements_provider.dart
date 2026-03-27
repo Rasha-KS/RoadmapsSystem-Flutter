@@ -1,4 +1,3 @@
-// features/announcements/presentation/announcements_provider.dart
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import '../domain/announcement_entity.dart';
@@ -26,10 +25,23 @@ class AnnouncementsProvider extends SafeChangeNotifier {
       _announcements = await useCase.execute();
       state = AnnouncementsState.loaded;
     } catch (e) {
-      error = e is ApiException ? e.message : 'تعذر تحميل الإعلانات.';
+      error = _friendlyError(e);
       state = AnnouncementsState.connectionError;
     }
 
     notifyListeners();
+  }
+
+  String _friendlyError(Object error) {
+    if (error is TimeoutApiException) {
+      return 'استغرق تحميل الإعلانات وقتًا أطول من المعتاد. حاول مرة أخرى.';
+    }
+    if (error is NetworkException) {
+      return 'تعذر الاتصال حالياً. تحقق من الشبكة وحاول مرة أخرى.';
+    }
+    if (error is ApiException) {
+      return error.message;
+    }
+    return 'تعذر تحميل الإعلانات.';
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
+import 'package:roadmaps/core/widgets/action_snackbar.dart';
 import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/roadmap_node.dart';
 import 'package:roadmaps/core/widgets/roadmap_progress.dart';
@@ -167,22 +168,11 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   }
 
   void _showRefreshFailedSnackBar(ScaffoldMessengerState messenger) {
-    messenger.showSnackBar(
-      SnackBar(
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(30),
-            topRight: Radius.circular(30),
-          ),
-        ),
-        content: Text(
-          'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
-          textAlign: TextAlign.right,
-          style: AppTextStyles.body.copyWith(color: AppColors.text_2),
-        ),
-        backgroundColor: AppColors.backGroundError,
-        duration: const Duration(milliseconds: 1000),
-      ),
+    showAppSnackBar(
+      messenger,
+      message: 'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
+      variant: SnackBarVariant.error,
+      duration: const Duration(milliseconds: 1000),
     );
   }
 
@@ -195,28 +185,17 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       final bool isLockedChallenge = unit.type == LearningUnitType.challenge;
       final bool isLockedCheckPonit = unit.type == LearningUnitType.quiz;
       final bool isLockedLesson = unit.type == LearningUnitType.lesson;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(30),
-              topRight: Radius.circular(30),
-            ),
-          ),
-          content: Text(
-            isLockedChallenge
-                ? 'هذا التحدي مقفل حاليًا.'
-                : isLockedCheckPonit
-                ? 'هذا الاختبار مقفل، أكمل الدرس السابق.'
-                : isLockedLesson
-                ? 'هذا الدرس مقفل، أكمل الدرس السابق.'
-                : ' التحدي مقفل، أكمل الدروس السابقة.',
-            textAlign: TextAlign.right,
-            style: AppTextStyles.body,
-          ),
-          backgroundColor: AppColors.backGroundError,
-          duration: const Duration(milliseconds: 1200),
-        ),
+      showAppSnackBar(
+        ScaffoldMessenger.of(context),
+        message: isLockedChallenge
+            ? 'هذا التحدي مقفل حاليًا.'
+            : isLockedCheckPonit
+            ? 'هذا الاختبار مقفل، أكمل الدرس السابق.'
+            : isLockedLesson
+            ? 'هذا الدرس مقفل، أكمل الدرس السابق.'
+            : 'التحدي مقفل، أكمل الدروس السابقة.',
+        variant: SnackBarVariant.warning,
+        duration: const Duration(milliseconds: 1200),
       );
       return;
     }
@@ -230,22 +209,11 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       if (!mounted) return;
 
       if (challenge == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(30),
-                topRight: Radius.circular(30),
-              ),
-            ),
-            content: Text(
-              textAlign: TextAlign.right,
-              'لا يوجد تحدي مرتبط بهذه الوحدة حاليا',
-              style: AppTextStyles.body,
-            ),
-            backgroundColor: AppColors.backGroundError,
-            duration: Duration(milliseconds: 1200),
-          ),
+        showAppSnackBar(
+          ScaffoldMessenger.of(context),
+          message: 'لا يوجد تحدي مرتبط بهذه الوحدة حاليا',
+          variant: SnackBarVariant.error,
+          duration: const Duration(milliseconds: 1200),
         );
         return;
       }
@@ -300,23 +268,11 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       await provider.completeUnit(unitId: unit.id, earnedXp: earnedXp);
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.fixed,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(30),
-              topRight: Radius.circular(30),
-            ),
-          ),
-          content: Text(
-            '${unit.title} مكتمل.',
-            textAlign: TextAlign.right,
-            style: AppTextStyles.body.copyWith(color: AppColors.text_5),
-          ),
-          backgroundColor: AppColors.backGroundSuccess,
-          duration: const Duration(milliseconds: 1500),
-        ),
+      showAppSnackBar(
+        ScaffoldMessenger.of(context),
+        message: '${unit.title} مكتمل.',
+        variant: SnackBarVariant.success,
+        duration: const Duration(milliseconds: 1500),
       );
       return;
     }
@@ -355,67 +311,34 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       if (!mounted) return;
 
       if (!result.passed) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(30),
-                topRight: Radius.circular(30),
-              ),
-            ),
-            content: Text(
-              'لم تحقق الحد الأدنى للنجاح في هذه المحاولة. يمكنك إعادة الاختبار.',
-              textAlign: TextAlign.right,
-              style: AppTextStyles.body.copyWith(color: AppColors.text_2),
-            ),
-            backgroundColor: AppColors.backGroundError,
-            duration: const Duration(milliseconds: 1700),
-          ),
+        showAppSnackBar(
+          ScaffoldMessenger.of(context),
+          message: 'لم تحقق الحد الأدنى للنجاح في هذه المحاولة. يمكنك إعادة الاختبار.',
+          variant: SnackBarVariant.error,
+          duration: const Duration(milliseconds: 1700),
         );
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(30),
-              topRight: Radius.circular(30),
-            ),
-          ),
-          content: Text(
-            'أحسنت! تم فتح الدرس التالي. +${result.earnedXp} XP',
-            textAlign: TextAlign.right,
-            style: AppTextStyles.body.copyWith(color: AppColors.text_5),
-          ),
-          backgroundColor: AppColors.backGroundSuccess,
-          duration: const Duration(milliseconds: 1500),
-        ),
+      showAppSnackBar(
+        ScaffoldMessenger.of(context),
+        message: 'أحسنت! تم فتح الدرس التالي. +${result.earnedXp} XP',
+        variant: SnackBarVariant.success,
+        duration: const Duration(milliseconds: 1500),
       );
       return;
     }
 
-      final int earnedXp = _earnedXpForUnit(unit.type);
-      await provider.completeUnit(unitId: unit.id, earnedXp: earnedXp);
-      _syncProfileProgress(provider);
-      if (!mounted) return;
+    final int earnedXp = _earnedXpForUnit(unit.type);
+    await provider.completeUnit(unitId: unit.id, earnedXp: earnedXp);
+    _syncProfileProgress(provider);
+    if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(30),
-            topRight: Radius.circular(30),
-          ),
-        ),
-        content: Text(
-          textAlign: TextAlign.right,
-          '${unit.title} مكتمل. +$earnedXp نقاط خبرة',
-          style: AppTextStyles.body.copyWith(color: AppColors.text_5),
-        ),
-        backgroundColor: AppColors.backGroundSuccess,
-        duration: Duration(milliseconds: 1500),
-      ),
+    showAppSnackBar(
+      ScaffoldMessenger.of(context),
+      message: '${unit.title} مكتمل. +$earnedXp نقاط خبرة',
+      variant: SnackBarVariant.success,
+      duration: const Duration(milliseconds: 1500),
     );
   }
 

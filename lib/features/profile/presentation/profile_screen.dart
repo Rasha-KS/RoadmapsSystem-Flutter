@@ -230,7 +230,6 @@ class _ProfileAvatarState extends State<_ProfileAvatar> {
     _activeCandidateIndex = 0;
     _switchScheduled = false;
     _precacheScheduled = false;
-    _schedulePrecache();
   }
 
   void _tryNextCandidate() {

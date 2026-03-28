@@ -10,44 +10,87 @@ class NotificationsRepository {
     : _apiClient = apiClient;
 
   final ApiClient _apiClient;
+  final List<NotificationEntity> _cachedNotifications = [];
+  int _cachedUnreadCount = 0;
+  String? _lastLoadErrorMessage;
+
+  String? get lastLoadErrorMessage => _lastLoadErrorMessage;
 
   Future<List<NotificationEntity>> getNotifications() async {
-    final response = await _apiClient.get(
-      ApiConstants.url(ApiConstants.notifications),
-    );
-    _ensureSuccess(response, fallbackMessage: 'تعذر تحميل الإشعارات.');
+    try {
+      final response = await _apiClient.get(
+        ApiConstants.url(ApiConstants.notifications),
+      );
+      _ensureSuccess(response, fallbackMessage: 'تعذر تحميل الإشعارات.');
 
-    final items = _extractList(
-      response['data'],
-      keys: const ['notifications', 'items', 'data', 'results'],
-    );
+      final items = _extractList(
+        response['data'],
+        keys: const ['notifications', 'items', 'data', 'results'],
+      );
 
-    return items.map(NotificationModel.fromJson).toList()
-      ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+      final notifications = items.map(NotificationModel.fromJson).toList()
+        ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+      _cachedNotifications
+        ..clear()
+        ..addAll(notifications);
+      _lastLoadErrorMessage = null;
+      return notifications;
+    } on TimeoutApiException {
+      _lastLoadErrorMessage = 'تعذر تحميل الإشعارات حاليًا. حاول مرة أخرى.';
+      return List<NotificationEntity>.from(_cachedNotifications);
+    } on NetworkException {
+      _lastLoadErrorMessage =
+          'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
+      return List<NotificationEntity>.from(_cachedNotifications);
+    } on ParsingException {
+      _lastLoadErrorMessage = 'تعذر قراءة بيانات الإشعارات.';
+      return List<NotificationEntity>.from(_cachedNotifications);
+    }
   }
 
   Future<int> getUnreadCount() async {
-    final response = await _apiClient.get(
-      ApiConstants.url(ApiConstants.notificationsUnreadCount),
-    );
-    _ensureSuccess(response, fallbackMessage: 'تعذر تحميل عدد الإشعارات.');
+    try {
+      final response = await _apiClient.get(
+        ApiConstants.url(ApiConstants.notificationsUnreadCount),
+      );
+      _ensureSuccess(response, fallbackMessage: 'تعذر تحميل عدد الإشعارات.');
 
-    final dynamic data = response['data'];
-    final dynamic countValue = data is Map<String, dynamic>
-        ? (data['unread_count'] ?? data['count'])
-        : (response['unread_count'] ?? response['count']);
-    final parsed = int.tryParse(countValue?.toString() ?? '');
-    if (parsed == null) {
-      throw const ParsingException();
+      final dynamic data = response['data'];
+      final dynamic countValue = data is Map<String, dynamic>
+          ? (data['unread_count'] ?? data['count'])
+          : (response['unread_count'] ?? response['count']);
+      final parsed = int.tryParse(countValue?.toString() ?? '');
+      if (parsed == null) {
+        throw const ParsingException();
+      }
+      _cachedUnreadCount = parsed;
+      _lastLoadErrorMessage = null;
+      return parsed;
+    } on TimeoutApiException {
+      _lastLoadErrorMessage = 'تعذر تحميل عدد الإشعارات حاليًا. حاول مرة أخرى.';
+      return _cachedUnreadCount;
+    } on NetworkException {
+      _lastLoadErrorMessage =
+          'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
+      return _cachedUnreadCount;
+    } on ParsingException {
+      _lastLoadErrorMessage = 'تعذر قراءة عدد الإشعارات.';
+      return _cachedUnreadCount;
     }
-    return parsed;
   }
 
   Future<void> readAllNotifications() async {
-    final response = await _apiClient.post(
-      ApiConstants.url(ApiConstants.notificationsReadAll),
-    );
-    _ensureSuccess(response, fallbackMessage: 'تعذر تعليم الإشعارات كمقروءة.');
+    try {
+      final response = await _apiClient.post(
+        ApiConstants.url(ApiConstants.notificationsReadAll),
+      );
+      _ensureSuccess(response, fallbackMessage: 'تعذر تعليم الإشعارات كمقروءة.');
+    } on TimeoutApiException {
+      _lastLoadErrorMessage = 'تعذر تحديث الإشعارات حاليًا. حاول مرة أخرى.';
+    } on NetworkException {
+      _lastLoadErrorMessage =
+          'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
+    }
   }
 
   void _ensureSuccess(

@@ -68,6 +68,11 @@ class SmartInstructorProvider extends SafeChangeNotifier {
 
     try {
       _sessions = await getSmartInstructorSessionsUseCase();
+      final repositoryError =
+          getSmartInstructorSessionsUseCase.repository.lastSessionsLoadErrorMessage;
+      if (repositoryError != null) {
+        sessionsError = repositoryError;
+      }
       if (_isDisposed) return;
       _removeMissingCurrentSession();
     } catch (_) {
@@ -91,6 +96,11 @@ class SmartInstructorProvider extends SafeChangeNotifier {
       final loadedMessages = await getSmartInstructorMessagesUseCase(
         sessionId: sessionId,
       );
+      final repositoryError =
+          getSmartInstructorMessagesUseCase.repository.lastMessagesLoadErrorMessage;
+      if (repositoryError != null) {
+        messagesError = repositoryError;
+      }
       if (_isDisposed) return;
       final normalizedMessages = _normalizeRetrievedMessages(loadedMessages);
       if (requestToken != _messagesRequestToken || currentSessionId != sessionId) {

@@ -8,11 +8,9 @@ import 'package:roadmaps/core/widgets/action_snackbar.dart';
 import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/roadmap_node.dart';
 import 'package:roadmaps/core/widgets/roadmap_progress.dart';
-import 'package:roadmaps/core/providers/current_user_provider.dart';
-import 'package:roadmaps/features/challenge/presentation/challenge_provider.dart';
-import 'package:roadmaps/features/challenge/presentation/challenge_screen.dart';
+import 'package:roadmaps/features/checkpoints/domain/checkpoint_submission_result.dart';
+import 'package:roadmaps/features/checkpoints/presentation/checkpoints_provider.dart';
 import 'package:roadmaps/features/checkpoints/presentation/checkpoint_screen.dart';
-import 'package:roadmaps/features/main_screen.dart';
 import 'package:roadmaps/features/learning_path/domain/learning_unit_entity.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
 import 'package:roadmaps/features/lessons/presentation/lessons_screen.dart';
@@ -45,6 +43,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<LearningPathProvider>();
+    context.watch<ProfileProvider>();
     final hasInitialLoading =
         provider.state == LearningPathState.loading && provider.units.isEmpty;
     final hasInitialError =
@@ -119,9 +118,15 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         itemCount: provider.units.length,
         itemBuilder: (context, index) {
           final unit = provider.units[index];
+          final displayUnit = _effectiveUnitForDisplay(
+            units: provider.units,
+            index: index,
+            unit: unit,
+            userXp: provider.userXp,
+          );
           final bool alignLeft = index.isEven;
           final lessonNumber = _lessonNumberForIndex(provider.units, index);
-          final String? displayTitle = unit.type == LearningUnitType.lesson
+          final String? displayTitle = displayUnit.type == LearningUnitType.lesson
               ? 'درس $lessonNumber'
               : null;
 
@@ -131,9 +136,9 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                 alignment:
                     alignLeft ? Alignment.centerLeft : Alignment.centerRight,
                 child: RoadmapNode(
-                  unit: unit,
+                  unit: displayUnit,
                   displayTitle: displayTitle,
-                  onTap: () => _onUnitTap(provider, unit, lessonNumber),
+                  onTap: () => _onUnitTap(provider, displayUnit, lessonNumber),
                 ),
               ),
               if (index < provider.units.length - 1)
@@ -181,7 +186,8 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     LearningUnitEntity unit,
     int lessonNumber,
   ) async {
-    if (unit.isLocked) {
+    if (unit.isLocked && unit.type != LearningUnitType.challenge) {
+      final previousUnit = _previousUnit(provider.units, unit.id);
       final bool isLockedChallenge = unit.type == LearningUnitType.challenge;
       final bool isLockedCheckPonit = unit.type == LearningUnitType.quiz;
       final bool isLockedLesson = unit.type == LearningUnitType.lesson;
@@ -190,9 +196,9 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         message: isLockedChallenge
             ? 'هذا التحدي مقفل حاليًا.'
             : isLockedCheckPonit
-            ? 'هذا الاختبار مقفل، أكمل الدرس السابق.'
+            ? _lockedQuizMessage(previousUnit)
             : isLockedLesson
-            ? 'هذا الدرس مقفل، أكمل الدرس السابق.'
+            ? _lockedLessonMessage(previousUnit)
             : 'التحدي مقفل، أكمل الدروس السابقة.',
         variant: SnackBarVariant.warning,
         duration: const Duration(milliseconds: 1200),
@@ -201,49 +207,23 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     }
 
     if (unit.type == LearningUnitType.challenge) {
-      final challengeProvider = context.read<ChallengeProvider>();
-      final challenge = await challengeProvider.getChallengeByLearningUnitId(
-        unit.id,
-      );
-
-      if (!mounted) return;
-
-      if (challenge == null) {
+      final previousUnit = _previousUnit(provider.units, unit.id);
+      final bool previousLessonCompleted = previousUnit?.isCompleted ?? false;
+      final int requiredXp = unit.requiredXp;
+      final bool hasEnoughXp = requiredXp <= 0 || provider.userXp >= requiredXp;
+      if (!previousLessonCompleted || !hasEnoughXp) {
         showAppSnackBar(
           ScaffoldMessenger.of(context),
-          message: 'لا يوجد تحدي مرتبط بهذه الوحدة حاليا',
-          variant: SnackBarVariant.error,
+          message: _challengeLockMessage(
+            previousLessonCompleted: previousLessonCompleted,
+            hasEnoughXp: hasEnoughXp,
+            currentXp: provider.userXp,
+            requiredXp: requiredXp,
+          ),
+          variant: SnackBarVariant.warning,
           duration: const Duration(milliseconds: 1200),
         );
         return;
-      }
-
-      final userId = context.read<CurrentUserProvider>().userId ?? 1;
-      final ChallengeFinishAction? finishAction = await Navigator.of(context)
-          .push<ChallengeFinishAction>(
-            MaterialPageRoute(
-              builder: (_) => ChallengeScreen(
-                learningUnitId: unit.id,
-                userId: userId,
-                roadmapTitle: widget.roadmapTitle,
-              ),
-            ),
-          );
-
-      if (finishAction == null) return;
-
-      await provider.completeUnit(unitId: unit.id, earnedXp: 0);
-      _syncProfileProgress(provider);
-      if (!mounted) return;
-
-      if (finishAction == ChallengeFinishAction.goHome) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const MainScreen()),
-            (route) => false,
-          );
-        });
       }
       return;
     }
@@ -264,8 +244,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
 
       if (shouldComplete != true) return;
 
-      const int earnedXp = 0;
-      await provider.completeUnit(unitId: unit.id, earnedXp: earnedXp);
+      await provider.completeUnit(unitId: unit.id);
       if (!mounted) return;
 
       showAppSnackBar(
@@ -278,25 +257,43 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     }
 
     if (unit.type == LearningUnitType.quiz) {
-      if (provider.isCheckpointCompleted(unit.id) &&
-          !provider.hasConfirmedRetake(unit.id)) {
-        final bool shouldRetake = await _showRetakeCheckpointDialog();
-        if (!shouldRetake) return;
-
-        provider.markRetakeConfirmed(unit.id);
-        await provider.resetCheckpointProgress(unitId: unit.id);
+      final navigator = Navigator.of(context);
+      final checkpointsProvider = context.read<CheckpointsProvider>();
+      final profileProvider = context.read<ProfileProvider>();
+      final int attemptsCount;
+      try {
+        attemptsCount = await checkpointsProvider.getAttemptsCount(
+          quizId: unit.entityId,
+        );
+      } catch (_) {
         if (!mounted) return;
+        showAppSnackBar(
+          ScaffoldMessenger.of(context),
+          message: 'تعذر فتح الاختبار حاول مرة اخرى.',
+          variant: SnackBarVariant.error,
+          duration: const Duration(milliseconds: 1400),
+        );
+        return;
       }
 
-      provider.registerCheckpointAttemptStart(unit.id);
+      final bool isRetake = attemptsCount > 0;
+      if (isRetake) {
+        final bool shouldRetake = await _showRetakeCheckpointDialog(
+          previousAttemptPassed:
+              unit.isCompleted || provider.hasConfirmedRetake(unit.id),
+        );
+        if (!shouldRetake) return;
+      }
 
-      final CheckpointResult? result = await Navigator.of(context)
-          .push<CheckpointResult>(
+      final CheckpointSubmissionResult? result = await navigator.push<
+        CheckpointSubmissionResult
+      >(
             MaterialPageRoute(
               builder: (_) => CheckpointScreen(
                 learningPathId: widget.roadmapId.toString(),
-                checkpointId: unit.id.toString(),
+                checkpointId: unit.entityId.toString(),
                 roadmapTitle: widget.roadmapTitle,
+                isRetake: isRetake,
               ),
             ),
           );
@@ -306,7 +303,6 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       await provider.submitCheckpointAttempt(
         unitId: unit.id,
         passed: result.passed,
-        earnedXp: result.earnedXp,
       );
       if (!mounted) return;
 
@@ -320,9 +316,12 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         return;
       }
 
+      await profileProvider.loadProfileData();
+      if (!mounted) return;
+
       showAppSnackBar(
         ScaffoldMessenger.of(context),
-        message: 'أحسنت! تم فتح الدرس التالي. +${result.earnedXp} XP',
+        message: 'أحسنت! تم تسجيل نتيجة الاختبار. +${result.earnedXp} XP',
         variant: SnackBarVariant.success,
         duration: const Duration(milliseconds: 1500),
       );
@@ -330,7 +329,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     }
 
     final int earnedXp = _earnedXpForUnit(unit.type);
-    await provider.completeUnit(unitId: unit.id, earnedXp: earnedXp);
+    await provider.completeUnit(unitId: unit.id);
     _syncProfileProgress(provider);
     if (!mounted) return;
 
@@ -351,13 +350,16 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     );
   }
 
-  Future<bool> _showRetakeCheckpointDialog() async {
+  Future<bool> _showRetakeCheckpointDialog({
+    required bool previousAttemptPassed,
+  }) async {
     bool confirmed = false;
     await showConfirmActionDialog(
       context: context,
       title: 'إعادة الاختبار',
-      message:
-          'سيتم بدء محاولة جديدة وإعادة ضبط نتيجة الاختبار الحالية. هل تريد المتابعة؟',
+      message: previousAttemptPassed
+          ? 'المحاولة السابقة ناجحة بالفعل. هل تريد إعادة الاختبار وبدء محاولة جديدة؟'
+          : 'لم تنجح المحاولة السابقة. هل تريد إعادة الاختبار مباشرة؟',
       cancelText: 'إلغاء',
       confirmText: 'إعادة',
       onConfirm: () async {
@@ -376,6 +378,86 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       case LearningUnitType.challenge:
         return 0;
     }
+  }
+
+  LearningUnitEntity _effectiveUnitForDisplay({
+    required List<LearningUnitEntity> units,
+    required int index,
+    required LearningUnitEntity unit,
+    required int userXp,
+  }) {
+    if (unit.type != LearningUnitType.challenge || unit.isCompleted) {
+      return unit;
+    }
+
+    final previousUnit = index > 0 ? units[index - 1] : null;
+    final bool previousLessonCompleted = previousUnit?.isCompleted ?? false;
+    final int requiredXp = unit.requiredXp;
+    final bool shouldUnlock =
+        previousLessonCompleted && (requiredXp <= 0 || userXp >= requiredXp);
+
+    return unit.copyWith(
+      status: shouldUnlock
+          ? LearningUnitStatus.unlocked
+          : LearningUnitStatus.locked,
+      isLocked: !shouldUnlock,
+    );
+  }
+
+  LearningUnitEntity? _previousUnit(
+    List<LearningUnitEntity> units,
+    int currentUnitId,
+  ) {
+    final index = units.indexWhere((unit) => unit.id == currentUnitId);
+    if (index <= 0) return null;
+    return units[index - 1];
+  }
+
+  String _lockedLessonMessage(LearningUnitEntity? previousUnit) {
+    if (previousUnit == null) {
+      return 'هذا الدرس مقفل، أكمل الدرس السابق.';
+    }
+
+    switch (previousUnit.type) {
+      case LearningUnitType.quiz:
+        return 'هذا الدرس مقفل، أكمل الاختبار السابق.';
+      case LearningUnitType.challenge:
+        return 'هذا الدرس مقفل، أكمل التحدي السابق.';
+      case LearningUnitType.lesson:
+        return 'هذا الدرس مقفل، أكمل الدرس السابق.';
+    }
+  }
+
+  String _lockedQuizMessage(LearningUnitEntity? previousUnit) {
+    if (previousUnit == null) {
+      return 'هذا الاختبار مقفل، أكمل الدرس السابق.';
+    }
+
+    switch (previousUnit.type) {
+      case LearningUnitType.lesson:
+        return 'هذا الاختبار مقفل، أكمل الدرس السابق.';
+      case LearningUnitType.quiz:
+        return 'هذا الاختبار مقفل، أكمل الاختبار السابق.';
+      case LearningUnitType.challenge:
+        return 'هذا الاختبار مقفل، أكمل التحدي السابق.';
+    }
+  }
+
+  String _challengeLockMessage({
+    required bool previousLessonCompleted,
+    required bool hasEnoughXp,
+    required int currentXp,
+    required int requiredXp,
+  }) {
+    if (!previousLessonCompleted) {
+      return 'هذا التحدي مقفل، أكمل الدرس السابق.';
+    }
+
+    if (requiredXp > 0 && !hasEnoughXp) {
+      return 'نقاط الخبرة الحالية $currentXp من أصل $requiredXp غير كافية لفتح التحدي.';
+    }
+
+    return 'هذا التحدي مقفل حاليًا.';
   }
 
 }

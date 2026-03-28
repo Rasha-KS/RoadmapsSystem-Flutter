@@ -40,6 +40,15 @@ class ProfileProvider extends SafeChangeNotifier {
   bool hasLoadedProfileData = false;
   bool lastLoadFailed = false;
 
+  int getRoadmapXp(int roadmapId) {
+    for (final roadmap in roadmaps) {
+      if (roadmap.roadmapId == roadmapId) {
+        return roadmap.xpPoints;
+      }
+    }
+    return 0;
+  }
+
   Future<void> loadProfileData() async {
     loading = true;
     error = null;
@@ -79,11 +88,15 @@ class ProfileProvider extends SafeChangeNotifier {
     final loadedRoadmaps = loadedUser == null
         ? <UserRoadmapEntity>[]
         : await getUserRoadmapsUseCase(loadedUser.id);
+    final roadmapsLoadError =
+        getUserRoadmapsUseCase.repository.lastRoadmapsLoadErrorMessage;
 
     user = loadedUser;
-    roadmaps = await _applyComputedProgress(loadedRoadmaps);
+    final computedRoadmaps = await _applyComputedProgress(loadedRoadmaps);
+    roadmaps = computedRoadmaps;
     hasLoadedProfileData = true;
-    lastLoadFailed = false;
+    lastLoadFailed = roadmapsLoadError != null;
+    error = roadmapsLoadError;
     notifyListeners();
   }
 
@@ -205,7 +218,6 @@ class ProfileProvider extends SafeChangeNotifier {
       if (roadmap.enrollmentId != enrollmentId) {
         return roadmap;
       }
-
       return roadmap.copyWith(
         completedAt: null,
         xpPoints: 0,
@@ -223,7 +235,6 @@ class ProfileProvider extends SafeChangeNotifier {
     if (updatedRoadmaps.length == roadmaps.length) {
       return;
     }
-
     roadmaps = updatedRoadmaps;
     notifyListeners();
   }
@@ -233,7 +244,6 @@ class ProfileProvider extends SafeChangeNotifier {
       if (roadmap.roadmapId != roadmapId) {
         return roadmap;
       }
-
       return roadmap.copyWith(
         completedAt: null,
         xpPoints: 0,

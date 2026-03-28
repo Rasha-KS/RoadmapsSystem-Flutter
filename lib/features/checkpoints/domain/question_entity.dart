@@ -5,11 +5,13 @@ class QuestionEntity {
   final String text;
   final List<OptionEntity> options;
   final String correctOptionId;
+  final int questionXp;
 
   const QuestionEntity({
     required this.id,
     required this.text,
     required this.options,
     required this.correctOptionId,
+    this.questionXp = 0,
   });
 }

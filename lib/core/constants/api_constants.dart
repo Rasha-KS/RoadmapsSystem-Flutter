@@ -48,8 +48,17 @@ class ApiConstants {
   static String enrollRoadmap(int roadmapId) => "/roadmaps/$roadmapId/enroll";
   static String unenrollRoadmap(int roadmapId) =>
       "/roadmaps/$roadmapId/unenroll";
+  
+  // Learning path and Quize
   static String learningPath(int roadmapId) =>
       "/roadmaps/$roadmapId/learning-path";
+  static String quizDetails(int quizId) => "/quizzes/$quizId/details";
+  static String quizAttempts(int quizId) => "/quizzes/$quizId/attempts";
+  static String quizRetake(int quizId) => "/quizzes/$quizId/retake";
+  static String quizAttemptsCount(int quizId) =>
+      "/quizzes/$quizId/attempts-count";
+  static String quizSubmitAttempt(int attemptId) =>
+      "/quiz-attempts/$attemptId/submit";
 
   // Lessons
   static String unitLessons(int learningUnitId) =>

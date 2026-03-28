@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/auth/token_manager.dart';
 import 'package:roadmaps/core/navigation/auth_guard.dart';
 import 'package:roadmaps/core/navigation/app_route_observer.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
+import 'package:roadmaps/core/widgets/action_snackbar.dart';
 import 'package:roadmaps/features/auth/presentation/confirm_new_password_screen.dart';
 import 'package:roadmaps/features/auth/presentation/splash_screen.dart';
 import 'package:roadmaps/features/main_screen.dart';
@@ -16,62 +20,74 @@ import 'package:roadmaps/features/notifications/presentation/notifications_provi
 import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_provider.dart';
 import 'package:roadmaps/injection.dart';
 
-void main() async {
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<ScaffoldMessengerState> appMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  final launchUri = _resolveLaunchUri();
+  runZonedGuarded(
+    () async {
+      _installGlobalErrorHandlers();
+      final launchUri = _resolveLaunchUri();
 
-  final currentUserProvider = Injection.provideCurrentUserProvider();
-  await currentUserProvider.loadCurrentUser();
+      final currentUserProvider = Injection.provideCurrentUserProvider();
+      await currentUserProvider.loadCurrentUser();
 
-  runApp(
-    MultiProvider(
-      providers: [
-        Provider<TokenManager>.value(
-          value: Injection.provideTokenManager(),
-        ),
-        ChangeNotifierProvider.value(value: currentUserProvider),
-        ChangeNotifierProvider<AuthProvider>(
-          create: (_) => Injection.provideAuthProvider(),
-        ),
+      runApp(
+        MultiProvider(
+          providers: [
+            Provider<TokenManager>.value(
+              value: Injection.provideTokenManager(),
+            ),
+            ChangeNotifierProvider.value(value: currentUserProvider),
+            ChangeNotifierProvider<AuthProvider>(
+              create: (_) => Injection.provideAuthProvider(),
+            ),
 
-        ChangeNotifierProvider(create: (_) => Injection.provideHomeProvider()),
+            ChangeNotifierProvider(create: (_) => Injection.provideHomeProvider()),
 
-        ChangeNotifierProvider(
-          create: (_) => Injection.provideRoadmapsProvider(),
+            ChangeNotifierProvider(
+              create: (_) => Injection.provideRoadmapsProvider(),
+            ),
+            ChangeNotifierProvider(
+              create: (_) => Injection.provideAnnouncementsProvider(),
+            ),
+            ChangeNotifierProvider(
+              create: (_) => Injection.provideProfileProvider(),
+            ),
+            ChangeNotifierProvider(
+              create: (_) => Injection.provideSettingsProvider(),
+            ),
+            ChangeNotifierProvider(
+              create: (_) => Injection.provideCommunityProvider(),
+            ),
+            ChangeNotifierProvider<LearningPathProvider>(
+              create: (_) => Injection.provideLearningPathProvider(),
+            ),
+            ChangeNotifierProvider<LessonsProvider>(
+              create: (_) => Injection.provideLessonsProvider(),
+            ),
+            ChangeNotifierProvider<CheckpointsProvider>(
+              create: (_) => Injection.provideCheckpointsProvider(),
+            ),
+            ChangeNotifierProvider<NotificationsProvider>(
+              create: (_) => Injection.provideNotificationsProvider(),
+            ),
+            ChangeNotifierProvider<SmartInstructorProvider>(
+              create: (_) => Injection.provideSmartInstructorProvider(),
+            ),
+            ChangeNotifierProvider<ChallengeProvider>(
+              create: (_) => Injection.provideChallengeProvider(),
+            ),
+          ],
+          child: MyApp(initialUri: launchUri),
         ),
-        ChangeNotifierProvider(
-          create: (_) => Injection.provideAnnouncementsProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => Injection.provideProfileProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => Injection.provideSettingsProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => Injection.provideCommunityProvider(),
-        ),
-        ChangeNotifierProvider<LearningPathProvider>(
-          create: (_) => Injection.provideLearningPathProvider(),
-        ),
-        ChangeNotifierProvider<LessonsProvider>(
-          create: (_) => Injection.provideLessonsProvider(),
-        ),
-        ChangeNotifierProvider<CheckpointsProvider>(
-          create: (_) => Injection.provideCheckpointsProvider(),
-        ),
-        ChangeNotifierProvider<NotificationsProvider>(
-          create: (_) => Injection.provideNotificationsProvider(),
-        ),
-        ChangeNotifierProvider<SmartInstructorProvider>(
-          create: (_) => Injection.provideSmartInstructorProvider(),
-        ),
-        ChangeNotifierProvider<ChallengeProvider>(
-          create: (_) => Injection.provideChallengeProvider(),
-        ),
-      ],
-      child: MyApp(initialUri: launchUri),
-    ),
+      );
+    },
+    (error, stackTrace) {
+      _showGlobalError(error);
+    },
   );
 }
 
@@ -88,8 +104,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
-
   @override
   void initState() {
     super.initState();
@@ -106,7 +120,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      navigatorKey: _navigatorKey,
+      navigatorKey: appNavigatorKey,
+      scaffoldMessengerKey: appMessengerKey,
       navigatorObservers: [appRouteObserver],
       title: 'Roadmaps App',
       theme: ThemeData(
@@ -139,7 +154,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   void _openResetPasswordScreen(Uri uri) {
-    final navigator = _navigatorKey.currentState;
+    final navigator = appNavigatorKey.currentState;
     if (navigator == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _openResetPasswordScreen(uri);
@@ -157,6 +172,44 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       (route) => false,
     );
   }
+}
+
+void _installGlobalErrorHandlers() {
+  ErrorWidget.builder = (details) {
+    return const SizedBox.shrink();
+  };
+
+  FlutterError.onError = (details) {
+    _showGlobalError(details.exception);
+  };
+
+  WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+    _showGlobalError(error);
+    return true;
+  };
+}
+
+void _showGlobalError(Object error) {
+  final messenger = appMessengerKey.currentState;
+  if (messenger == null) {
+    debugPrint('Unhandled app error: $error');
+    return;
+  }
+
+  final message = error is TimeoutApiException
+      ? 'استغرق الطلب وقتًا أطول من المعتاد. حاول مرة أخرى.'
+      : error is NetworkException
+          ? 'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.'
+          : error is ApiException
+              ? error.message
+              : 'حدث خطأ غير متوقع. حاول مرة أخرى.';
+
+  showAppSnackBar(
+    messenger,
+    message: message,
+    variant: SnackBarVariant.error,
+    duration: const Duration(seconds: 3),
+  );
 }
 
 class _AppEntry extends StatelessWidget {

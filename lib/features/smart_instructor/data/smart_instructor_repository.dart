@@ -3,6 +3,10 @@ import 'package:roadmaps/features/smart_instructor/domain/smart_instructor_messa
 import 'package:roadmaps/features/smart_instructor/domain/smart_instructor_session_entity.dart';
 
 abstract class SmartInstructorRepository {
+  String? get lastSessionsLoadErrorMessage;
+
+  String? get lastMessagesLoadErrorMessage;
+
   Future<SmartInstructorIntroEntity> getIntro();
 
   Future<List<SmartInstructorSessionEntity>> getSessions();

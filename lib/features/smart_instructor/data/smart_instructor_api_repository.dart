@@ -13,6 +13,16 @@ class SmartInstructorApiRepository implements SmartInstructorRepository {
       : _apiClient = apiClient;
 
   final ApiClient _apiClient;
+  final List<SmartInstructorSessionEntity> _cachedSessions = [];
+  final Map<int, List<SmartInstructorMessageEntity>> _cachedMessagesBySession = {};
+  String? _lastSessionsLoadErrorMessage;
+  String? _lastMessagesLoadErrorMessage;
+
+  @override
+  String? get lastSessionsLoadErrorMessage => _lastSessionsLoadErrorMessage;
+
+  @override
+  String? get lastMessagesLoadErrorMessage => _lastMessagesLoadErrorMessage;
 
   @override
   Future<SmartInstructorIntroEntity> getIntro() async {
@@ -25,17 +35,34 @@ class SmartInstructorApiRepository implements SmartInstructorRepository {
 
   @override
   Future<List<SmartInstructorSessionEntity>> getSessions() async {
-    final response = await _apiClient.get(
-      ApiConstants.url(ApiConstants.chatbotSessions),
-    );
-    _ensureSuccess(response, fallbackMessage: 'تعذر تحميل المحادثات.');
+    try {
+      final response = await _apiClient.get(
+        ApiConstants.url(ApiConstants.chatbotSessions),
+      );
+      _ensureSuccess(response, fallbackMessage: 'تعذر تحميل المحادثات.');
 
-    final items = _extractList(
-      response['data'],
-      keys: const ['sessions', 'items', 'data', 'results'],
-    );
+      final items = _extractList(
+        response['data'],
+        keys: const ['sessions', 'items', 'data', 'results'],
+      );
 
-    return items.map(SmartInstructorSessionModel.fromJson).toList();
+      final sessions = items.map(SmartInstructorSessionModel.fromJson).toList();
+      _cachedSessions
+        ..clear()
+        ..addAll(sessions);
+      _lastSessionsLoadErrorMessage = null;
+      return sessions;
+    } on TimeoutApiException {
+      _lastSessionsLoadErrorMessage = 'تعذر تحميل المحادثات حاليًا. حاول مرة أخرى.';
+      return List<SmartInstructorSessionEntity>.from(_cachedSessions);
+    } on NetworkException {
+      _lastSessionsLoadErrorMessage =
+          'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
+      return List<SmartInstructorSessionEntity>.from(_cachedSessions);
+    } on ParsingException {
+      _lastSessionsLoadErrorMessage = 'تعذر قراءة بيانات المحادثات.';
+      return List<SmartInstructorSessionEntity>.from(_cachedSessions);
+    }
   }
 
   @override
@@ -60,28 +87,48 @@ class SmartInstructorApiRepository implements SmartInstructorRepository {
   Future<List<SmartInstructorMessageEntity>> getMessages({
     required int sessionId,
   }) async {
-    final messages = <SmartInstructorMessageEntity>[];
-    var page = 1;
-    var lastPage = 1;
+    try {
+      final messages = <SmartInstructorMessageEntity>[];
+      var page = 1;
+      var lastPage = 1;
 
-    do {
-      final response = await _apiClient.get(
-        _buildMessagesUrl(sessionId: sessionId, page: page),
+      do {
+        final response = await _apiClient.get(
+          _buildMessagesUrl(sessionId: sessionId, page: page),
+        );
+        _ensureSuccess(response, fallbackMessage: 'تعذر تحميل الرسائل.');
+
+        final items = _extractList(
+          response['data'],
+          keys: const ['messages', 'items', 'data', 'results'],
+        );
+
+        messages.addAll(items.map(SmartInstructorMessageModel.fromJson));
+        lastPage = _extractLastPage(response['meta']) ?? page;
+        page++;
+      } while (page <= lastPage);
+
+      messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
+      _cachedMessagesBySession[sessionId] = List<SmartInstructorMessageEntity>.from(messages);
+      _lastMessagesLoadErrorMessage = null;
+      return messages;
+    } on TimeoutApiException {
+      _lastMessagesLoadErrorMessage = 'تعذر تحميل الرسائل حاليًا. حاول مرة أخرى.';
+      return List<SmartInstructorMessageEntity>.from(
+        _cachedMessagesBySession[sessionId] ?? const <SmartInstructorMessageEntity>[],
       );
-      _ensureSuccess(response, fallbackMessage: 'تعذر تحميل الرسائل.');
-
-      final items = _extractList(
-        response['data'],
-        keys: const ['messages', 'items', 'data', 'results'],
+    } on NetworkException {
+      _lastMessagesLoadErrorMessage =
+          'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
+      return List<SmartInstructorMessageEntity>.from(
+        _cachedMessagesBySession[sessionId] ?? const <SmartInstructorMessageEntity>[],
       );
-
-      messages.addAll(items.map(SmartInstructorMessageModel.fromJson));
-      lastPage = _extractLastPage(response['meta']) ?? page;
-      page++;
-    } while (page <= lastPage);
-
-    messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
-    return messages;
+    } on ParsingException {
+      _lastMessagesLoadErrorMessage = 'تعذر قراءة بيانات الرسائل.';
+      return List<SmartInstructorMessageEntity>.from(
+        _cachedMessagesBySession[sessionId] ?? const <SmartInstructorMessageEntity>[],
+      );
+    }
   }
 
   @override
@@ -113,11 +160,6 @@ class SmartInstructorApiRepository implements SmartInstructorRepository {
 
     final message = response['message']?.toString().trim();
     if (message == 'Server Error') {
-      // Temporary payment-gated behavior:
-      // until the AI backend is enabled, this response means the user message
-      // was accepted but no assistant reply is available yet.
-      // Once billing is enabled, remove this special-case and treat responses
-      // strictly by their real payload.
       return [
         SmartInstructorMessageModel(
           id: -DateTime.now().microsecondsSinceEpoch,
@@ -186,8 +228,9 @@ class SmartInstructorApiRepository implements SmartInstructorRepository {
     required int sessionId,
     required int page,
   }) {
-    final uri = Uri.parse(ApiConstants.url(ApiConstants.chatbotSessionMessages(sessionId)))
-        .replace(queryParameters: {'page': '$page'});
+    final uri = Uri.parse(
+      ApiConstants.url(ApiConstants.chatbotSessionMessages(sessionId)),
+    ).replace(queryParameters: {'page': '$page'});
     return uri.toString();
   }
 

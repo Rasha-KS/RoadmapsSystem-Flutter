@@ -34,7 +34,15 @@ class NotificationsProvider extends SafeChangeNotifier {
     try {
       // Load notifications list and update the notifications UI.
       notifications = await getNotificationsUseCase();
-      state = NotificationsState.loaded;
+      final repositoryError = getNotificationsUseCase.repository.lastLoadErrorMessage;
+      if (repositoryError != null) {
+        error = repositoryError;
+        state = notifications.isEmpty
+            ? NotificationsState.connectionError
+            : NotificationsState.loaded;
+      } else {
+        state = NotificationsState.loaded;
+      }
       notifyListeners();
 
       final markedAsRead = await markAllAsRead();
@@ -53,6 +61,10 @@ class NotificationsProvider extends SafeChangeNotifier {
     try {
       // Fetch unread count to update the bell red dot indicator.
       final fetchedUnreadCount = await getUnreadCountUseCase();
+      final repositoryError = getUnreadCountUseCase.repository.lastLoadErrorMessage;
+      if (repositoryError != null) {
+        error ??= repositoryError;
+      }
       if (_awaitingUnreadSync && fetchedUnreadCount > 0) {
         unreadCount = 0;
         notifyListeners();

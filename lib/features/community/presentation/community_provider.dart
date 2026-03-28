@@ -63,6 +63,11 @@ class CommunityProvider extends SafeChangeNotifier {
     try {
       _rooms = await getUserCommunityRoomsUseCase();
       _ensureActiveRoomStillValid();
+      final repositoryError =
+          getUserCommunityRoomsUseCase.communityRepository.lastRoomsLoadErrorMessage;
+      if (repositoryError != null) {
+        roomsError = repositoryError;
+      }
     } catch (error) {
       roomsError = _resolveErrorMessage(
         error,
@@ -88,6 +93,11 @@ class CommunityProvider extends SafeChangeNotifier {
     try {
       final data = await getMessagesByRoomUseCase(roomId);
       _messagesByRoom[roomId] = data;
+      final repositoryError =
+          getMessagesByRoomUseCase.repository.lastMessagesLoadErrorMessage;
+      if (repositoryError != null) {
+        _messagesErrorsByRoom[roomId] = repositoryError;
+      }
     } catch (error) {
       _messagesErrorsByRoom[roomId] = _resolveErrorMessage(
         error,
@@ -321,7 +331,6 @@ class CommunityProvider extends SafeChangeNotifier {
           ),
         ),
       );
-      rethrow;
     } finally {
       _sendingRooms.remove(roomId);
       notifyListeners();

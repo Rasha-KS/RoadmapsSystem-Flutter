@@ -9,6 +9,7 @@ import 'package:roadmaps/core/widgets/action_snackbar.dart';
 import 'package:roadmaps/core/widgets/lesson_card_1.dart';
 import 'package:roadmaps/core/utils/enrollment_sync.dart';
 import 'package:roadmaps/core/utils/page_refresh.dart';
+import 'package:roadmaps/core/providers/current_user_provider.dart';
 import 'package:roadmaps/features/homepage/domain/home_entity.dart';
 import 'package:roadmaps/features/homepage/presentation/home_provider.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
@@ -28,9 +29,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      refreshProfilePageData(context);
+      await refreshProfilePageData(context);
+      if (!mounted) return;
+
+      final provider = context.read<ProfileProvider>();
+      if (provider.lastLoadFailed) {
+        showAppSnackBar(
+          ScaffoldMessenger.of(context),
+          message: provider.error ?? AppTexts.profileRefreshError,
+          variant: SnackBarVariant.error,
+          duration: const Duration(milliseconds: 1000),
+        );
+      }
     });
   }
 
@@ -46,8 +58,12 @@ class _ProfileScreenBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ProfileProvider>();
+    final currentUserProvider = context.watch<CurrentUserProvider>();
+    final effectiveUser = currentUserProvider.user ?? provider.user;
     final hasInitialLoading =
-        !provider.hasLoadedProfileData && !provider.lastLoadFailed;
+        !provider.hasLoadedProfileData &&
+        !provider.lastLoadFailed &&
+        effectiveUser == null;
     final hasInitialError =
         provider.lastLoadFailed && !provider.hasLoadedProfileData;
 
@@ -81,9 +97,9 @@ class _ProfileScreenBody extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         children: [
           _buildHeader(
-            username: provider.user?.username ?? '',
-            profileImageUrl: provider.user?.profileImageUrl,
-            profileImageUpdatedAt: provider.user?.updatedAt,
+            username: effectiveUser?.username ?? '',
+            profileImageUrl: effectiveUser?.profileImageUrl,
+            profileImageUpdatedAt: effectiveUser?.updatedAt,
           ),
           const SizedBox(height: 10),
           Divider(color: AppColors.secondary1, thickness: 1),

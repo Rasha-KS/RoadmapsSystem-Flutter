@@ -11,33 +11,76 @@ class HomeRepository {
   HomeRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
   final ApiClient _apiClient;
+  final List<HomeCourseEntity> _cachedRecommendedCourses = [];
+  final List<HomeCourseEntity> _cachedMyCourses = [];
+  String? _lastLoadErrorMessage;
+
+  String? get lastLoadErrorMessage => _lastLoadErrorMessage;
 
   Future<List<HomeCourseEntity>> getRecommendedCourses() async {
-    final response = await _apiClient.get(
-      ApiConstants.url(ApiConstants.suggestedRoadmaps),
-    );
-    _ensureSuccess(response);
+    try {
+      final response = await _apiClient.get(
+        ApiConstants.url(ApiConstants.suggestedRoadmaps),
+      );
+      _ensureSuccess(response);
 
-    final items = _extractList(
-      response['data'],
-      keys: const ['roadmaps', 'suggested_roadmaps', 'items', 'data', 'results'],
-    );
+      final items = _extractList(
+        response['data'],
+        keys: const [
+          'roadmaps',
+          'suggested_roadmaps',
+          'items',
+          'data',
+          'results',
+        ],
+      );
 
-    return items.map(_mapSuggestedRoadmap).toList();
+      final roadmaps = items.map(_mapSuggestedRoadmap).toList();
+      _cachedRecommendedCourses
+        ..clear()
+        ..addAll(roadmaps);
+      _lastLoadErrorMessage = null;
+      return roadmaps;
+    } on TimeoutApiException {
+      _lastLoadErrorMessage = 'تعذر تحميل المسارات المقترحة حاليًا. حاول مرة أخرى.';
+      return List<HomeCourseEntity>.from(_cachedRecommendedCourses);
+    } on NetworkException {
+      _lastLoadErrorMessage = 'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
+      return List<HomeCourseEntity>.from(_cachedRecommendedCourses);
+    } on ParsingException {
+      _lastLoadErrorMessage = 'تعذر قراءة بيانات المسارات المقترحة.';
+      return List<HomeCourseEntity>.from(_cachedRecommendedCourses);
+    }
   }
 
   Future<List<HomeCourseEntity>> getMyCourses() async {
-    final response = await _apiClient.get(
-      '${ApiConstants.url(ApiConstants.enrollments)}?per_page=2',
-    );
-    _ensureSuccess(response);
+    try {
+      final response = await _apiClient.get(
+        '${ApiConstants.url(ApiConstants.enrollments)}?per_page=2',
+      );
+      _ensureSuccess(response);
 
-    final items = _extractList(
-      response['data'],
-      keys: const ['enrollments', 'items', 'data', 'results'],
-    );
+      final items = _extractList(
+        response['data'],
+        keys: const ['enrollments', 'items', 'data', 'results'],
+      );
 
-    return items.map(_mapEnrollment).toList();
+      final roadmaps = items.map(_mapEnrollment).toList();
+      _cachedMyCourses
+        ..clear()
+        ..addAll(roadmaps);
+      _lastLoadErrorMessage = null;
+      return roadmaps;
+    } on TimeoutApiException {
+      _lastLoadErrorMessage = 'تعذر تحميل مساراتك الحالية. حاول مرة أخرى.';
+      return List<HomeCourseEntity>.from(_cachedMyCourses);
+    } on NetworkException {
+      _lastLoadErrorMessage = 'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
+      return List<HomeCourseEntity>.from(_cachedMyCourses);
+    } on ParsingException {
+      _lastLoadErrorMessage = 'تعذر قراءة بيانات المسارات الحالية.';
+      return List<HomeCourseEntity>.from(_cachedMyCourses);
+    }
   }
 
   Future<void> deleteMyCourse(int courseId) async {

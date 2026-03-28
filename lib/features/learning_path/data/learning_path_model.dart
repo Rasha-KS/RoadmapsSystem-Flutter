@@ -87,6 +87,7 @@ class LearningUnitModel {
   final bool trackingExists;
   final bool trackingIsComplete;
   final DateTime? trackingLastUpdatedAt;
+  final int entityRequiredXp;
 
   LearningUnitModel({
     required this.id,
@@ -99,6 +100,7 @@ class LearningUnitModel {
     required this.entityDescription,
     required this.entityPosition,
     required this.entityIsActive,
+    required this.entityRequiredXp,
     required this.isLocked,
     required this.isCompleted,
     required this.trackingExists,
@@ -121,6 +123,9 @@ class LearningUnitModel {
       entityDescription: _asNullableString(entity['description']),
       entityPosition: _asInt(entity['position']),
       entityIsActive: _asBool(entity['is_active'], fallback: true),
+      entityRequiredXp: _asInt(
+        entity['min_xp'] ?? entity['required_xp'] ?? json['min_xp'] ?? json['required_xp'],
+      ),
       isLocked: _asBool(json['is_locked']),
       isCompleted: _asBool(json['is_completed']),
       trackingExists: _asBool(tracking['exists']),
@@ -153,6 +158,7 @@ class LearningUnitModel {
       trackingExists: trackingExists,
       trackingIsComplete: trackingIsComplete,
       trackingLastUpdatedAt: trackingLastUpdatedAt,
+      requiredXp: entityRequiredXp,
     );
   }
 

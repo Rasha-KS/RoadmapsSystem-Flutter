@@ -253,11 +253,11 @@ class CommunityRoomTile extends StatelessWidget {
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.3),
-                          offset: Offset(1, 2),
+                          offset: const Offset(1, 2),
                           spreadRadius: 0,
-                          blurRadius: 2
-                        )
-                      ]
+                          blurRadius: 2,
+                        ),
+                      ],
                     ),
                     child: const Icon(
                       Icons.arrow_back,

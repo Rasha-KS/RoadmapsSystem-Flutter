@@ -226,6 +226,15 @@ class _ChatRoomHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 30, 20, 10),
       child: Row(
         children: [
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(
+              Icons.arrow_right_alt_outlined,
+              color: AppColors.text_5,
+              size: 35,
+            ),
+          ),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               roomName,
@@ -233,15 +242,6 @@ class _ChatRoomHeader extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.right,
               style: AppTextStyles.boldHeading5.copyWith(color: AppColors.text_3),
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(
-              Icons.arrow_right_alt_outlined,
-              color: AppColors.text_5,
-              size: 35,
             ),
           ),
         ],

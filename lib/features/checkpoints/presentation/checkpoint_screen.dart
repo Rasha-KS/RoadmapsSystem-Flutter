@@ -2,42 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
+import 'package:roadmaps/core/widgets/action_snackbar.dart';
 import 'package:roadmaps/core/widgets/app_primary_button.dart';
+import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/checkpoint_header_card.dart';
 import 'package:roadmaps/core/widgets/checkpoint_question_card.dart';
-import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/features/checkpoints/domain/checkpoint_entity.dart';
 import 'package:roadmaps/features/checkpoints/domain/question_entity.dart';
 import 'package:roadmaps/features/checkpoints/presentation/checkpoints_provider.dart';
-
-class CheckpointResult {
-  final bool passed;
-  final int earnedXp;
-  final int minimumRequiredXp;
-  final int correctCount;
-  final int totalQuestions;
-  final double scorePercent;
-
-  const CheckpointResult({
-    required this.passed,
-    required this.earnedXp,
-    required this.minimumRequiredXp,
-    required this.correctCount,
-    required this.totalQuestions,
-    required this.scorePercent,
-  });
-}
 
 class CheckpointScreen extends StatefulWidget {
   final String learningPathId;
   final String checkpointId;
   final String roadmapTitle;
+  final bool isRetake;
 
   const CheckpointScreen({
     super.key,
     required this.learningPathId,
     required this.checkpointId,
     this.roadmapTitle = '',
+    this.isRetake = false,
   });
 
   @override
@@ -53,6 +38,7 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
       context.read<CheckpointsProvider>().fetchCheckpoint(
         learningPathId: widget.learningPathId,
         checkpointId: widget.checkpointId,
+        useRetakeAttempt: widget.isRetake,
       );
     });
   }
@@ -85,10 +71,12 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 40),
                       child: AppPrimaryButton(
                         text: 'النتيجة',
+                        isLoading: provider.isSubmitting,
                         onPressed:
                             checkpoint != null &&
                                 provider.isAllAnswered &&
-                                !provider.isLoading
+                                !provider.isLoading &&
+                                !provider.isSubmitting
                             ? () => _showResultDialog(provider)
                             : null,
                       ),
@@ -126,9 +114,8 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: () {
-                context.read<CheckpointsProvider>().fetchCheckpoint(
+                context.read<CheckpointsProvider>().retryCurrentCheckpoint(
                   learningPathId: widget.learningPathId,
-                  checkpointId: widget.checkpointId,
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -153,14 +140,14 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
       itemCount: checkpoint.questions.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
-          final String titleToShow = checkpoint.title.trim().isNotEmpty
-              ? checkpoint.title
-              : widget.roadmapTitle ;
+          final String titleToShow = widget.roadmapTitle.trim().isNotEmpty
+              ? widget.roadmapTitle
+              : checkpoint.title;
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: CheckpointHeaderCard(
               title: titleToShow,
-              subtitle: 'أكمل الاختبار للحصول على نقاط خبرة',
+              subtitle: checkpoint.subtitle,
               onBackPressed: () => Navigator.of(context).maybePop(),
             ),
           );
@@ -189,21 +176,30 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
   Future<void> _showResultDialog(CheckpointsProvider provider) async {
     if (!provider.isAllAnswered || provider.checkpoint == null) return;
 
-    final CheckpointResult result = CheckpointResult(
-      passed: provider.isPassed,
-      earnedXp: provider.earnedXp,
-      minimumRequiredXp: provider.minimumRequiredXp,
-      correctCount: provider.correctCount,
-      totalQuestions: provider.totalQuestions,
-      scorePercent: provider.scorePercent,
-    );
+    final result = await provider.submitAnswers();
+    if (result == null) {
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      showAppSnackBar(
+        messenger,
+        message: provider.errorMessage ?? 'تعذر إرسال إجابات الاختبار.',
+        variant: SnackBarVariant.error,
+        duration: const Duration(milliseconds: 1500),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+
+    provider.resetAnswers();
 
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
         final bool passed = result.passed;
-        final bool hasFullScore = result.correctCount == result.totalQuestions;
+        final bool hasFullScore =
+            result.maximumPossibleXp > 0 && result.earnedXp >= result.maximumPossibleXp;
 
         return Dialog(
           alignment: Alignment.topCenter,
@@ -238,50 +234,46 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    '${result.correctCount}/${result.totalQuestions}',
+                    result.correctCount != null
+                        ? '${result.correctCount}/${result.totalQuestions}'
+                        : '${result.earnedXp}/${result.maximumPossibleXp}',
                     style: AppTextStyles.heading2.copyWith(
                       color: passed ? AppColors.success : AppColors.error,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'نقاط الخبرة: ${result.earnedXp}/${result.minimumRequiredXp}',
+                    'نقاط الخبرة: ${result.maximumPossibleXp}/${result.earnedXp}',
                     style: AppTextStyles.body.copyWith(color: AppColors.text_2),
                     textAlign: TextAlign.center,
                   ),
                   if (!passed) ...[
                     const SizedBox(height: 8),
                     Text(
-                      'لم تنجح. لن يتم فتح الدرس التالي. يرجى إعادة المحاولة.',
+                      'لم تنجح. يمكنك إعادة المحاولة لاحقًا.',
                       style: AppTextStyles.body.copyWith(color: AppColors.text_2),
                       textAlign: TextAlign.center,
                     ),
                   ],
                   const SizedBox(height: 18),
                   if (passed && hasFullScore)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.secondary4,
-                              foregroundColor: AppColors.text_3,
-                              elevation: 0,
-                            ),
-                            onPressed: () {
-                              Navigator.of(dialogContext).pop();
-                              if (!mounted) return;
-                              Navigator.of(context).pop(result);
-                            },
-                            child: Text(
-                              'الدرس التالي',
-                              style: AppTextStyles.boldSmallText.copyWith(
-                                color: AppColors.text_3,
-                              ),
-                            ),
-                          ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondary4,
+                        foregroundColor: AppColors.text_3,
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                        if (!mounted) return;
+                        Navigator.of(context).pop(result);
+                      },
+                      child: Text(
+                        'المسار',
+                        style: AppTextStyles.boldSmallText.copyWith(
+                          color: AppColors.text_3,
                         ),
-                      ],
+                      ),
                     ),
                   if (passed && !hasFullScore)
                     Directionality(
@@ -301,7 +293,7 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
                                 Navigator.of(context).pop(result);
                               },
                               child: Text(
-                                'التالي',
+                                'المسار',
                                 style: AppTextStyles.boldSmallText.copyWith(
                                   color: AppColors.text_3,
                                 ),
@@ -319,23 +311,24 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
                               onPressed: () async {
                                 Navigator.of(dialogContext).pop();
                                 if (!mounted) return;
-                                bool confirmed = false;
-                                await showConfirmActionDialog(
-                                  context: context,
-                                  title: 'إعادة الاختبار',
-                                  message:
-                                      'سيتم بدء محاولة جديدة وإعادة ضبط نتيجة الاختبار الحالية. هل تريد المتابعة؟',
-                                  cancelText: 'إلغاء',
-                                  confirmText: 'إعادة',
-                                  onConfirm: () async {
-                                    confirmed = true;
-                                  },
-                                );
-                                if (!mounted || !confirmed) return;
-                                context.read<CheckpointsProvider>().resetAnswers();
+                                final shouldRetake =
+                                    await _showRetakeCheckpointDialogWithMessage(
+                                      previousAttemptPassed: result.passed,
+                                    );
+                                if (!shouldRetake) {
+                                  if (!mounted) return;
+                                  Navigator.of(context).maybePop();
+                                  return;
+                                }
+                                if (!mounted) return;
+                                await context
+                                    .read<CheckpointsProvider>()
+                                    .retakeCurrentCheckpoint(
+                                      learningPathId: widget.learningPathId,
+                                    );
                               },
                               child: Text(
-                                'إعادة',
+                                'إعادة المحاولة',
                                 style: AppTextStyles.boldSmallText.copyWith(
                                   color: AppColors.text_3,
                                 ),
@@ -358,7 +351,7 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
                                 Navigator.of(context).pop();
                               },
                               child: Text(
-                                'إلغاء',
+                                'إغلاق',
                                 style: AppTextStyles.boldSmallText.copyWith(
                                   color: AppColors.text_2,
                                 ),
@@ -373,10 +366,24 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
                                 foregroundColor: AppColors.text_3,
                                 elevation: 0,
                               ),
-                              onPressed: () {
+                              onPressed: () async {
                                 Navigator.of(dialogContext).pop();
                                 if (!mounted) return;
-                                context.read<CheckpointsProvider>().resetAnswers();
+                                final shouldRetake =
+                                    await _showRetakeCheckpointDialogWithMessage(
+                                      previousAttemptPassed: false,
+                                    );
+                                if (!shouldRetake) {
+                                  if (!mounted) return;
+                                  Navigator.of(context).maybePop();
+                                  return;
+                                }
+                                if (!mounted) return;
+                                await context
+                                    .read<CheckpointsProvider>()
+                                    .retakeCurrentCheckpoint(
+                                      learningPathId: widget.learningPathId,
+                                    );
                               },
                               child: Text(
                                 'إعادة المحاولة',
@@ -396,5 +403,41 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
         );
       },
     );
+  }
+
+  // ignore: unused_element
+  Future<bool> _showRetakeCheckpointDialog() async {
+    bool confirmed = false;
+    await showConfirmActionDialog(
+      context: context,
+      title: 'إعادة الاختبار',
+      message:
+          'سيتم بدء محاولة جديدة وإعادة ضبط نتيجة الاختبار الحالية. هل تريد المتابعة؟',
+      cancelText: 'إلغاء',
+      confirmText: 'إعادة',
+      onConfirm: () async {
+        confirmed = true;
+      },
+    );
+    return confirmed;
+  }
+
+  Future<bool> _showRetakeCheckpointDialogWithMessage({
+    required bool previousAttemptPassed,
+  }) async {
+    bool confirmed = false;
+    await showConfirmActionDialog(
+      context: context,
+      title: 'إعادة الاختبار',
+      message: previousAttemptPassed
+          ? 'المحاولة السابقة ناجحة بالفعل. هل تريد إعادة الاختبار وبدء محاولة جديدة؟'
+          : 'لم تنجح المحاولة السابقة. هل تريد إعادة الاختبار مباشرة؟',
+      cancelText: 'إلغاء',
+      confirmText: 'إعادة',
+      onConfirm: () async {
+        confirmed = true;
+      },
+    );
+    return confirmed;
   }
 }

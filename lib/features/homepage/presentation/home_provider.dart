@@ -42,9 +42,14 @@ class HomeProvider extends SafeChangeNotifier {
 
     final hadCachedData = hasLoadedHomeData;
     var hadError = false;
+    final homeRepository = getHomeDataUseCase.repository;
 
     try {
       recommended = await getHomeDataUseCase.callRecommended();
+      if (homeRepository.lastLoadErrorMessage != null) {
+        hadError = true;
+        errorMessage ??= homeRepository.lastLoadErrorMessage;
+      }
     } catch (error, stackTrace) {
       hadError = true;
       debugPrint('HomeProvider.loadHome recommended failed: $error');
@@ -54,6 +59,10 @@ class HomeProvider extends SafeChangeNotifier {
 
     try {
       myCourses = await getHomeDataUseCase.callMyCourses();
+      if (homeRepository.lastLoadErrorMessage != null) {
+        hadError = true;
+        errorMessage ??= homeRepository.lastLoadErrorMessage;
+      }
     } catch (error, stackTrace) {
       hadError = true;
       debugPrint('HomeProvider.loadHome myCourses failed: $error');
@@ -61,7 +70,9 @@ class HomeProvider extends SafeChangeNotifier {
       errorMessage ??= _friendlyLoadError(error);
     }
 
-    if (hadError && !hadCachedData) {
+    final hasAnyData = recommended.isNotEmpty || myCourses.isNotEmpty || hadCachedData;
+
+    if (hadError && !hasAnyData) {
       state = HomeState.connectionError;
       lastLoadFailed = true;
       errorMessage ??= 'تعذر تحميل بيانات الصفحة الرئيسية. حاول مرة أخرى.';

@@ -11,68 +11,115 @@ class CommunityApiRepository implements CommunityRepository {
   CommunityApiRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
   final ApiClient _apiClient;
+  final List<ChatRoomEntity> _cachedRooms = [];
+  final Map<int, List<ChatMessageEntity>> _cachedMessagesByRoom = {};
+  String? _lastRoomsLoadErrorMessage;
+  String? _lastMessagesLoadErrorMessage;
+
+  @override
+  String? get lastRoomsLoadErrorMessage => _lastRoomsLoadErrorMessage;
+
+  @override
+  String? get lastMessagesLoadErrorMessage => _lastMessagesLoadErrorMessage;
 
   @override
   Future<List<ChatRoomEntity>> getUserCommunityRooms() async {
-    final response = await _apiClient.get(
-      ApiConstants.url(ApiConstants.myCommunity),
-    );
-    _ensureSuccess(response, fallbackMessage: 'تعذر تحميل المجتمعات.');
+    try {
+      final response = await _apiClient.get(
+        ApiConstants.url(ApiConstants.myCommunity),
+      );
+      _ensureSuccess(response, fallbackMessage: 'تعذر تحميل المجتمعات.');
 
-    final items = _extractList(
-      response['data'] ?? response,
-      keys: const [
-        'communities',
-        'community_rooms',
-        'chat_rooms',
-        'rooms',
-        'items',
-        'data',
-        'results',
-      ],
-    );
+      final items = _extractList(
+        response['data'] ?? response,
+        keys: const [
+          'communities',
+          'community_rooms',
+          'chat_rooms',
+          'rooms',
+          'items',
+          'data',
+          'results',
+        ],
+      );
 
-    return items
-        .map(ChatRoomModel.fromJson)
-        .where((room) => room.isActive)
-        .toList();
+      final rooms = items
+          .map(ChatRoomModel.fromJson)
+          .where((room) => room.isActive)
+          .toList();
+      _cachedRooms
+        ..clear()
+        ..addAll(rooms);
+      _lastRoomsLoadErrorMessage = null;
+      return rooms;
+    } on TimeoutApiException {
+      _lastRoomsLoadErrorMessage = 'تعذر تحميل المجتمعات حاليًا. حاول مرة أخرى.';
+      return List<ChatRoomEntity>.from(_cachedRooms);
+    } on NetworkException {
+      _lastRoomsLoadErrorMessage =
+          'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
+      return List<ChatRoomEntity>.from(_cachedRooms);
+    } on ParsingException {
+      _lastRoomsLoadErrorMessage = 'تعذر قراءة بيانات المجتمعات.';
+      return List<ChatRoomEntity>.from(_cachedRooms);
+    }
   }
 
   @override
   Future<List<ChatMessageEntity>> getMessagesByRoom(int roomId) async {
-    final messages = <ChatMessageEntity>[];
-    var page = 1;
-    var lastPage = 1;
+    try {
+      final messages = <ChatMessageEntity>[];
+      var page = 1;
+      var lastPage = 1;
 
-    do {
-      final response = await _apiClient.get(
-        _buildMessagesUrl(roomId: roomId, page: page),
-      );
-      _ensureSuccess(response, fallbackMessage: 'تعذر تحميل الرسائل.');
+      do {
+        final response = await _apiClient.get(
+          _buildMessagesUrl(roomId: roomId, page: page),
+        );
+        _ensureSuccess(response, fallbackMessage: 'تعذر تحميل الرسائل.');
 
-      final items = _extractList(
-        response['data'] ?? response,
-        keys: const ['messages', 'items', 'data', 'results'],
-      );
+        final items = _extractList(
+          response['data'] ?? response,
+          keys: const ['messages', 'items', 'data', 'results'],
+        );
 
-      messages.addAll(
-        items.map(
-          (item) => ChatMessageModel.fromJson(
-            item,
-            fallbackRoomId: roomId,
+        messages.addAll(
+          items.map(
+            (item) => ChatMessageModel.fromJson(
+              item,
+              fallbackRoomId: roomId,
+            ),
           ),
-        ),
+        );
+
+        lastPage =
+            _extractLastPage(response['meta']) ??
+            _extractLastPage(_extractMap(response['data'], const ['meta'])) ??
+            page;
+        page++;
+      } while (page <= lastPage);
+
+      messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
+      _cachedMessagesByRoom[roomId] = List<ChatMessageEntity>.from(messages);
+      _lastMessagesLoadErrorMessage = null;
+      return messages;
+    } on TimeoutApiException {
+      _lastMessagesLoadErrorMessage = 'تعذر تحميل الرسائل حاليًا. حاول مرة أخرى.';
+      return List<ChatMessageEntity>.from(
+        _cachedMessagesByRoom[roomId] ?? const <ChatMessageEntity>[],
       );
-
-      lastPage =
-          _extractLastPage(response['meta']) ??
-          _extractLastPage(_extractMap(response['data'], const ['meta'])) ??
-          page;
-      page++;
-    } while (page <= lastPage);
-
-    messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
-    return messages;
+    } on NetworkException {
+      _lastMessagesLoadErrorMessage =
+          'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
+      return List<ChatMessageEntity>.from(
+        _cachedMessagesByRoom[roomId] ?? const <ChatMessageEntity>[],
+      );
+    } on ParsingException {
+      _lastMessagesLoadErrorMessage = 'تعذر قراءة بيانات الرسائل.';
+      return List<ChatMessageEntity>.from(
+        _cachedMessagesByRoom[roomId] ?? const <ChatMessageEntity>[],
+      );
+    }
   }
 
   @override

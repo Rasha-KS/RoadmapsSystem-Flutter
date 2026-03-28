@@ -42,14 +42,17 @@ class LearningPathProvider extends SafeChangeNotifier {
   final Map<int, Set<int>> _checkpointAttemptsByRoadmap = {};
   final Map<int, Set<int>> _confirmedCheckpointRetakesByRoadmap = {};
   final Map<int, Set<int>> _optimisticCompletedUnitsByRoadmap = {};
-  final Map<int, Set<int>> _optimisticUnlockedUnitsByRoadmap = {};
 
   LearningPathState get state => _state;
   String? get errorMessage => _errorMessage;
   RoadmapEntity? get roadmap => _path?.roadmap;
   List<LearningUnitEntity> get units => _path?.units ?? <LearningUnitEntity>[];
   int get currentRoadmapId => _currentRoadmapId;
-  int get userXp => 0;
+  int get userXp {
+    final roadmapId = _currentRoadmapId;
+    if (roadmapId <= 0) return 0;
+    return _profileProvider?.getRoadmapXp(roadmapId) ?? 0;
+  }
 
   String get roadmapTitle => roadmap?.title ?? '';
   String get roadmapDescription => roadmap?.description ?? '';
@@ -113,6 +116,7 @@ class LearningPathProvider extends SafeChangeNotifier {
     try {
       final loadedPath = await useCase(roadmapId: roadmapId);
       _path = loadedPath;
+      _restoreOptimisticCompletionsForRoadmap(roadmapId);
       _state = LearningPathState.loaded;
       _syncProfileProgress();
     } catch (error) {
@@ -136,10 +140,11 @@ class LearningPathProvider extends SafeChangeNotifier {
     await loadPath(_currentRoadmapId, showLoader: false);
   }
 
-  Future<void> completeUnit({required int unitId, int earnedXp = 0}) async {
+  Future<void> completeUnit({required int unitId}) async {
     if (_currentRoadmapId <= 0) return;
     await _lessonContentCache.markUnitCompleted(_currentRoadmapId, unitId);
     _applyOptimisticCompletion(unitId);
+
     _syncProfileProgress();
     notifyListeners();
   }
@@ -147,11 +152,12 @@ class LearningPathProvider extends SafeChangeNotifier {
   Future<void> submitCheckpointAttempt({
     required int unitId,
     required bool passed,
-    required int earnedXp,
   }) async {
     if (_currentRoadmapId <= 0) return;
     if (passed) {
       markRetakeConfirmed(unitId);
+      await completeUnit(unitId: unitId);
+      return;
     }
     await refreshPath();
   }
@@ -220,17 +226,6 @@ class LearningPathProvider extends SafeChangeNotifier {
     );
     completedUnits.add(unitId);
 
-    if (index + 1 < units.length) {
-      final nextUnit = units[index + 1];
-      if (nextUnit.status == LearningUnitStatus.locked) {
-        final unlockedUnits = _optimisticUnlockedUnitsByRoadmap.putIfAbsent(
-          _currentRoadmapId,
-          () => <int>{},
-        );
-        unlockedUnits.add(nextUnit.id);
-      }
-    }
-
     _path = LearningPathEntity(
       roadmap: path.roadmap,
       units: units,
@@ -240,7 +235,18 @@ class LearningPathProvider extends SafeChangeNotifier {
 
   void _clearOptimisticOverridesForRoadmap(int roadmapId) {
     _optimisticCompletedUnitsByRoadmap.remove(roadmapId);
-    _optimisticUnlockedUnitsByRoadmap.remove(roadmapId);
+  }
+
+  void _restoreOptimisticCompletionsForRoadmap(int roadmapId) {
+    final completedUnits =
+        _optimisticCompletedUnitsByRoadmap[roadmapId] ?? const <int>{};
+    if (completedUnits.isEmpty) {
+      return;
+    }
+
+    for (final unitId in completedUnits) {
+      _applyOptimisticCompletion(unitId);
+    }
   }
 
   void _syncProfileProgress({

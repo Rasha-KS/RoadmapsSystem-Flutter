@@ -1,7 +1,7 @@
 import 'package:roadmaps/core/api/api_exceptions.dart';
 
 class EnrollmentReset {
-  static Future<void> perform({
+  static Future<bool> perform({
     required Future<Map<String, dynamic>> Function() deleteEnrollment,
     required Future<Map<String, dynamic>> Function() enrollAgain,
     required void Function(Map<String, dynamic> response) handleDeleteResponse,
@@ -13,8 +13,9 @@ class EnrollmentReset {
 
       final enrollResponse = await enrollAgain();
       handleEnrollResponse(enrollResponse);
+      return true;
     } on ApiException {
-      rethrow;
+      return false;
     }
   }
 }

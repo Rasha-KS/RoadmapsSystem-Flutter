@@ -101,6 +101,7 @@ class RoadmapsProvider extends SafeChangeNotifier {
 
     try {
       final loadedRoadmaps = await useCase.call();
+      final repositoryError = useCase.repository.lastLoadErrorMessage;
       final persistedEnrollmentIds = <int>{
         ...loadedRoadmaps
             .where((course) => course.isEnrolled)
@@ -121,7 +122,12 @@ class RoadmapsProvider extends SafeChangeNotifier {
       _enrolledCourseIds
         ..clear()
         ..addAll(myCourses.map((course) => course.id));
-      state = PageState.loaded;
+      if (repositoryError != null) {
+        errorMessage = repositoryError;
+        state = roadmaps.isEmpty ? PageState.connectionError : PageState.loaded;
+      } else {
+        state = PageState.loaded;
+      }
     } catch (e) {
       state = PageState.connectionError;
       errorMessage = _friendlyError(e);

@@ -5,6 +5,7 @@ import 'package:roadmaps/core/theme/app_text_styles.dart';
 class AppPrimaryButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
+  final bool isLoading;
   final double width;
   final double height;
   final double borderRadius;
@@ -16,6 +17,7 @@ class AppPrimaryButton extends StatelessWidget {
     super.key,
     required this.text,
     required this.onPressed,
+    this.isLoading = false,
     this.width = 241,
     this.height = 50,
     this.borderRadius = 30,
@@ -26,6 +28,8 @@ class AppPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final VoidCallback? effectiveOnPressed = isLoading ? null : onPressed;
+
     return SizedBox(
       width: width,
       height: height,
@@ -39,13 +43,22 @@ class AppPrimaryButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(borderRadius),
           ),
         ),
-        onPressed: onPressed,
-        child: Text(
-          text,
-          style: (textStyle ?? AppTextStyles.heading5).copyWith(
-            color: foregroundColor,
-          ),
-        ),
+        onPressed: effectiveOnPressed,
+        child: isLoading
+            ? SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  valueColor: AlwaysStoppedAnimation<Color>(foregroundColor),
+                ),
+              )
+            : Text(
+                text,
+                style: (textStyle ?? AppTextStyles.heading5).copyWith(
+                  color: foregroundColor,
+                ),
+              ),
       ),
     );
   }

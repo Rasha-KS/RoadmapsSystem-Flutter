@@ -10,28 +10,49 @@ class AnnouncementsRepository {
       : _apiClient = apiClient;
 
   final ApiClient _apiClient;
+  final List<AnnouncementEntity> _cachedAnnouncements = [];
+  String? _lastLoadErrorMessage;
+
+  String? get lastLoadErrorMessage => _lastLoadErrorMessage;
 
   Future<List<AnnouncementEntity>> getActiveAnnouncements() async {
-    // Fetch announcements for the Home announcements section.
-    final response = await _apiClient.get(
-      ApiConstants.url(ApiConstants.announcements),
-    );
-
-    if (response.containsKey('success') && response['success'] != true) {
-      final message = response['message'];
-      throw ApiException(
-        message is String && message.trim().isNotEmpty
-            ? message.trim()
-            : 'تعذر تحميل الإعلانات.',
+    try {
+      // Fetch announcements for the Home announcements section.
+      final response = await _apiClient.get(
+        ApiConstants.url(ApiConstants.announcements),
       );
+
+      if (response.containsKey('success') && response['success'] != true) {
+        final message = response['message'];
+        throw ApiException(
+          message is String && message.trim().isNotEmpty
+              ? message.trim()
+              : 'تعذر تحميل الإعلانات.',
+        );
+      }
+
+      final items = _extractList(
+        response['data'],
+        keys: const ['announcements', 'items', 'data', 'results'],
+      );
+
+      final announcements = items.map(AnnouncementModel.fromJson).toList();
+      _cachedAnnouncements
+        ..clear()
+        ..addAll(announcements);
+      _lastLoadErrorMessage = null;
+      return announcements;
+    } on TimeoutApiException {
+      _lastLoadErrorMessage = 'تعذر تحميل الإعلانات حاليًا. حاول مرة أخرى.';
+      return List<AnnouncementEntity>.from(_cachedAnnouncements);
+    } on NetworkException {
+      _lastLoadErrorMessage =
+          'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
+      return List<AnnouncementEntity>.from(_cachedAnnouncements);
+    } on ParsingException {
+      _lastLoadErrorMessage = 'تعذر قراءة بيانات الإعلانات.';
+      return List<AnnouncementEntity>.from(_cachedAnnouncements);
     }
-
-    final items = _extractList(
-      response['data'],
-      keys: const ['announcements', 'items', 'data', 'results'],
-    );
-
-    return items.map(AnnouncementModel.fromJson).toList();
   }
 
   List<Map<String, dynamic>> _extractList(

@@ -47,7 +47,7 @@ class SubLessonCard extends StatelessWidget {
             child: Text(
               displayTitle ?? 'الجزء ${subLesson.position}',
               textAlign: TextAlign.right,
-              style: AppTextStyles.heading5.copyWith(
+              style: AppTextStyles.boldHeading5.copyWith(
                 color: AppColors.text_4,
               ),
             ),
@@ -60,7 +60,7 @@ class SubLessonCard extends StatelessWidget {
             Text(
               'المقدمة',
               textAlign: TextAlign.right,
-              style: AppTextStyles.boldHeading5.copyWith(
+              style: AppTextStyles.heading5.copyWith(
                 color: AppColors.text_5,
               ),
             ),
@@ -79,7 +79,7 @@ class SubLessonCard extends StatelessWidget {
             Text(
               'المقدمة',
               textAlign: TextAlign.right,
-              style: AppTextStyles.boldHeading5.copyWith(
+              style: AppTextStyles.heading5.copyWith(
                 color: AppColors.text_5,
               ),
             ),
@@ -100,7 +100,7 @@ class SubLessonCard extends StatelessWidget {
               Text(
                 'المصادر العربية',
                 textAlign: TextAlign.right,
-                style: AppTextStyles.boldHeading5.copyWith(
+                style: AppTextStyles.heading5.copyWith(
                   color: AppColors.text_5,
                 ),
               ),
@@ -116,7 +116,7 @@ class SubLessonCard extends StatelessWidget {
               Text(
                 'المصادر الإنجليزية',
                 textAlign: TextAlign.right,
-                style: AppTextStyles.boldHeading5.copyWith(
+                style: AppTextStyles.heading5.copyWith(
                   color: AppColors.text_5,
                 ),
               ),

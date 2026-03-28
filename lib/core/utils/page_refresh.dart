@@ -7,7 +7,7 @@ import 'package:roadmaps/features/roadmaps/presentation/roadmaps_provider.dart';
 
 import 'package:roadmaps/features/announcements/presentation/announcements_provider.dart';
 
-Future<void> retryUntilSuccess(
+Future<bool> retryUntilSuccess(
   Future<void> Function() action, {
   required String label,
   int maxAttempts = 2,
@@ -18,20 +18,22 @@ Future<void> retryUntilSuccess(
     attempt++;
     try {
       await action();
-      return;
+      return true;
     } catch (error, stackTrace) {
       debugPrint('$label failed on attempt $attempt: $error');
       debugPrint(stackTrace.toString());
-      if (attempt >= maxAttempts) {
-        rethrow;
-      }
       // Simple backoff: later retries wait a bit longer.
+      if (attempt >= maxAttempts) {
+        return false;
+      }
       final wait = Duration(
         milliseconds: delay.inMilliseconds * attempt,
       );
       await Future.delayed(wait);
     }
   }
+
+  return false;
 }
 
 Future<void> refreshHomePageData(BuildContext context) async {

@@ -27,7 +27,6 @@ class CheckpointHeaderCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Directionality(
                 textDirection: TextDirection.ltr,
@@ -40,9 +39,21 @@ class CheckpointHeaderCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
-                title,
-                style: AppTextStyles.heading4.copyWith(color: AppColors.text_5),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                    textAlign: TextAlign.right,
+                    style: AppTextStyles.heading4.copyWith(
+                      color: AppColors.text_5,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -60,19 +71,23 @@ class CheckpointHeaderCard extends StatelessWidget {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            
                 children: [
-                  Text(
-                    subtitle!,
-                    style: AppTextStyles.smallText.copyWith(
-                      color: AppColors.text_3,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
                   const Icon(
                     Icons.local_fire_department_rounded,
                     size: 20,
                     color: AppColors.primary2,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      subtitle!,
+                      textAlign: TextAlign.right,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: AppTextStyles.body.copyWith(
+                        color: AppColors.text_3,
+                      ),
+                    ),
                   ),
                 ],
               ),

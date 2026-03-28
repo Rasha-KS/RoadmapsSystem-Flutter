@@ -25,7 +25,11 @@ import 'package:roadmaps/features/challenge/domain/get_challenge_by_learning_uni
 import 'package:roadmaps/features/challenge/domain/run_challenge_code_usecase.dart';
 import 'package:roadmaps/features/challenge/presentation/challenge_provider.dart';
 import 'package:roadmaps/features/checkpoints/data/checkpoint_repository.dart';
+import 'package:roadmaps/features/checkpoints/domain/create_checkpoint_attempt_usecase.dart';
+import 'package:roadmaps/features/checkpoints/domain/get_checkpoint_attempts_count_usecase.dart';
 import 'package:roadmaps/features/checkpoints/domain/get_checkpoint_usecase.dart';
+import 'package:roadmaps/features/checkpoints/domain/retake_checkpoint_attempt_usecase.dart';
+import 'package:roadmaps/features/checkpoints/domain/submit_checkpoint_attempt_usecase.dart';
 import 'package:roadmaps/features/checkpoints/presentation/checkpoints_provider.dart';
 import 'package:roadmaps/features/homepage/data/home_repository.dart';
 import 'package:roadmaps/features/homepage/domain/delete_my_roadmap_usecase.dart';
@@ -244,8 +248,14 @@ class Injection {
   }
 
   static CheckpointsProvider provideCheckpointsProvider() {
-    final repository = CheckpointRepository();
-    return CheckpointsProvider(GetCheckpointUseCase(repository));
+    final repository = CheckpointRepository(apiClient: _apiClient);
+    return CheckpointsProvider(
+      getCheckpointUseCase: GetCheckpointUseCase(repository),
+      createAttemptUseCase: CreateCheckpointAttemptUseCase(repository),
+      getAttemptsCountUseCase: GetCheckpointAttemptsCountUseCase(repository),
+      retakeAttemptUseCase: RetakeCheckpointAttemptUseCase(repository),
+      submitAttemptUseCase: SubmitCheckpointAttemptUseCase(repository),
+    );
   }
 
   static NotificationsProvider provideNotificationsProvider() {

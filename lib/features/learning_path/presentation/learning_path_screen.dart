@@ -43,7 +43,6 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<LearningPathProvider>();
-    context.watch<ProfileProvider>();
     final hasInitialLoading =
         provider.state == LearningPathState.loading && provider.units.isEmpty;
     final hasInitialError =

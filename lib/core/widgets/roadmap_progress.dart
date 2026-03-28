@@ -18,7 +18,7 @@ class RoadmapProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final int completedCount = units
-        .where((unit) => unit.status == LearningUnitStatus.completed)
+        .where((unit) => unit.isCompleted)
         .length;
     final double progress = units.isEmpty ? 0 : completedCount / units.length;
     final int percentage = (progress * 100).round();

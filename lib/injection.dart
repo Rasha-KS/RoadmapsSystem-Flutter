@@ -40,6 +40,7 @@ import 'package:roadmaps/features/homepage/domain/reset_my_roadmap_usecase.dart'
 import 'package:roadmaps/features/homepage/presentation/home_provider.dart';
 import 'package:roadmaps/features/learning_path/data/learning_path_repository.dart';
 import 'package:roadmaps/features/learning_path/domain/get_learning_path_usecase.dart';
+import 'package:roadmaps/features/learning_path/domain/get_roadmap_xp_usecase.dart';
 import 'package:roadmaps/features/learning_path/presentation/learning_path_provider.dart';
 import 'package:roadmaps/features/lessons/data/lesson_repository.dart';
 import 'package:roadmaps/features/lessons/domain/get_sub_lessons_usecase.dart';
@@ -228,6 +229,7 @@ class Injection {
     );
     return LearningPathProvider(
       GetLearningPathUseCase(repository),
+      GetRoadmapXpUseCase(repository),
       PrefetchLessonContentUseCase(lessonRepository),
       profileProvider: provideProfileProvider(),
       homeProvider: provideHomeProvider(),

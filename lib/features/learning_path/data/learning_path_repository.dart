@@ -47,6 +47,23 @@ class LearningPathRepository {
     return overriddenEntity;
   }
 
+  Future<int> getRoadmapXp({required int roadmapId}) async {
+    final response = await _apiClient.get(
+      ApiConstants.url(ApiConstants.roadmapXp(roadmapId)),
+    );
+    _ensureSuccess(
+      response,
+      fallbackMessage: 'تعذر تحميل نقاط الخبرة للمسار.',
+    );
+
+    final dynamic payload = response['data'] ?? response;
+    final xp = _extractXp(payload);
+    if (xp == null) {
+      throw const ParsingException();
+    }
+    return xp;
+  }
+
   void _ensureSuccess(
     Map<String, dynamic> response, {
     required String fallbackMessage,
@@ -57,5 +74,28 @@ class LearningPathRepository {
         message == null || message.isEmpty ? fallbackMessage : message,
       );
     }
+  }
+
+  int? _extractXp(dynamic payload) {
+    if (payload is int) return payload;
+    if (payload is num) return payload.toInt();
+
+    if (payload is Map<String, dynamic>) {
+      final candidates = <dynamic>[
+        payload['xp'],
+        payload['xp_points'],
+        payload['points'],
+        payload['value'],
+      ];
+      for (final candidate in candidates) {
+        final parsed = _extractXp(candidate);
+        if (parsed != null) {
+          return parsed;
+        }
+      }
+    }
+
+    final parsed = int.tryParse(payload?.toString() ?? '');
+    return parsed;
   }
 }

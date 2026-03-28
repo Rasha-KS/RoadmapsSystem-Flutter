@@ -8,7 +8,6 @@ import 'package:roadmaps/core/cache/user_profile_cache.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import 'package:roadmaps/features/learning_path/domain/get_learning_path_usecase.dart';
-import 'package:roadmaps/features/learning_path/domain/learning_unit_entity.dart';
 import '../domain/delete_user_roadmap_usecase.dart';
 import '../domain/get_user_roadmaps_usecase.dart';
 import '../domain/reset_user_roadmap_usecase.dart';
@@ -63,10 +62,6 @@ class ProfileProvider extends SafeChangeNotifier {
         user = cachedUser;
         currentUserProvider.setUser(cachedUser);
         hasLoadedProfileData = true;
-        loading = false;
-        notifyListeners();
-        unawaited(_syncProfileData());
-        return;
       }
 
       await _syncProfileData();
@@ -112,11 +107,8 @@ class ProfileProvider extends SafeChangeNotifier {
             roadmapId: roadmap.roadmapId,
           );
           final units = learningPath.units;
-          final int completedCount = units
-              .where((unit) =>
-                  unit.status == LearningUnitStatus.completed ||
-                  unit.isCompleted)
-              .length;
+          final int completedCount =
+              units.where((unit) => unit.isCompleted).length;
           final int computedProgress = units.isEmpty
               ? 0
               : ((completedCount / units.length) * 100).round();

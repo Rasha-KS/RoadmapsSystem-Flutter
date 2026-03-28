@@ -45,6 +45,7 @@ class ApiConstants {
   // Roadmaps
   static const String roadmaps = "/roadmaps";
   static String roadmapDetails(int roadmapId) => "/roadmaps/$roadmapId";
+  static String roadmapXp(int roadmapId) => "/roadmaps/$roadmapId/xp";
   static String enrollRoadmap(int roadmapId) => "/roadmaps/$roadmapId/enroll";
   static String unenrollRoadmap(int roadmapId) =>
       "/roadmaps/$roadmapId/unenroll";

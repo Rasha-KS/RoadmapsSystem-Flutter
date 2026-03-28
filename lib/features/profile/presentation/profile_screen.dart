@@ -104,12 +104,20 @@ class _ProfileScreenBody extends StatelessWidget {
           const SizedBox(height: 10),
           Divider(color: AppColors.secondary1, thickness: 1),
           const SizedBox(height: 12),
-          ...provider.roadmaps.map((roadmap) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: _RoadmapSection(roadmap: roadmap),
-            );
-          }),
+          if (provider.loading && provider.roadmaps.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 70),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.primary2),
+              ),
+            )
+          else
+            ...provider.roadmaps.map((roadmap) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: _RoadmapSection(roadmap: roadmap),
+              );
+            }),
         ],
       ),
     );

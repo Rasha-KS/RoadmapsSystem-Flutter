@@ -111,6 +111,8 @@ class LearningUnitModel {
   factory LearningUnitModel.fromJson(Map<String, dynamic> json) {
     final entity = _asMap(json['entity']);
     final tracking = _asMap(json['tracking']);
+    final trackingExists = _asBool(tracking['exists']);
+    final trackingIsComplete = _asBool(tracking['is_complete']);
 
     return LearningUnitModel(
       id: _asInt(json['id']),
@@ -127,9 +129,9 @@ class LearningUnitModel {
         entity['min_xp'] ?? entity['required_xp'] ?? json['min_xp'] ?? json['required_xp'],
       ),
       isLocked: _asBool(json['is_locked']),
-      isCompleted: _asBool(json['is_completed']),
-      trackingExists: _asBool(tracking['exists']),
-      trackingIsComplete: _asBool(tracking['is_complete']),
+      isCompleted: trackingExists ? trackingIsComplete : _asBool(json['is_completed']),
+      trackingExists: trackingExists,
+      trackingIsComplete: trackingIsComplete,
       trackingLastUpdatedAt: _parseDateTime(tracking['last_updated_at']),
     );
   }

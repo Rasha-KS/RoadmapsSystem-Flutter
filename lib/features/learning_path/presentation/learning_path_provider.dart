@@ -9,6 +9,7 @@ import 'package:roadmaps/features/roadmaps/presentation/roadmaps_provider.dart';
 import 'package:roadmaps/features/profile/presentation/profile_provider.dart';
 
 import '../domain/get_learning_path_usecase.dart';
+import '../domain/get_roadmap_xp_usecase.dart';
 import '../domain/learning_path_entity.dart';
 import '../domain/learning_unit_entity.dart';
 import 'package:roadmaps/features/lessons/domain/prefetch_lesson_content_usecase.dart';
@@ -17,6 +18,7 @@ enum LearningPathState { loading, loaded, connectionError }
 
 class LearningPathProvider extends SafeChangeNotifier {
   final GetLearningPathUseCase useCase;
+  final GetRoadmapXpUseCase _getRoadmapXpUseCase;
   final PrefetchLessonContentUseCase _prefetchLessonContentUseCase;
   final ProfileProvider? _profileProvider;
   final HomeProvider? _homeProvider;
@@ -25,6 +27,7 @@ class LearningPathProvider extends SafeChangeNotifier {
 
   LearningPathProvider(
     this.useCase,
+    this._getRoadmapXpUseCase,
     this._prefetchLessonContentUseCase,
     {
       ProfileProvider? profileProvider,
@@ -37,6 +40,7 @@ class LearningPathProvider extends SafeChangeNotifier {
 
   int _currentRoadmapId = 0;
   LearningPathEntity? _path;
+  int _roadmapXp = 0;
   LearningPathState _state = LearningPathState.loading;
   String? _errorMessage;
   final Map<int, Set<int>> _checkpointAttemptsByRoadmap = {};
@@ -49,9 +53,7 @@ class LearningPathProvider extends SafeChangeNotifier {
   List<LearningUnitEntity> get units => _path?.units ?? <LearningUnitEntity>[];
   int get currentRoadmapId => _currentRoadmapId;
   int get userXp {
-    final roadmapId = _currentRoadmapId;
-    if (roadmapId <= 0) return 0;
-    return _profileProvider?.getRoadmapXp(roadmapId) ?? 0;
+    return _roadmapXp;
   }
 
   String get roadmapTitle => roadmap?.title ?? '';
@@ -105,8 +107,12 @@ class LearningPathProvider extends SafeChangeNotifier {
   }
 
   Future<void> loadPath(int roadmapId, {bool showLoader = true}) async {
+    final isDifferentRoadmap = _currentRoadmapId != roadmapId;
     _currentRoadmapId = roadmapId;
     _errorMessage = null;
+    if (isDifferentRoadmap) {
+      _roadmapXp = 0;
+    }
 
     if (showLoader) {
       _state = LearningPathState.loading;
@@ -115,7 +121,11 @@ class LearningPathProvider extends SafeChangeNotifier {
 
     try {
       final loadedPath = await useCase(roadmapId: roadmapId);
+      final loadedXp = await _loadRoadmapXp(roadmapId);
       _path = loadedPath;
+      if (loadedXp != null) {
+        _roadmapXp = loadedXp;
+      }
       _restoreOptimisticCompletionsForRoadmap(roadmapId);
       _state = LearningPathState.loaded;
       _syncProfileProgress();
@@ -157,6 +167,7 @@ class LearningPathProvider extends SafeChangeNotifier {
     if (passed) {
       markRetakeConfirmed(unitId);
       await completeUnit(unitId: unitId);
+      await refreshPath();
       return;
     }
     await refreshPath();
@@ -278,6 +289,14 @@ class LearningPathProvider extends SafeChangeNotifier {
       roadmapId: targetRoadmapId,
       status: normalizedStatus,
     );
+  }
+
+  Future<int?> _loadRoadmapXp(int roadmapId) async {
+    try {
+      return await _getRoadmapXpUseCase(roadmapId: roadmapId);
+    } catch (_) {
+      return null;
+    }
   }
 
   String _normalizeError(Object error) {

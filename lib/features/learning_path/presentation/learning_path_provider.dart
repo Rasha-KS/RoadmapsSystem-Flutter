@@ -45,7 +45,6 @@ class LearningPathProvider extends SafeChangeNotifier {
   String? _errorMessage;
   final Map<int, Set<int>> _checkpointAttemptsByRoadmap = {};
   final Map<int, Set<int>> _confirmedCheckpointRetakesByRoadmap = {};
-  final Map<int, Set<int>> _optimisticCompletedUnitsByRoadmap = {};
 
   LearningPathState get state => _state;
   String? get errorMessage => _errorMessage;
@@ -126,7 +125,6 @@ class LearningPathProvider extends SafeChangeNotifier {
       if (loadedXp != null) {
         _roadmapXp = loadedXp;
       }
-      _restoreOptimisticCompletionsForRoadmap(roadmapId);
       _state = LearningPathState.loaded;
       _syncProfileProgress();
     } catch (error) {
@@ -152,9 +150,7 @@ class LearningPathProvider extends SafeChangeNotifier {
 
   Future<void> completeUnit({required int unitId}) async {
     if (_currentRoadmapId <= 0) return;
-    await _lessonContentCache.markUnitCompleted(_currentRoadmapId, unitId);
     _applyOptimisticCompletion(unitId);
-
     _syncProfileProgress();
     notifyListeners();
   }
@@ -167,44 +163,9 @@ class LearningPathProvider extends SafeChangeNotifier {
     if (passed) {
       markRetakeConfirmed(unitId);
       await completeUnit(unitId: unitId);
-      await refreshPath();
       return;
     }
     await refreshPath();
-  }
-
-  Future<void> resetCheckpointProgress({required int unitId}) async {
-    if (_currentRoadmapId <= 0) return;
-    clearRetakeConfirmed(unitId);
-    await refreshPath();
-  }
-
-  Future<void> resetProgress({
-    int? roadmapId,
-    bool updateState = true,
-  }) async {
-    final id = roadmapId ?? _currentRoadmapId;
-    if (id <= 0) {
-      notifyListeners();
-      return;
-    }
-
-    if (!updateState) {
-      return;
-    }
-
-    await _lessonContentCache.clearAll();
-    _clearOptimisticOverridesForRoadmap(id);
-
-    if (_currentRoadmapId == id) {
-      _path = null;
-      _state = LearningPathState.loading;
-      _syncProfileProgress(roadmapId: id, progressPercentage: 0);
-      notifyListeners();
-      return;
-    }
-
-    notifyListeners();
   }
 
   void _applyOptimisticCompletion(int unitId) {
@@ -231,12 +192,6 @@ class LearningPathProvider extends SafeChangeNotifier {
       }
     }
 
-    final completedUnits = _optimisticCompletedUnitsByRoadmap.putIfAbsent(
-      _currentRoadmapId,
-      () => <int>{},
-    );
-    completedUnits.add(unitId);
-
     _path = LearningPathEntity(
       roadmap: path.roadmap,
       units: units,
@@ -244,20 +199,37 @@ class LearningPathProvider extends SafeChangeNotifier {
     _state = LearningPathState.loaded;
   }
 
-  void _clearOptimisticOverridesForRoadmap(int roadmapId) {
-    _optimisticCompletedUnitsByRoadmap.remove(roadmapId);
+  Future<void> resetCheckpointProgress({required int unitId}) async {
+    if (_currentRoadmapId <= 0) return;
+    clearRetakeConfirmed(unitId);
+    await refreshPath();
   }
 
-  void _restoreOptimisticCompletionsForRoadmap(int roadmapId) {
-    final completedUnits =
-        _optimisticCompletedUnitsByRoadmap[roadmapId] ?? const <int>{};
-    if (completedUnits.isEmpty) {
+  Future<void> resetProgress({
+    int? roadmapId,
+    bool updateState = true,
+  }) async {
+    final id = roadmapId ?? _currentRoadmapId;
+    if (id <= 0) {
+      notifyListeners();
       return;
     }
 
-    for (final unitId in completedUnits) {
-      _applyOptimisticCompletion(unitId);
+    if (!updateState) {
+      return;
     }
+
+    await _lessonContentCache.clearAll();
+
+    if (_currentRoadmapId == id) {
+      _path = null;
+      _state = LearningPathState.loading;
+      _syncProfileProgress(roadmapId: id, progressPercentage: 0);
+      notifyListeners();
+      return;
+    }
+
+    notifyListeners();
   }
 
   void _syncProfileProgress({

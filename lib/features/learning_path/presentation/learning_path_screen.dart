@@ -1,5 +1,6 @@
 ﻿import 'dart:math';
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
@@ -266,15 +267,17 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
 
       if (shouldComplete != true) return;
 
-      await provider.completeUnit(unitId: unit.id);
       if (!mounted) return;
 
+      final messenger = ScaffoldMessenger.of(context);
+      await provider.completeUnit(unitId: unit.id);
       showAppSnackBar(
-        ScaffoldMessenger.of(context),
+        messenger,
         message: '${unit.title} مكتمل.',
         variant: SnackBarVariant.success,
         duration: const Duration(milliseconds: 1500),
       );
+      unawaited(provider.refreshPath());
       return;
     }
 

@@ -77,7 +77,9 @@ class _LessonsScreenState extends State<LessonsScreen> {
               ),
               actions: [
                 IconButton(
-                  onPressed: () => Navigator.of(context).maybePop(false),
+                  onPressed: provider.isCompleting
+                      ? null
+                      : () => Navigator.of(context).maybePop(false),
                   icon: const Icon(
                     Icons.arrow_right_alt_outlined,
                     size: 35,
@@ -91,16 +93,19 @@ class _LessonsScreenState extends State<LessonsScreen> {
           ),
         ),
       ),
-      body: SafeArea(
-        top: false,
-        child: Directionality(
-          textDirection: TextDirection.rtl,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 700),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 25),
-                child: _buildBody(provider, lesson),
+      body: PopScope(
+        canPop: !provider.isCompleting,
+        child: SafeArea(
+          top: false,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 700),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 25),
+                  child: _buildBody(provider, lesson),
+                ),
               ),
             ),
           ),

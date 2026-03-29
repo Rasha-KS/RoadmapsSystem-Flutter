@@ -14,37 +14,33 @@ class LearningPathRepository {
 
   Future<LearningPathEntity> getLearningPath({required int roadmapId}) async {
     try {
-      final cached = await _cache.readLearningPath(roadmapId);
-      if (cached != null) {
-        final overriddenCached = await _cache.applyProgressOverrides(cached);
-        if (!identical(overriddenCached, cached)) {
-          try {
-            await _cache.writeLearningPath(roadmapId, overriddenCached);
-          } catch (_) {}
-        }
-        return overriddenCached;
+      final response = await _apiClient.get(
+        ApiConstants.url(ApiConstants.learningPath(roadmapId)),
+      );
+      _ensureSuccess(
+        response,
+        fallbackMessage: 'تعذر تحميل المسار التعليمي.',
+      );
+
+      final data = response['data'];
+      if (data is! Map<String, dynamic>) {
+        throw const ParsingException();
       }
-    } catch (_) {}
 
-    final response = await _apiClient.get(
-      ApiConstants.url(ApiConstants.learningPath(roadmapId)),
-    );
-    _ensureSuccess(
-      response,
-      fallbackMessage: 'تعذر تحميل المسار التعليمي.',
-    );
-
-    final data = response['data'];
-    if (data is! Map<String, dynamic>) {
-      throw const ParsingException();
+      final entity = LearningPathModel.fromJson(data).toEntity();
+      try {
+        await _cache.writeLearningPath(roadmapId, entity);
+      } catch (_) {}
+      return entity;
+    } catch (error) {
+      try {
+        final cached = await _cache.readLearningPath(roadmapId);
+        if (cached != null) {
+          return cached;
+        }
+      } catch (_) {}
+      rethrow;
     }
-
-    final entity = LearningPathModel.fromJson(data).toEntity();
-    final overriddenEntity = await _cache.applyProgressOverrides(entity);
-    try {
-      await _cache.writeLearningPath(roadmapId, overriddenEntity);
-    } catch (_) {}
-    return overriddenEntity;
   }
 
   Future<int> getRoadmapXp({required int roadmapId}) async {

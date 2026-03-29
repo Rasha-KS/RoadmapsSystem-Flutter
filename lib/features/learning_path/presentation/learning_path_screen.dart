@@ -8,6 +8,8 @@ import 'package:roadmaps/core/widgets/action_snackbar.dart';
 import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/roadmap_node.dart';
 import 'package:roadmaps/core/widgets/roadmap_progress.dart';
+import 'package:roadmaps/core/providers/current_user_provider.dart';
+import 'package:roadmaps/features/challenge/presentation/challenge_screen.dart';
 import 'package:roadmaps/features/checkpoints/domain/checkpoint_submission_result.dart';
 import 'package:roadmaps/features/checkpoints/presentation/checkpoints_provider.dart';
 import 'package:roadmaps/features/checkpoints/presentation/checkpoint_screen.dart';
@@ -224,6 +226,27 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         );
         return;
       }
+
+      final currentUserId = context.read<CurrentUserProvider>().userId;
+      if (currentUserId == null) {
+        showAppSnackBar(
+          ScaffoldMessenger.of(context),
+          message: 'تعذر فتح التحدي، بيانات المستخدم غير متوفرة.',
+          variant: SnackBarVariant.error,
+          duration: const Duration(milliseconds: 1400),
+        );
+        return;
+      }
+
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => ChallengeScreen(
+            learningUnitId: unit.entityId,
+            userId: currentUserId,
+            roadmapTitle: widget.roadmapTitle,
+          ),
+        ),
+      );
       return;
     }
 

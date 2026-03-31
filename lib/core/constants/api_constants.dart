@@ -34,7 +34,8 @@ class ApiConstants {
 
   // Smart Instructor
   static const String chatbotSessions = "/chatbot/sessions";
-  static String chatbotSessionMessages(int sessionId) =>"/chatbot/sessions/$sessionId/messages";
+  static String chatbotSessionMessages(int sessionId) =>
+      "/chatbot/sessions/$sessionId/messages";
   static String chatbotSession(int sessionId) => "/chatbot/sessions/$sessionId";
 
   // Community
@@ -49,7 +50,7 @@ class ApiConstants {
   static String enrollRoadmap(int roadmapId) => "/roadmaps/$roadmapId/enroll";
   static String unenrollRoadmap(int roadmapId) =>
       "/roadmaps/$roadmapId/unenroll";
-  
+
   // Learning path and Quize
   static String learningPath(int roadmapId) =>
       "/roadmaps/$roadmapId/learning-path";
@@ -60,6 +61,13 @@ class ApiConstants {
       "/quizzes/$quizId/attempts-count";
   static String quizSubmitAttempt(int attemptId) =>
       "/quiz-attempts/$attemptId/submit";
+
+  // Challenges
+  static String challengeDetails(int challengeId) => "/challenges/$challengeId";
+  static String challengeAttempts(int challengeId) =>
+      "/challenges/$challengeId/attempts";
+  static String challengeSubmitAttempt(int attemptId) =>
+      "/challenge-attempts/$attemptId/submit";
 
   // Lessons
   static String unitLessons(int learningUnitId) =>

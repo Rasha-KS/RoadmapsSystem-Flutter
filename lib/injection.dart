@@ -211,12 +211,8 @@ class Injection {
         communityRepository: repository,
       ),
       getMessagesByRoomUseCase: GetMessagesByRoomUseCase(repository),
-      sendMessageUseCase: SendMessageUseCase(
-        repository: repository,
-      ),
-      sendImageMessageUseCase: SendImageMessageUseCase(
-        repository: repository,
-      ),
+      sendMessageUseCase: SendMessageUseCase(repository: repository),
+      sendImageMessageUseCase: SendImageMessageUseCase(repository: repository),
       currentUserProvider: _currentUserProvider,
     );
   }
@@ -281,15 +277,17 @@ class Injection {
       sendSmartInstructorMessageUseCase: SendSmartInstructorMessageUseCase(
         repository,
       ),
-      createSmartInstructorSessionUseCase:
-          CreateSmartInstructorSessionUseCase(repository),
-      deleteSmartInstructorSessionUseCase:
-          DeleteSmartInstructorSessionUseCase(repository),
+      createSmartInstructorSessionUseCase: CreateSmartInstructorSessionUseCase(
+        repository,
+      ),
+      deleteSmartInstructorSessionUseCase: DeleteSmartInstructorSessionUseCase(
+        repository,
+      ),
     );
   }
 
   static ChallengeProvider provideChallengeProvider() {
-    final repository = ChallengeRepository();
+    final repository = ChallengeRepository(apiClient: _apiClient);
     return ChallengeProvider(
       getChallengeByLearningUnitUseCase: GetChallengeByLearningUnitUseCase(
         repository,

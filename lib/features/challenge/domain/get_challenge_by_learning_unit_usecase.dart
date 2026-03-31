@@ -6,10 +6,8 @@ class GetChallengeByLearningUnitUseCase {
 
   GetChallengeByLearningUnitUseCase(this.repository);
 
-  Future<ChallengeEntity?> call(int learningUnitId) async {
-    final challenge = await repository.getChallengeByLearningUnitId(
-      learningUnitId,
-    );
+  Future<ChallengeEntity?> call(int challengeId) async {
+    final challenge = await repository.getChallengeById(challengeId);
     return challenge?.toEntity();
   }
 }

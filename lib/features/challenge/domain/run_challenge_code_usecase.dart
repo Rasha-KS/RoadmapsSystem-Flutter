@@ -8,12 +8,10 @@ class RunChallengeCodeUseCase {
 
   Future<ChallengeRunResultEntity> call({
     required int challengeId,
-    required int userId,
     required String userCode,
   }) async {
     final result = await repository.runCode(
       challengeId: challengeId,
-      userId: userId,
       userCode: userCode,
     );
     return result.toEntity();

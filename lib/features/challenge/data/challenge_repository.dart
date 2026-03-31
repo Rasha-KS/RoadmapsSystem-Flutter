@@ -1,95 +1,102 @@
+import 'package:roadmaps/core/api/api_client.dart';
+import 'package:roadmaps/core/api/api_exceptions.dart';
+import 'package:roadmaps/core/constants/api_constants.dart';
 import 'package:roadmaps/features/challenge/data/challenge_model.dart';
-import 'package:roadmaps/core/constants/xp_rules.dart';
 
 class ChallengeRepository {
-  final List<ChallengeModel> _challenges = <ChallengeModel>[
-    ChallengeModel(
-      id: 1,
-      learningUnitId: 7,
-      title: 'اكتب كودًا',
-      description:
-          'اكتب برنامجًا بسيطًا يقبل أسماء المنتجات في مصفوفة مع سعر كل منتج، '
-          'ثم يحسب التكلفة الإجمالية. أدخل حتى 100 اسم منتج كحد أقصى.',
-      language: 'C++',
-      minXp: XpRules.challengeUnlockMinXp,
-      isActive: true,
-      starterCode: '''
-#include <iostream>
-#include <iomanip>
-using namespace std;
+  ChallengeRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
-int main() {
+  final ApiClient _apiClient;
 
-  cout << ;
-  return 0;
-}
-''',
-      testCases: <ChallengeTestCaseModel>[
-        ChallengeTestCaseModel(
-          input: '3 apple 10 banana 15 orange 25',
-          expectedOutput: '50.00',
-        ),
-        ChallengeTestCaseModel(
-          input: '2 pen 5.5 book 12.5',
-          expectedOutput: '18.00',
-        ),
-      ],
-    ),
-  ];
+  Future<ChallengeModel?> getChallengeById(int challengeId) async {
+    final response = await _apiClient.get(
+      ApiConstants.url(ApiConstants.challengeDetails(challengeId)),
+    );
+    _ensureSuccess(response, fallbackMessage: 'تعذر تحميل بيانات التحدي.');
 
-  final List<ChallengeAttemptModel> _attempts = <ChallengeAttemptModel>[];
-  int _attemptIdSeed = 1;
-
-  Future<ChallengeModel?> getChallengeByLearningUnitId(
-    int learningUnitId,
-  ) async {
-    await Future.delayed(const Duration(milliseconds: 350));
-    try {
-      return _challenges.firstWhere(
-        (challenge) =>
-            challenge.learningUnitId == learningUnitId && challenge.isActive,
-      );
-    } catch (_) {
-      return null;
+    final data = _extractMap(response['data']);
+    if (data == null || data.isEmpty) {
+      throw const ParsingException();
     }
+
+    return ChallengeModel.fromJson(data);
   }
 
   Future<ChallengeRunResultModel> runCode({
     required int challengeId,
-    required int userId,
     required String userCode,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    final normalizedCode = userCode.trim();
-
-    final bool forceFail = normalizedCode.contains('//mock_fail');
-    final bool forceSuccess = normalizedCode.contains('//mock_success');
-    final bool passed =
-        forceSuccess ||
-        (!forceFail &&
-            normalizedCode.isNotEmpty &&
-            normalizedCode.contains('main') &&
-            normalizedCode.contains('cout'));
-
-    final String executionOutput = passed
-        ? 'تم التنفيذ بنجاح\nAll tests passed: 2/2\nOutput: 50.00'
-        : 'Error in line 15\nهناك خطأ في الكود';
-
-    _attempts.add(
-      ChallengeAttemptModel(
-        id: _attemptIdSeed++,
-        challengeId: challengeId,
-        userId: userId,
-        userCode: userCode,
-        executionOutput: executionOutput,
-        passed: passed,
-      ),
+    final attemptId = await _createAttempt(challengeId: challengeId);
+    final response = await _apiClient.post(
+      ApiConstants.url(ApiConstants.challengeSubmitAttempt(attemptId)),
+      body: <String, dynamic>{'code': userCode},
     );
+    _ensureSuccess(response, fallbackMessage: 'تعذر إرسال حل التحدي.');
 
-    return ChallengeRunResultModel(
-      passed: passed,
-      executionOutput: executionOutput,
+    final data = _extractMap(response['data']);
+    if (data == null || data.isEmpty) {
+      throw const ParsingException();
+    }
+
+    return ChallengeRunResultModel.fromJson(data);
+  }
+
+  Future<int> _createAttempt({required int challengeId}) async {
+    final response = await _apiClient.post(
+      ApiConstants.url(ApiConstants.challengeAttempts(challengeId)),
     );
+    _ensureSuccess(response, fallbackMessage: 'تعذر بدء محاولة جديدة للتحدي.');
+
+    final attemptId =
+        _extractAttemptId(response['data']) ?? _extractAttemptId(response);
+    if (attemptId == null) {
+      throw const ParsingException();
+    }
+    return attemptId;
+  }
+
+  void _ensureSuccess(
+    Map<String, dynamic> response, {
+    required String fallbackMessage,
+  }) {
+    if (response.containsKey('success') && response['success'] != true) {
+      final message = response['message']?.toString().trim();
+      throw ApiException(
+        message == null || message.isEmpty ? fallbackMessage : message,
+      );
+    }
+  }
+
+  Map<String, dynamic>? _extractMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.cast<String, dynamic>();
+    }
+    return null;
+  }
+
+  int? _extractAttemptId(dynamic value) {
+    final map = _extractMap(value);
+    if (map == null) {
+      return null;
+    }
+
+    final attempt = _extractMap(map['attempt']);
+    if (attempt != null) {
+      final nestedId = _asIntOrNull(attempt['id'] ?? attempt['attempt_id']);
+      if (nestedId != null) {
+        return nestedId;
+      }
+    }
+
+    return _asIntOrNull(map['id'] ?? map['attempt_id'] ?? map['attemptId']);
+  }
+
+  int? _asIntOrNull(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
   }
 }

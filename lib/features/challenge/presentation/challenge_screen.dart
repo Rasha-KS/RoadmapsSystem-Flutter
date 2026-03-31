@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
+import 'package:roadmaps/core/widgets/action_snackbar.dart';
 import 'package:roadmaps/core/widgets/app_primary_button.dart';
 import 'package:roadmaps/features/challenge/presentation/challenge_provider.dart';
 import 'package:roadmaps/features/main_screen.dart';
@@ -9,14 +10,12 @@ import 'package:roadmaps/features/main_screen.dart';
 enum ChallengeFinishAction { goHome, backToLearningPath }
 
 class ChallengeScreen extends StatefulWidget {
-  final int learningUnitId;
-  final int userId;
+  final int challengeId;
   final String roadmapTitle;
 
   const ChallengeScreen({
     super.key,
-    required this.learningUnitId,
-    required this.userId,
+    required this.challengeId,
     required this.roadmapTitle,
   });
 
@@ -34,7 +33,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       await context.read<ChallengeProvider>().loadChallenge(
-        widget.learningUnitId,
+        widget.challengeId,
         forceRefresh: true,
       );
       if (!mounted) return;
@@ -69,7 +68,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         child: Directionality(
           textDirection: TextDirection.ltr,
           child: Padding(
-            padding: EdgeInsets.only(left: 15, top: 30, right: 14),
+            padding: const EdgeInsets.only(left: 15, top: 30, right: 14),
             child: AppBar(
               automaticallyImplyLeading: false,
               backgroundColor: AppColors.background,
@@ -88,7 +87,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                     color: AppColors.text_3,
                     size: 35,
                   ),
-                  padding: EdgeInsets.only(bottom: 5),
+                  padding: const EdgeInsets.only(bottom: 5),
                 ),
                 const SizedBox(width: 8),
               ],
@@ -113,9 +112,12 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                       )
                     : hasInitialError
                     ? _ErrorState(
+                        message:
+                            provider.errorMessage ??
+                            'تعذر تحميل بيانات التحدي.',
                         onRetry: () async {
                           await context.read<ChallengeProvider>().loadChallenge(
-                            widget.learningUnitId,
+                            widget.challengeId,
                             forceRefresh: true,
                           );
                         },
@@ -144,14 +146,13 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
           color: AppColors.primary2,
           onRefresh: () async {
             await context.read<ChallengeProvider>().loadChallenge(
-              widget.learningUnitId,
+              widget.challengeId,
               forceRefresh: true,
               keepLocalData: true,
             );
             if (provider.state == ChallengeScreenState.error) {
               if (!context.mounted) return;
-              final messenger = ScaffoldMessenger.of(context);
-              _showRefreshFailedSnackBar(messenger);
+              _showRefreshFailedSnackBar(ScaffoldMessenger.of(context));
             }
           },
           child: ListView(
@@ -182,15 +183,13 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                       : () {
                           context.read<ChallengeProvider>().runCode(
                             challengeId: challenge.id,
-                            userId: widget.userId,
                           );
                         },
                 ),
               ),
               const SizedBox(height: 15),
-
               Padding(
-                padding: EdgeInsetsGeometry.symmetric(horizontal: 40),
+                padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: AppPrimaryButton(
                   text: 'إنهاء',
                   onPressed: provider.canFinish
@@ -206,48 +205,42 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   }
 
   void _showRefreshFailedSnackBar(ScaffoldMessengerState messenger) {
-    messenger.showSnackBar(
-      SnackBar(
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(30),
-            topRight: Radius.circular(30),
-          ),
-        ),
-        content: Text(
-          'تعذر التحديث بسبب انقطاع الاتصال بالشبكة',
-          textAlign: TextAlign.right,
-          style: AppTextStyles.heading5.copyWith(color: AppColors.text_2),
-        ),
-        backgroundColor: AppColors.backGroundError,
-        duration: const Duration(milliseconds: 1000),
-      ),
+    showAppSnackBar(
+      messenger,
+      message: 'تعذر التحديث بسبب انقطاع الاتصال بالشبكة.',
+      variant: SnackBarVariant.error,
+      duration: const Duration(milliseconds: 1200),
     );
   }
 
   Future<void> _onFinish(ChallengeProvider provider) async {
+    final challenge = provider.challenge;
+    if (challenge == null) {
+      return;
+    }
+
     if (!provider.canFinish) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'نفذ الكود بنجاح قبل إنهاء التحدي',
-            textAlign: TextAlign.right,
-            style: AppTextStyles.heading5.copyWith(color: AppColors.text_2),
-          ),
-          backgroundColor: AppColors.backGroundError,
-          duration: Duration(milliseconds: 1200),
-        ),
+      showAppSnackBar(
+        ScaffoldMessenger.of(context),
+        message: 'انتظر حتى ينتهي التنفيذ الحالي ثم حاول مرة أخرى.',
+        variant: SnackBarVariant.warning,
+        duration: const Duration(milliseconds: 1400),
       );
       return;
     }
+
+    final bool passed = await context.read<ChallengeProvider>().finishChallenge(
+      challengeId: challenge.id,
+    );
+    if (!mounted || !passed) return;
 
     final ChallengeFinishAction? action =
         await showDialog<ChallengeFinishAction>(
           context: context,
           builder: (dialogContext) {
             return Padding(
-              padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: Dialog(
                 backgroundColor: AppColors.primary1.withValues(alpha: 0.9),
                 shape: RoundedRectangleBorder(
@@ -271,14 +264,14 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'تهانينا !',
+                          'تهانينا!',
                           style: AppTextStyles.heading2.copyWith(
                             color: AppColors.success,
                           ),
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'لقد أكملت المسار',
+                          'لقد أكملت التحدي بنجاح',
                           style: AppTextStyles.heading4.copyWith(
                             color: AppColors.text_2,
                           ),
@@ -359,9 +352,10 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
 }
 
 class _ErrorState extends StatelessWidget {
+  final String message;
   final Future<void> Function() onRetry;
 
-  const _ErrorState({required this.onRetry});
+  const _ErrorState({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -374,7 +368,7 @@ class _ErrorState extends StatelessWidget {
             Directionality(
               textDirection: TextDirection.rtl,
               child: Text(
-                'تعذر تحميل التحدي',
+                message,
                 style: AppTextStyles.heading5.copyWith(color: AppColors.error),
                 textAlign: TextAlign.center,
               ),
@@ -480,8 +474,9 @@ class _CodeEditorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isFailure = runState == ChallengeRunState.failure;
     final bool isSuccess = runState == ChallengeRunState.success;
-    final String? errorHeader = isFailure && (runOutput?.isNotEmpty ?? false)
-        ? runOutput!.split('\n').first
+    final normalizedOutput = (runOutput ?? '').trimLeft();
+    final String? errorHeader = isFailure && normalizedOutput.isNotEmpty
+        ? normalizedOutput.split('\n').first.trim()
         : null;
 
     return Container(
@@ -489,7 +484,7 @@ class _CodeEditorCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primary,
         borderRadius: BorderRadius.circular(16),
-        border: BoxBorder.all(color: AppColors.primary2),
+        border: Border.all(color: AppColors.primary2),
       ),
       child: Stack(
         children: [
@@ -574,7 +569,9 @@ class _CodeEditorCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        isSuccess ? 'تم التنفيذ بنجاح' : 'هناك خطأ في الكود',
+                        isSuccess
+                            ? 'تم تنفيذ الكود بنجاح'
+                            : 'هناك خطأ في الكود',
                         textAlign: TextAlign.center,
                         style: AppTextStyles.heading5.copyWith(
                           color: isSuccess

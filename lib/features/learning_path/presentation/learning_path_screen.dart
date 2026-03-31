@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -9,7 +9,6 @@ import 'package:roadmaps/core/widgets/action_snackbar.dart';
 import 'package:roadmaps/core/widgets/confirm_action_dialog.dart';
 import 'package:roadmaps/core/widgets/roadmap_node.dart';
 import 'package:roadmaps/core/widgets/roadmap_progress.dart';
-import 'package:roadmaps/core/providers/current_user_provider.dart';
 import 'package:roadmaps/features/challenge/presentation/challenge_screen.dart';
 import 'package:roadmaps/features/checkpoints/domain/checkpoint_submission_result.dart';
 import 'package:roadmaps/features/checkpoints/presentation/checkpoints_provider.dart';
@@ -72,7 +71,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
                   const SizedBox(height: 20),
                   Expanded(
                     child: hasInitialLoading
-                      ? const Center(
+                        ? const Center(
                             child: CircularProgressIndicator(
                               color: AppColors.primary2,
                             ),
@@ -128,15 +127,17 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           );
           final bool alignLeft = index.isEven;
           final lessonNumber = _lessonNumberForIndex(provider.units, index);
-          final String? displayTitle = displayUnit.type == LearningUnitType.lesson
+          final String? displayTitle =
+              displayUnit.type == LearningUnitType.lesson
               ? 'درس $lessonNumber'
               : null;
 
           return Column(
             children: [
               Align(
-                alignment:
-                    alignLeft ? Alignment.centerLeft : Alignment.centerRight,
+                alignment: alignLeft
+                    ? Alignment.centerLeft
+                    : Alignment.centerRight,
                 child: RoadmapNode(
                   unit: displayUnit,
                   displayTitle: displayTitle,
@@ -228,26 +229,17 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         return;
       }
 
-      final currentUserId = context.read<CurrentUserProvider>().userId;
-      if (currentUserId == null) {
-        showAppSnackBar(
-          ScaffoldMessenger.of(context),
-          message: 'تعذر فتح التحدي، بيانات المستخدم غير متوفرة.',
-          variant: SnackBarVariant.error,
-          duration: const Duration(milliseconds: 1400),
-        );
-        return;
-      }
-
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (_) => ChallengeScreen(
-            learningUnitId: unit.entityId,
-            userId: currentUserId,
-            roadmapTitle: widget.roadmapTitle,
-          ),
-        ),
-      );
+      final challengeResult = await Navigator.of(context)
+          .push<ChallengeFinishAction>(
+            MaterialPageRoute(
+              builder: (_) => ChallengeScreen(
+                challengeId: unit.entityId,
+                roadmapTitle: widget.roadmapTitle,
+              ),
+            ),
+          );
+      if (challengeResult == null) return;
+      await provider.completeUnit(unitId: unit.id);
       return;
     }
 
@@ -310,9 +302,8 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         if (!shouldRetake) return;
       }
 
-      final CheckpointSubmissionResult? result = await navigator.push<
-        CheckpointSubmissionResult
-      >(
+      final CheckpointSubmissionResult? result = await navigator
+          .push<CheckpointSubmissionResult>(
             MaterialPageRoute(
               builder: (_) => CheckpointScreen(
                 learningPathId: widget.roadmapId.toString(),
@@ -334,7 +325,8 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       if (!result.passed) {
         showAppSnackBar(
           ScaffoldMessenger.of(context),
-          message: 'لم تحقق الحد الأدنى للنجاح في هذه المحاولة. يمكنك إعادة الاختبار.',
+          message:
+              'لم تحقق الحد الأدنى للنجاح في هذه المحاولة. يمكنك إعادة الاختبار.',
           variant: SnackBarVariant.error,
           duration: const Duration(milliseconds: 1700),
         );
@@ -484,7 +476,6 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
 
     return 'هذا التحدي مقفل حاليًا.';
   }
-
 }
 
 class _ErrorState extends StatelessWidget {

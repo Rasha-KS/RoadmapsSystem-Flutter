@@ -31,6 +31,8 @@ class LessonsScreen extends StatefulWidget {
 }
 
 class _LessonsScreenState extends State<LessonsScreen> {
+  bool _isLessonContentLoading = true;
+
   @override
   void initState() {
     super.initState();
@@ -38,13 +40,21 @@ class _LessonsScreenState extends State<LessonsScreen> {
       if (!mounted) return;
       final provider = context.read<LessonsProvider>();
       if (provider.hasLoadedLesson(widget.lessonId)) {
+        setState(() {
+          _isLessonContentLoading = false;
+        });
         return;
       }
       provider.fetchLesson(
         lessonId: widget.lessonId,
         title: widget.lessonTitle,
         description: widget.lessonDescription,
-      );
+      ).whenComplete(() {
+        if (!mounted) return;
+        setState(() {
+          _isLessonContentLoading = false;
+        });
+      });
     });
   }
 
@@ -187,7 +197,8 @@ class _LessonsScreenState extends State<LessonsScreen> {
         const SizedBox(height: 4),
         AppPrimaryButton(
           text: provider.isCompleting ? 'جاري الإنهاء...' : 'الدرس التالي',
-          onPressed: provider.isCompleting
+          isLoading: _isLessonContentLoading || provider.isCompleting,
+          onPressed: (_isLessonContentLoading || provider.isLoading || provider.isCompleting)
               ? null
               : () async {
                   if (widget.isLessonCompleted) {

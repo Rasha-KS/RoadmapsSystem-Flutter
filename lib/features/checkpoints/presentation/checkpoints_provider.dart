@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import 'package:roadmaps/features/checkpoints/data/checkpoint_repository.dart';
@@ -35,6 +37,7 @@ class CheckpointsProvider extends SafeChangeNotifier {
   String? errorMessage;
   int? attemptId;
   int? _currentQuizId;
+  String? _currentLearningPathId;
   bool _attemptReady = false;
   bool _useRetakeAttempt = false;
   CheckpointSubmissionResult? lastSubmissionResult;
@@ -54,14 +57,7 @@ class CheckpointsProvider extends SafeChangeNotifier {
     final currentCheckpoint = checkpoint;
     if (currentCheckpoint == null) return null;
     if (!_hasAnswerKey(currentCheckpoint)) return null;
-
-    var score = 0;
-    for (final question in currentCheckpoint.questions) {
-      if (_isSelectedAnswerCorrect(question)) {
-        score++;
-      }
-    }
-    return score;
+    return _countCorrectAnswers(currentCheckpoint, selectedOptionByQuestionId);
   }
 
   int get totalQuestions => checkpoint?.questions.length ?? 0;
@@ -96,7 +92,10 @@ class CheckpointsProvider extends SafeChangeNotifier {
     final currentCheckpoint = checkpoint;
     final correct = correctCount;
     if (currentCheckpoint == null || correct == null) return 0;
-    return _earnedXpFromSelectedAnswers(currentCheckpoint);
+    return _earnedXpFromSelectedAnswers(
+      currentCheckpoint,
+      selectedOptionByQuestionId,
+    );
   }
 
   double get previewScorePercent {
@@ -127,6 +126,7 @@ class CheckpointsProvider extends SafeChangeNotifier {
     }
 
     _currentQuizId = quizId;
+    _currentLearningPathId = learningPathId;
     _useRetakeAttempt = useRetakeAttempt;
     isLoading = true;
     errorMessage = null;
@@ -218,37 +218,55 @@ class CheckpointsProvider extends SafeChangeNotifier {
     notifyListeners();
 
     try {
-      final int earnedXp = _earnedXpFromSelectedAnswers(currentCheckpoint);
-      final int totalPossibleXp = maximumPossibleXp;
-      final int minimumXp = minimumRequiredXp;
-      final bool passed = earnedXp >= minimumXp;
       final quizId = _currentQuizId ?? currentCheckpoint.quizId;
+      attemptId = null;
+      _attemptReady = false;
       await _ensureAttemptCreated(
         quizId: quizId,
         useRetakeAttempt: _useRetakeAttempt,
       );
+      final learningPathId = _currentLearningPathId;
+      if (learningPathId != null && learningPathId.isNotEmpty) {
+        checkpoint = await _refreshCheckpointForSubmission(
+          learningPathId: learningPathId,
+          checkpointId: quizId.toString(),
+        );
+      }
+    } catch (error) {
+      errorMessage = _friendlyError(error);
+      isSubmitting = false;
+      notifyListeners();
+      return null;
+    }
+
+    try {
       final currentAttemptId = attemptId;
       if (currentAttemptId == null) {
-        throw const ApiException('تعذر بدء محاولة الاختبار.');
+        throw const ApiException('فشل إرسال النتيجة حاول مرة أخرى');
       }
+      final submittedAnswers = Map<String, String>.from(selectedOptionByQuestionId);
+      final submissionCheckpoint = checkpoint ?? currentCheckpoint;
+      final earnedXp = _earnedXpFromSelectedAnswers(
+        submissionCheckpoint,
+        submittedAnswers,
+      );
+      final minimumXp = minimumRequiredXp;
+      final passed = earnedXp >= minimumXp;
       final submission = await _submitAttemptUseCase(
         attemptId: currentAttemptId,
-        answers: Map<String, String>.from(selectedOptionByQuestionId),
+        answers: submittedAnswers,
         score: earnedXp,
         passed: passed,
       );
       final result = _buildSubmissionResult(
-        checkpoint: currentCheckpoint,
+        checkpoint: submissionCheckpoint,
         submission: submission,
-        earnedXp: earnedXp,
-        passed: passed,
-        minimumXp: minimumXp,
-        totalPossibleXp: totalPossibleXp,
+        answers: submittedAnswers,
       );
       lastSubmissionResult = result;
       return result;
     } catch (error) {
-      errorMessage = _friendlyError(error);
+      errorMessage = 'فشل إرسال النتيجة حاول مرة أخرى';
       return null;
     } finally {
       isSubmitting = false;
@@ -292,27 +310,60 @@ class CheckpointsProvider extends SafeChangeNotifier {
     notifyListeners();
   }
 
+  Future<CheckpointEntity> _refreshCheckpointForSubmission({
+    required String learningPathId,
+    required String checkpointId,
+  }) async {
+    CheckpointEntity? refreshedCheckpoint;
+    final attempts = <Duration>[
+      Duration.zero,
+      const Duration(milliseconds: 250),
+      const Duration(milliseconds: 500),
+    ];
+
+    for (final delay in attempts) {
+      if (delay != Duration.zero) {
+        await Future<void>.delayed(delay);
+      }
+
+      final candidate = await _getCheckpointUseCase(
+        learningPathId: learningPathId,
+        checkpointId: checkpointId,
+      );
+      refreshedCheckpoint = candidate;
+      if (_hasAnswerKey(candidate)) {
+        return candidate;
+      }
+    }
+
+    if (refreshedCheckpoint != null) {
+      return refreshedCheckpoint;
+    }
+
+    return await _getCheckpointUseCase(
+      learningPathId: learningPathId,
+      checkpointId: checkpointId,
+    );
+  }
+
   CheckpointSubmissionResult _buildSubmissionResult({
     required CheckpointEntity checkpoint,
     required QuizSubmissionResultModel submission,
-    required int earnedXp,
-    required bool passed,
-    required int minimumXp,
-    required int totalPossibleXp,
+    required Map<String, String> answers,
   }) {
     final int effectiveEarnedXp = submission.earnedPoints > 0
         ? submission.earnedPoints
-        : submission.score > 0
-            ? submission.score
-            : previewEarnedXp;
+        : submission.score;
     final int effectiveTotalPossibleXp = checkpoint.maxXp > 0
         ? checkpoint.maxXp
-        : totalPossibleXp;
+        : maximumPossibleXp;
     final int effectiveMinimumXp = checkpoint.minXp > 0
         ? checkpoint.minXp
-        : minimumXp;
-    final bool effectivePassed = submission.passed || passed || effectiveEarnedXp >= effectiveMinimumXp;
-    final int? correct = correctCount;
+        : minimumRequiredXp;
+    final bool effectivePassed = effectiveEarnedXp >= effectiveMinimumXp;
+    final int? correct = _hasAnswerKey(checkpoint)
+        ? _countCorrectAnswers(checkpoint, answers)
+        : null;
 
     return CheckpointSubmissionResult(
       attemptId: submission.attemptId ?? attemptId,
@@ -337,14 +388,17 @@ class CheckpointsProvider extends SafeChangeNotifier {
     );
   }
 
-  int _earnedXpFromSelectedAnswers(CheckpointEntity checkpoint) {
+  int _earnedXpFromSelectedAnswers(
+    CheckpointEntity checkpoint,
+    Map<String, String> answers,
+  ) {
     if (!_hasAnswerKey(checkpoint)) {
       return 0;
     }
 
     var earned = 0;
     for (final question in checkpoint.questions) {
-      if (!_isSelectedAnswerCorrect(question)) {
+      if (!_isSelectedAnswerCorrect(question, answers)) {
         continue;
       }
       earned += question.questionXp > 0
@@ -356,27 +410,49 @@ class CheckpointsProvider extends SafeChangeNotifier {
     return earned;
   }
 
-  bool _isSelectedAnswerCorrect(QuestionEntity question) {
+  int _countCorrectAnswers(
+    CheckpointEntity checkpoint,
+    Map<String, String> answers,
+  ) {
+    var score = 0;
+    for (final question in checkpoint.questions) {
+      if (_isSelectedAnswerCorrect(question, answers)) {
+        score++;
+      }
+    }
+    return score;
+  }
+
+  bool _isSelectedAnswerCorrect(
+    QuestionEntity question,
+    Map<String, String> answers,
+  ) {
     final correctOptionId = question.correctOptionId.trim();
     if (correctOptionId.isEmpty) return false;
 
-    final selected = selectedOptionByQuestionId[question.id];
+    final selected = answers[question.id];
     if (selected == null) return false;
 
-    if (selected == correctOptionId) {
+    if (_normalizeAnswerToken(selected) == _normalizeAnswerToken(correctOptionId)) {
       return true;
     }
 
     for (final option in question.options) {
       final matchesCorrectRef =
-          option.id == correctOptionId || option.text == correctOptionId;
+          _normalizeAnswerToken(option.id) == _normalizeAnswerToken(correctOptionId) ||
+          _normalizeAnswerToken(option.text) == _normalizeAnswerToken(correctOptionId);
       final matchesSelection =
-          selected == option.id || selected == option.text;
+          _normalizeAnswerToken(selected) == _normalizeAnswerToken(option.id) ||
+          _normalizeAnswerToken(selected) == _normalizeAnswerToken(option.text);
       if (matchesCorrectRef && matchesSelection) {
         return true;
       }
     }
     return false;
+  }
+
+  String _normalizeAnswerToken(String value) {
+    return value.trim().toLowerCase();
   }
 
   void _resetQuizState() {
@@ -387,6 +463,7 @@ class CheckpointsProvider extends SafeChangeNotifier {
     attemptId = null;
     _attemptReady = false;
     _currentQuizId = null;
+    _currentLearningPathId = null;
     _useRetakeAttempt = false;
     lastSubmissionResult = null;
     selectedOptionByQuestionId.clear();

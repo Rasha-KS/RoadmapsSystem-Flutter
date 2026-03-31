@@ -19,9 +19,7 @@ Future<bool> retryUntilSuccess(
     try {
       await action();
       return true;
-    } catch (error, stackTrace) {
-      debugPrint('$label failed on attempt $attempt: $error');
-      debugPrint(stackTrace.toString());
+    } catch (error) {
       // Simple backoff: later retries wait a bit longer.
       if (attempt >= maxAttempts) {
         return false;

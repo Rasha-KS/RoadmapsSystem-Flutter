@@ -1,7 +1,6 @@
 import 'package:roadmaps/core/api/api_client.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/constants/api_constants.dart';
-import 'package:roadmaps/core/cache/lesson_content_cache.dart';
 
 import '../domain/learning_path_entity.dart';
 import 'learning_path_model.dart';
@@ -10,37 +9,22 @@ class LearningPathRepository {
   LearningPathRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
   final ApiClient _apiClient;
-  final LessonContentCache _cache = LessonContentCache.instance;
 
   Future<LearningPathEntity> getLearningPath({required int roadmapId}) async {
-    try {
-      final response = await _apiClient.get(
-        ApiConstants.url(ApiConstants.learningPath(roadmapId)),
-      );
-      _ensureSuccess(
-        response,
-        fallbackMessage: 'تعذر تحميل المسار التعليمي.',
-      );
+    final response = await _apiClient.get(
+      ApiConstants.url(ApiConstants.learningPath(roadmapId)),
+    );
+    _ensureSuccess(
+      response,
+      fallbackMessage: 'تعذر تحميل المسار التعليمي.',
+    );
 
-      final data = response['data'];
-      if (data is! Map<String, dynamic>) {
-        throw const ParsingException();
-      }
-
-      final entity = LearningPathModel.fromJson(data).toEntity();
-      try {
-        await _cache.writeLearningPath(roadmapId, entity);
-      } catch (_) {}
-      return entity;
-    } catch (error) {
-      try {
-        final cached = await _cache.readLearningPath(roadmapId);
-        if (cached != null) {
-          return cached;
-        }
-      } catch (_) {}
-      rethrow;
+    final data = response['data'];
+    if (data is! Map<String, dynamic>) {
+      throw const ParsingException();
     }
+
+    return LearningPathModel.fromJson(data).toEntity();
   }
 
   Future<int> getRoadmapXp({required int roadmapId}) async {

@@ -1,6 +1,4 @@
-import 'package:flutter/material.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
-import 'package:roadmaps/core/cache/lesson_content_cache.dart';
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import '../domain/delete_my_roadmap_usecase.dart';
 import '../domain/enroll_roadmap_usecase.dart';
@@ -17,7 +15,6 @@ class HomeProvider extends SafeChangeNotifier {
   final DeleteMyCourseUseCase deleteMyCourseUseCase;
   final ResetMyCourseUseCase resetMyCourseUseCase;
   final EnrollCourseUseCase enrollCourseUseCase;
-  final LessonContentCache _lessonContentCache = LessonContentCache.instance;
 
   HomeProvider({
     required this.getHomeDataUseCase,
@@ -45,28 +42,32 @@ class HomeProvider extends SafeChangeNotifier {
     final homeRepository = getHomeDataUseCase.repository;
 
     try {
-      recommended = await getHomeDataUseCase.callRecommended();
-      if (homeRepository.lastLoadErrorMessage != null) {
-        hadError = true;
-        errorMessage ??= homeRepository.lastLoadErrorMessage;
+      final fetchedRecommended = await getHomeDataUseCase.callRecommended();
+      final recommendedError = homeRepository.lastLoadErrorMessage;
+      if (recommendedError == null || fetchedRecommended.isNotEmpty) {
+        recommended = fetchedRecommended;
       }
-    } catch (error, stackTrace) {
+      if (recommendedError != null) {
+        hadError = true;
+        errorMessage ??= recommendedError;
+      }
+    } catch (error) {
       hadError = true;
-      debugPrint('HomeProvider.loadHome recommended failed: $error');
-      debugPrint(stackTrace.toString());
       errorMessage ??= _friendlyLoadError(error);
     }
 
     try {
-      myCourses = await getHomeDataUseCase.callMyCourses();
-      if (homeRepository.lastLoadErrorMessage != null) {
-        hadError = true;
-        errorMessage ??= homeRepository.lastLoadErrorMessage;
+      final fetchedMyCourses = await getHomeDataUseCase.callMyCourses();
+      final myCoursesError = homeRepository.lastLoadErrorMessage;
+      if (myCoursesError == null || fetchedMyCourses.isNotEmpty) {
+        myCourses = fetchedMyCourses;
       }
-    } catch (error, stackTrace) {
+      if (myCoursesError != null) {
+        hadError = true;
+        errorMessage ??= myCoursesError;
+      }
+    } catch (error) {
       hadError = true;
-      debugPrint('HomeProvider.loadHome myCourses failed: $error');
-      debugPrint(stackTrace.toString());
       errorMessage ??= _friendlyLoadError(error);
     }
 
@@ -96,7 +97,6 @@ class HomeProvider extends SafeChangeNotifier {
     bool updateState = true,
   }) async {
     await deleteMyCourseUseCase(courseId);
-    await _lessonContentCache.clearAll();
     if (!updateState) return;
     myCourses = myCourses.where((course) => course.id != courseId).toList();
     if (courseData != null &&
@@ -137,7 +137,6 @@ class HomeProvider extends SafeChangeNotifier {
     bool updateState = true,
   }) async {
     await resetMyCourseUseCase(courseId);
-    await _lessonContentCache.clearAll();
     if (!updateState) return;
     myCourses = myCourses.map((course) {
       if (course.id != courseId) return course;
@@ -158,7 +157,6 @@ class HomeProvider extends SafeChangeNotifier {
     bool updateState = true,
   }) async {
     await enrollCourseUseCase(courseId);
-    await _lessonContentCache.clearAll();
     if (!updateState) return;
 
     final index = recommended.indexWhere((course) => course.id == courseId);

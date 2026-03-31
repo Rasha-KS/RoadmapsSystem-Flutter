@@ -11,8 +11,6 @@ class HomeRepository {
   HomeRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
   final ApiClient _apiClient;
-  final List<HomeCourseEntity> _cachedRecommendedCourses = [];
-  final List<HomeCourseEntity> _cachedMyCourses = [];
   String? _lastLoadErrorMessage;
 
   String? get lastLoadErrorMessage => _lastLoadErrorMessage;
@@ -36,20 +34,17 @@ class HomeRepository {
       );
 
       final roadmaps = items.map(_mapSuggestedRoadmap).toList();
-      _cachedRecommendedCourses
-        ..clear()
-        ..addAll(roadmaps);
       _lastLoadErrorMessage = null;
       return roadmaps;
     } on TimeoutApiException {
       _lastLoadErrorMessage = 'تعذر تحميل المسارات المقترحة حاليًا. حاول مرة أخرى.';
-      return List<HomeCourseEntity>.from(_cachedRecommendedCourses);
+      return <HomeCourseEntity>[];
     } on NetworkException {
       _lastLoadErrorMessage = 'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
-      return List<HomeCourseEntity>.from(_cachedRecommendedCourses);
+      return <HomeCourseEntity>[];
     } on ParsingException {
       _lastLoadErrorMessage = 'تعذر قراءة بيانات المسارات المقترحة.';
-      return List<HomeCourseEntity>.from(_cachedRecommendedCourses);
+      return <HomeCourseEntity>[];
     }
   }
 
@@ -66,20 +61,17 @@ class HomeRepository {
       );
 
       final roadmaps = items.map(_mapEnrollment).toList();
-      _cachedMyCourses
-        ..clear()
-        ..addAll(roadmaps);
       _lastLoadErrorMessage = null;
       return roadmaps;
     } on TimeoutApiException {
       _lastLoadErrorMessage = 'تعذر تحميل مساراتك الحالية. حاول مرة أخرى.';
-      return List<HomeCourseEntity>.from(_cachedMyCourses);
+      return <HomeCourseEntity>[];
     } on NetworkException {
       _lastLoadErrorMessage = 'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
-      return List<HomeCourseEntity>.from(_cachedMyCourses);
+      return <HomeCourseEntity>[];
     } on ParsingException {
       _lastLoadErrorMessage = 'تعذر قراءة بيانات المسارات الحالية.';
-      return List<HomeCourseEntity>.from(_cachedMyCourses);
+      return <HomeCourseEntity>[];
     }
   }
 

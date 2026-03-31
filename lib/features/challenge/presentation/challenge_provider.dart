@@ -19,8 +19,6 @@ class ChallengeProvider extends SafeChangeNotifier {
   }) : _getChallengeByLearningUnitUseCase = getChallengeByLearningUnitUseCase,
        _runChallengeCodeUseCase = runChallengeCodeUseCase;
 
-  final Map<int, ChallengeEntity> _cache = <int, ChallengeEntity>{};
-
   ChallengeEntity? _challenge;
   ChallengeRunResultEntity? _lastRunResult;
   String _userCode = '';
@@ -45,15 +43,8 @@ class ChallengeProvider extends SafeChangeNotifier {
     int challengeId, {
     bool forceRefresh = false,
   }) async {
-    if (!forceRefresh && _cache.containsKey(challengeId)) {
-      return _cache[challengeId];
-    }
-
-    final challenge = await _getChallengeByLearningUnitUseCase(challengeId);
-    if (challenge != null) {
-      _cache[challengeId] = challenge;
-    }
-    return challenge;
+    final _ = forceRefresh;
+    return _getChallengeByLearningUnitUseCase(challengeId);
   }
 
   Future<void> loadChallenge(

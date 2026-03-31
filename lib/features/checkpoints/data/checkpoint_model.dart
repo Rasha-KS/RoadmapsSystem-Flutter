@@ -85,14 +85,7 @@ class QuestionModel {
       id: _asString(json['id']),
       text: _asString(json['question_text'] ?? json['text']),
       options: options,
-      correctOptionId: _asString(
-        json['correct_option_id'] ??
-            json['correct_option'] ??
-            json['correct_answer_id'] ??
-            json['correct_answer'] ??
-            json['correct_answer_text'] ??
-            json['answer'],
-      ),
+      correctOptionId: _extractCorrectOptionId(json),
       order: _asInt(json['order']),
       questionXp: _asInt(json['question_xp'] ?? json['xp']),
     );
@@ -183,4 +176,42 @@ bool _asBool(dynamic value) {
     default:
       return false;
   }
+}
+
+String _extractCorrectOptionId(Map<String, dynamic> json) {
+  final candidates = <dynamic>[
+    json['correct_option_id'],
+    json['correct_answer_id'],
+    json['answer_id'],
+    json['correct_answer'],
+    json['correct_option'],
+    json['answer'],
+  ];
+
+  for (final candidate in candidates) {
+    final text = _asString(candidate);
+    if (text.isNotEmpty) {
+      return text;
+    }
+  }
+
+  for (final nested in <dynamic>[json['correct_option'], json['answer']]) {
+    final map = _asMap(nested);
+    if (map.isEmpty) continue;
+    final text = _asString(map['id'] ?? map['value'] ?? map['text'] ?? map['answer_id']);
+    if (text.isNotEmpty) return text;
+  }
+
+  final fallbackCandidates = <dynamic>[
+    json['correct_answer_text'],
+    json['correct_option_text'],
+  ];
+  for (final candidate in fallbackCandidates) {
+    final text = _asString(candidate);
+    if (text.isNotEmpty) {
+      return text;
+    }
+  }
+
+  return '';
 }

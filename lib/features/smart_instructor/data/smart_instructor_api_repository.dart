@@ -13,8 +13,6 @@ class SmartInstructorApiRepository implements SmartInstructorRepository {
       : _apiClient = apiClient;
 
   final ApiClient _apiClient;
-  final List<SmartInstructorSessionEntity> _cachedSessions = [];
-  final Map<int, List<SmartInstructorMessageEntity>> _cachedMessagesBySession = {};
   String? _lastSessionsLoadErrorMessage;
   String? _lastMessagesLoadErrorMessage;
 
@@ -47,21 +45,18 @@ class SmartInstructorApiRepository implements SmartInstructorRepository {
       );
 
       final sessions = items.map(SmartInstructorSessionModel.fromJson).toList();
-      _cachedSessions
-        ..clear()
-        ..addAll(sessions);
       _lastSessionsLoadErrorMessage = null;
       return sessions;
     } on TimeoutApiException {
       _lastSessionsLoadErrorMessage = 'تعذر تحميل المحادثات حاليًا. حاول مرة أخرى.';
-      return List<SmartInstructorSessionEntity>.from(_cachedSessions);
+      return <SmartInstructorSessionEntity>[];
     } on NetworkException {
       _lastSessionsLoadErrorMessage =
           'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
-      return List<SmartInstructorSessionEntity>.from(_cachedSessions);
+      return <SmartInstructorSessionEntity>[];
     } on ParsingException {
       _lastSessionsLoadErrorMessage = 'تعذر قراءة بيانات المحادثات.';
-      return List<SmartInstructorSessionEntity>.from(_cachedSessions);
+      return <SmartInstructorSessionEntity>[];
     }
   }
 
@@ -109,25 +104,18 @@ class SmartInstructorApiRepository implements SmartInstructorRepository {
       } while (page <= lastPage);
 
       messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
-      _cachedMessagesBySession[sessionId] = List<SmartInstructorMessageEntity>.from(messages);
       _lastMessagesLoadErrorMessage = null;
       return messages;
     } on TimeoutApiException {
       _lastMessagesLoadErrorMessage = 'تعذر تحميل الرسائل حاليًا. حاول مرة أخرى.';
-      return List<SmartInstructorMessageEntity>.from(
-        _cachedMessagesBySession[sessionId] ?? const <SmartInstructorMessageEntity>[],
-      );
+      return <SmartInstructorMessageEntity>[];
     } on NetworkException {
       _lastMessagesLoadErrorMessage =
           'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
-      return List<SmartInstructorMessageEntity>.from(
-        _cachedMessagesBySession[sessionId] ?? const <SmartInstructorMessageEntity>[],
-      );
+      return <SmartInstructorMessageEntity>[];
     } on ParsingException {
       _lastMessagesLoadErrorMessage = 'تعذر قراءة بيانات الرسائل.';
-      return List<SmartInstructorMessageEntity>.from(
-        _cachedMessagesBySession[sessionId] ?? const <SmartInstructorMessageEntity>[],
-      );
+      return <SmartInstructorMessageEntity>[];
     }
   }
 

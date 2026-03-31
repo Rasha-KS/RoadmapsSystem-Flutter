@@ -10,8 +10,6 @@ class NotificationsRepository {
     : _apiClient = apiClient;
 
   final ApiClient _apiClient;
-  final List<NotificationEntity> _cachedNotifications = [];
-  int _cachedUnreadCount = 0;
   String? _lastLoadErrorMessage;
 
   String? get lastLoadErrorMessage => _lastLoadErrorMessage;
@@ -30,21 +28,18 @@ class NotificationsRepository {
 
       final notifications = items.map(NotificationModel.fromJson).toList()
         ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
-      _cachedNotifications
-        ..clear()
-        ..addAll(notifications);
       _lastLoadErrorMessage = null;
       return notifications;
     } on TimeoutApiException {
       _lastLoadErrorMessage = 'تعذر تحميل الإشعارات حاليًا. حاول مرة أخرى.';
-      return List<NotificationEntity>.from(_cachedNotifications);
+      return <NotificationEntity>[];
     } on NetworkException {
       _lastLoadErrorMessage =
           'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
-      return List<NotificationEntity>.from(_cachedNotifications);
+      return <NotificationEntity>[];
     } on ParsingException {
       _lastLoadErrorMessage = 'تعذر قراءة بيانات الإشعارات.';
-      return List<NotificationEntity>.from(_cachedNotifications);
+      return <NotificationEntity>[];
     }
   }
 
@@ -63,19 +58,18 @@ class NotificationsRepository {
       if (parsed == null) {
         throw const ParsingException();
       }
-      _cachedUnreadCount = parsed;
       _lastLoadErrorMessage = null;
       return parsed;
     } on TimeoutApiException {
       _lastLoadErrorMessage = 'تعذر تحميل عدد الإشعارات حاليًا. حاول مرة أخرى.';
-      return _cachedUnreadCount;
+      return 0;
     } on NetworkException {
       _lastLoadErrorMessage =
           'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
-      return _cachedUnreadCount;
+      return 0;
     } on ParsingException {
       _lastLoadErrorMessage = 'تعذر قراءة عدد الإشعارات.';
-      return _cachedUnreadCount;
+      return 0;
     }
   }
 

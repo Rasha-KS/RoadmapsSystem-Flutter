@@ -135,10 +135,12 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
       );
     }
 
-    return ListView.builder(
-      physics: const BouncingScrollPhysics(),
-      itemCount: checkpoint.questions.length + 1,
-      itemBuilder: (context, index) {
+    return AbsorbPointer(
+      absorbing: provider.isSubmitting,
+      child: ListView.builder(
+        physics: const BouncingScrollPhysics(),
+        itemCount: checkpoint.questions.length + 1,
+        itemBuilder: (context, index) {
         if (index == 0) {
           final String titleToShow = widget.roadmapTitle.trim().isNotEmpty
               ? widget.roadmapTitle
@@ -169,7 +171,8 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
             },
           ),
         );
-      },
+        },
+      ),
     );
   }
 
@@ -243,7 +246,7 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'نقاط الخبرة: ${result.maximumPossibleXp}/${result.earnedXp}',
+                    'نقاط الخبرة: ${result.earnedXp}/${result.maximumPossibleXp}',
                     style: AppTextStyles.body.copyWith(color: AppColors.text_2),
                     textAlign: TextAlign.center,
                   ),
@@ -348,7 +351,7 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
                               onPressed: () {
                                 Navigator.of(dialogContext).pop();
                                 if (!mounted) return;
-                                Navigator.of(context).pop();
+                                Navigator.of(context).pop(result);
                               },
                               child: Text(
                                 'إغلاق',
@@ -368,16 +371,6 @@ class _CheckpointScreenState extends State<CheckpointScreen> {
                               ),
                               onPressed: () async {
                                 Navigator.of(dialogContext).pop();
-                                if (!mounted) return;
-                                final shouldRetake =
-                                    await _showRetakeCheckpointDialogWithMessage(
-                                      previousAttemptPassed: false,
-                                    );
-                                if (!shouldRetake) {
-                                  if (!mounted) return;
-                                  Navigator.of(context).maybePop();
-                                  return;
-                                }
                                 if (!mounted) return;
                                 await context
                                     .read<CheckpointsProvider>()

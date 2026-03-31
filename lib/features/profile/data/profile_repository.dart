@@ -18,7 +18,6 @@ class ProfileRepository {
 
   final UserRepository _userRepository;
   final ApiClient _apiClient;
-  final List<UserRoadmapModel> _cachedRoadmaps = [];
   String? _lastRoadmapsLoadErrorMessage;
 
   String? get lastRoadmapsLoadErrorMessage => _lastRoadmapsLoadErrorMessage;
@@ -47,30 +46,21 @@ class ProfileRepository {
       final items = _extractEnrollments(response['data']);
       final roadmaps = items.map(UserRoadmapModel.fromJson).toList();
 
-      _cachedRoadmaps
-        ..clear()
-        ..addAll(roadmaps);
       _lastRoadmapsLoadErrorMessage = null;
 
       return roadmaps;
     } on TimeoutApiException {
       _lastRoadmapsLoadErrorMessage =
           'تعذر تحميل المسارات حاليًا. حاول مرة أخرى.';
-      return _cachedRoadmaps.isNotEmpty
-          ? List<UserRoadmapEntity>.from(_cachedRoadmaps)
-          : <UserRoadmapEntity>[];
+      return <UserRoadmapEntity>[];
     } on NetworkException {
       _lastRoadmapsLoadErrorMessage =
           'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
-      return _cachedRoadmaps.isNotEmpty
-          ? List<UserRoadmapEntity>.from(_cachedRoadmaps)
-          : <UserRoadmapEntity>[];
+      return <UserRoadmapEntity>[];
     } on ParsingException {
       _lastRoadmapsLoadErrorMessage =
           'تعذر قراءة بيانات المسارات الحالية. حاول مرة أخرى.';
-      return _cachedRoadmaps.isNotEmpty
-          ? List<UserRoadmapEntity>.from(_cachedRoadmaps)
-          : <UserRoadmapEntity>[];
+      return <UserRoadmapEntity>[];
     }
   }
 
@@ -115,12 +105,6 @@ class ProfileRepository {
   }
 
   Future<int> _resolveRoadmapId(int enrollmentId) async {
-    for (final roadmap in _cachedRoadmaps) {
-      if (roadmap.enrollmentId == enrollmentId) {
-        return roadmap.roadmapId;
-      }
-    }
-
     final roadmaps = await getUserRoadmaps(0);
     for (final roadmap in roadmaps) {
       if (roadmap.enrollmentId == enrollmentId) {

@@ -94,6 +94,9 @@ class _ProfileScreenBody extends StatelessWidget {
       },
       color: AppColors.primary2,
       child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         children: [
           _buildHeader(

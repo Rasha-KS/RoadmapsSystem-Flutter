@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/entities/user_entity.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
@@ -158,14 +157,10 @@ class AuthProvider extends SafeChangeNotifier {
     if (error is ApiException) {
       _error = error.message;
       _errorStatusCode = error.statusCode;
-      debugPrint(
-        'Auth error${error.statusCode != null ? ' [${error.statusCode}]' : ''}: ${error.message}',
-      );
       return;
     }
 
     _error = 'حدث خطأ غير متوقع. حاول مرة أخرى.';
     _errorStatusCode = null;
-    debugPrint('Auth error: $_error');
   }
 }

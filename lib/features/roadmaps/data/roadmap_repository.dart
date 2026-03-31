@@ -9,7 +9,6 @@ class RoadmapRepository {
   RoadmapRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
   final ApiClient _apiClient;
-  final List<RoadmapEntity> _cachedRoadmaps = [];
   String? _lastLoadErrorMessage;
 
   String? get lastLoadErrorMessage => _lastLoadErrorMessage;
@@ -33,20 +32,17 @@ class RoadmapRepository {
           .map(RoadmapModel.fromJson)
           .where((roadmap) => roadmap.isActive)
           .toList();
-      _cachedRoadmaps
-        ..clear()
-        ..addAll(roadmaps);
       _lastLoadErrorMessage = null;
       return roadmaps;
     } on TimeoutApiException {
       _lastLoadErrorMessage = 'تعذر تحميل المسارات حاليًا. حاول مرة أخرى.';
-      return List<RoadmapEntity>.from(_cachedRoadmaps);
+      return <RoadmapEntity>[];
     } on NetworkException {
       _lastLoadErrorMessage = 'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
-      return List<RoadmapEntity>.from(_cachedRoadmaps);
+      return <RoadmapEntity>[];
     } on ParsingException {
       _lastLoadErrorMessage = 'تعذر قراءة بيانات المسارات.';
-      return List<RoadmapEntity>.from(_cachedRoadmaps);
+      return <RoadmapEntity>[];
     }
   }
 

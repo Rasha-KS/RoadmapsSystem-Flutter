@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:roadmaps/core/api/api_client.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/auth/token_manager.dart';
@@ -64,8 +63,6 @@ class AuthRepository {
         'redirect_uri': ApiConstants.url(ApiConstants.githubCallback),
       },
     );
-
-    debugPrint('GitHub login response: $response');
 
     final auth = AuthModel.fromResponse(response);
     await _tokenManager.saveToken(auth.token);

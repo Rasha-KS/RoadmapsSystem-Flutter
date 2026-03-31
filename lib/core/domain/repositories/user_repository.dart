@@ -1,7 +1,6 @@
 import 'package:roadmaps/core/entities/user_entity.dart';
 
 abstract class UserRepository {
-  Future<UserEntity?> getCachedCurrentUser();
   Future<UserEntity> getCurrentUser();
 
   Future<UserEntity> updateCurrentUser({

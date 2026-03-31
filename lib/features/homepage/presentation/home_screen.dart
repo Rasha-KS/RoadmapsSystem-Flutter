@@ -85,7 +85,9 @@ class _HomeScreenBody extends StatelessWidget {
       },
       color: AppColors.primary2,
       child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
         child: Column(
           children: [
             const SizedBox(height: 15),

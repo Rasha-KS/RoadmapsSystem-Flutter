@@ -1,7 +1,6 @@
 import 'package:roadmaps/core/api/api_client.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/auth/token_manager.dart';
-import 'package:roadmaps/core/cache/user_profile_cache.dart';
 import 'package:roadmaps/core/constants/api_constants.dart';
 import 'package:roadmaps/core/data/user/user_model.dart';
 import 'package:roadmaps/core/domain/repositories/user_repository.dart';
@@ -16,30 +15,11 @@ class ApiUserRepository implements UserRepository {
 
   final ApiClient _apiClient;
   final TokenManager _tokenManager;
-  final UserProfileCache _profileCache = UserProfileCache.instance;
-
-  UserEntity? _cachedUser;
-
-  @override
-  Future<UserEntity?> getCachedCurrentUser() async {
-    final cached = _cachedUser;
-    if (cached != null) {
-      return cached;
-    }
-
-    final stored = await _profileCache.readCurrentUser();
-    _cachedUser = stored;
-    return stored;
-  }
 
   @override
   Future<UserEntity> getCurrentUser() async {
     final token = await _tokenManager.getToken();
     if (token == null || token.isEmpty) {
-      final cached = await getCachedCurrentUser();
-      if (cached != null) {
-        return cached;
-      }
       throw ApiException('لم يتم تسجيل الدخول بعد.');
     }
 
@@ -66,28 +46,7 @@ class ApiUserRepository implements UserRepository {
         throw ParsingException();
       }
 
-      final user = UserModel.fromJson(payload);
-      _cachedUser = user;
-      await _profileCache.writeCurrentUserIfChanged(user);
-      return user;
-    } on NetworkException {
-      final cached = await getCachedCurrentUser();
-      if (cached != null) {
-        return cached;
-      }
-      rethrow;
-    } on TimeoutApiException {
-      final cached = await getCachedCurrentUser();
-      if (cached != null) {
-        return cached;
-      }
-      rethrow;
-    } on ParsingException {
-      final cached = await getCachedCurrentUser();
-      if (cached != null) {
-        return cached;
-      }
-      rethrow;
+      return UserModel.fromJson(payload);
     } on UnauthorizedException {
       await _tokenManager.clearToken();
       rethrow;
@@ -102,29 +61,65 @@ class ApiUserRepository implements UserRepository {
     String? profileImageUrl,
     bool? isNotificationsEnabled,
   }) async {
-    final current = _cachedUser ?? await getCurrentUser();
+    final current = await getCurrentUser();
+    final body = <String, dynamic>{};
+    if (username != null) body['username'] = username;
+    if (email != null) body['email'] = email;
+    if (password != null) body['password'] = password;
+    if (profileImageUrl != null) {
+      body['profile_image_url'] = profileImageUrl;
+    }
+    if (isNotificationsEnabled != null) {
+      body['is_notifications_enabled'] = isNotificationsEnabled;
+    }
 
-    // Password is accepted to keep the contract backend-ready.
-    final _ = password;
-
-    final updated = current.copyWith(
-      username: username,
-      email: email,
-      profileImageUrl: profileImageUrl,
-      isNotificationsEnabled: isNotificationsEnabled,
-      updatedAt: DateTime.now(),
-      lastActivityAt: DateTime.now(),
+    final response = await _apiClient.put(
+      ApiConstants.url(ApiConstants.updateAccount),
+      headers: await _authHeaders(),
+      body: body,
     );
+    if (response['success'] != true) {
+      final message = response['message'];
+      throw ApiException(
+        message is String && message.trim().isNotEmpty
+            ? message.trim()
+            : 'تعذر تحديث بيانات الحساب.',
+      );
+    }
 
-    _cachedUser = updated;
-    await _profileCache.writeCurrentUserIfChanged(updated);
-    return updated;
+    final data = response['data'];
+    final payload = data is Map<String, dynamic> && data['user'] is Map
+        ? data['user']
+        : data is Map<String, dynamic>
+            ? data
+            : <String, dynamic>{};
+    if (payload.isEmpty) {
+      return current.copyWith(
+        username: username,
+        email: email,
+        profileImageUrl: profileImageUrl,
+        isNotificationsEnabled: isNotificationsEnabled,
+        updatedAt: DateTime.now(),
+        lastActivityAt: DateTime.now(),
+      );
+    }
+
+    return UserModel.fromJson(payload);
   }
 
   @override
   Future<void> deleteCurrentUser() async {
-    _cachedUser = null;
     await _tokenManager.clearToken();
-    await _profileCache.clearCurrentUser();
+  }
+
+  Future<Map<String, String>> _authHeaders() async {
+    final token = await _tokenManager.getToken();
+    if (token == null || token.trim().isEmpty) {
+      return const <String, String>{};
+    }
+
+    return <String, String>{
+      'Authorization': 'Bearer ${token.trim()}',
+    };
   }
 }

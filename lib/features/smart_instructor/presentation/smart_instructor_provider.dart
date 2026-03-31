@@ -67,9 +67,12 @@ class SmartInstructorProvider extends SafeChangeNotifier {
     _notifyIfAlive();
 
     try {
-      _sessions = await getSmartInstructorSessionsUseCase();
+      final fetchedSessions = await getSmartInstructorSessionsUseCase();
       final repositoryError =
           getSmartInstructorSessionsUseCase.repository.lastSessionsLoadErrorMessage;
+      if (repositoryError == null || fetchedSessions.isNotEmpty) {
+        _sessions = fetchedSessions;
+      }
       if (repositoryError != null) {
         sessionsError = repositoryError;
       }
@@ -98,17 +101,18 @@ class SmartInstructorProvider extends SafeChangeNotifier {
       );
       final repositoryError =
           getSmartInstructorMessagesUseCase.repository.lastMessagesLoadErrorMessage;
+      final normalizedMessages = _normalizeRetrievedMessages(loadedMessages);
+      if (repositoryError == null || normalizedMessages.isNotEmpty) {
+        _messagesBySession[sessionId] = normalizedMessages;
+        _messages = normalizedMessages;
+      }
       if (repositoryError != null) {
         messagesError = repositoryError;
       }
       if (_isDisposed) return;
-      final normalizedMessages = _normalizeRetrievedMessages(loadedMessages);
       if (requestToken != _messagesRequestToken || currentSessionId != sessionId) {
         return;
       }
-      _messagesBySession[sessionId] = normalizedMessages;
-      _messages = normalizedMessages;
-      messagesError = null;
     } on ApiException catch (error) {
       if (requestToken != _messagesRequestToken || currentSessionId != sessionId) {
         return;

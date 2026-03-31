@@ -115,15 +115,15 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
         }
       },
       child: ListView.builder(
-        physics: const BouncingScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
         itemCount: provider.units.length,
         itemBuilder: (context, index) {
           final unit = provider.units[index];
           final displayUnit = _effectiveUnitForDisplay(
             units: provider.units,
-            index: index,
             unit: unit,
-            userXp: provider.userXp,
           );
           final bool alignLeft = index.isEven;
           final lessonNumber = _lessonNumberForIndex(provider.units, index);
@@ -189,32 +189,16 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
     LearningUnitEntity unit,
     int lessonNumber,
   ) async {
-    if (unit.isLocked && unit.type != LearningUnitType.challenge) {
-      final previousUnit = _previousUnit(provider.units, unit.id);
-      final bool isLockedChallenge = unit.type == LearningUnitType.challenge;
-      final bool isLockedCheckPonit = unit.type == LearningUnitType.quiz;
-      final bool isLockedLesson = unit.type == LearningUnitType.lesson;
-      showAppSnackBar(
-        ScaffoldMessenger.of(context),
-        message: isLockedChallenge
-            ? 'هذا التحدي مقفل حاليًا.'
-            : isLockedCheckPonit
-            ? _lockedQuizMessage(previousUnit)
-            : isLockedLesson
-            ? _lockedLessonMessage(previousUnit)
-            : 'التحدي مقفل، أكمل الدروس السابقة.',
-        variant: SnackBarVariant.warning,
-        duration: const Duration(milliseconds: 1200),
-      );
-      return;
-    }
-
     if (unit.type == LearningUnitType.challenge) {
       final previousUnit = _previousUnit(provider.units, unit.id);
+      final bool isAccessible = _isUnitAccessible(
+        units: provider.units,
+        unit: unit,
+      );
       final bool previousLessonCompleted = previousUnit?.isCompleted ?? false;
       final int requiredXp = unit.requiredXp;
       final bool hasEnoughXp = requiredXp <= 0 || provider.userXp >= requiredXp;
-      if (!previousLessonCompleted || !hasEnoughXp) {
+      if (!isAccessible || !previousLessonCompleted || !hasEnoughXp) {
         showAppSnackBar(
           ScaffoldMessenger.of(context),
           message: _challengeLockMessage(
@@ -240,6 +224,26 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
           );
       if (challengeResult == null) return;
       await provider.completeUnit(unitId: unit.id);
+      return;
+    }
+
+    if (!_isUnitAccessible(
+      units: provider.units,
+      unit: unit,
+    )) {
+      final previousUnit = _previousUnit(provider.units, unit.id);
+      final bool isLockedQuiz = unit.type == LearningUnitType.quiz;
+      final bool isLockedLesson = unit.type == LearningUnitType.lesson;
+      showAppSnackBar(
+        ScaffoldMessenger.of(context),
+        message: isLockedQuiz
+            ? _lockedQuizMessage(previousUnit)
+            : isLockedLesson
+            ? _lockedLessonMessage(previousUnit)
+            : 'هذا المحتوى مقفل حاليًا، أكمل المحتوى السابق.',
+        variant: SnackBarVariant.warning,
+        duration: const Duration(milliseconds: 1200),
+      );
       return;
     }
 
@@ -294,7 +298,7 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       }
 
       final bool isRetake = attemptsCount > 0;
-      if (isRetake) {
+      if (isRetake && unit.isCompleted && !provider.hasConfirmedRetake(unit.id)) {
         final bool shouldRetake = await _showRetakeCheckpointDialog(
           previousAttemptPassed:
               unit.isCompleted || provider.hasConfirmedRetake(unit.id),
@@ -334,6 +338,9 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
       }
 
       await profileProvider.loadProfileData();
+      if (!mounted) return;
+
+      await provider.refreshPath();
       if (!mounted) return;
 
       showAppSnackBar(
@@ -399,26 +406,32 @@ class _LearningPathScreenState extends State<LearningPathScreen> {
 
   LearningUnitEntity _effectiveUnitForDisplay({
     required List<LearningUnitEntity> units,
-    required int index,
     required LearningUnitEntity unit,
-    required int userXp,
   }) {
-    if (unit.type != LearningUnitType.challenge || unit.isCompleted) {
+    if (unit.isCompleted || _isUnitAccessible(units: units, unit: unit)) {
       return unit;
     }
-
-    final previousUnit = index > 0 ? units[index - 1] : null;
-    final bool previousLessonCompleted = previousUnit?.isCompleted ?? false;
-    final int requiredXp = unit.requiredXp;
-    final bool shouldUnlock =
-        previousLessonCompleted && (requiredXp <= 0 || userXp >= requiredXp);
-
     return unit.copyWith(
-      status: shouldUnlock
-          ? LearningUnitStatus.unlocked
-          : LearningUnitStatus.locked,
-      isLocked: !shouldUnlock,
+      status: LearningUnitStatus.locked,
+      isLocked: true,
     );
+  }
+
+  bool _isUnitAccessible({
+    required List<LearningUnitEntity> units,
+    required LearningUnitEntity unit,
+  }) {
+    if (unit.isCompleted) {
+      return true;
+    }
+
+    final index = units.indexWhere((item) => item.id == unit.id);
+    if (index <= 0) {
+      return !unit.isLocked;
+    }
+
+    final previousUnit = units[index - 1];
+    return !unit.isLocked && previousUnit.isCompleted;
   }
 
   LearningUnitEntity? _previousUnit(

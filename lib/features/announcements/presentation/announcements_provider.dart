@@ -22,8 +22,11 @@ class AnnouncementsProvider extends SafeChangeNotifier {
 
     try {
       // Load announcements from API and update the Home UI list.
-      _announcements = await useCase.execute();
+      final fetched = await useCase.execute();
       final repositoryError = useCase.repository.lastLoadErrorMessage;
+      if (repositoryError == null || fetched.isNotEmpty) {
+        _announcements = fetched;
+      }
       if (repositoryError != null) {
         error = repositoryError;
         state = _announcements.isEmpty

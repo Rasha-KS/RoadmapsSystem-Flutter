@@ -11,8 +11,6 @@ class CommunityApiRepository implements CommunityRepository {
   CommunityApiRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
   final ApiClient _apiClient;
-  final List<ChatRoomEntity> _cachedRooms = [];
-  final Map<int, List<ChatMessageEntity>> _cachedMessagesByRoom = {};
   String? _lastRoomsLoadErrorMessage;
   String? _lastMessagesLoadErrorMessage;
 
@@ -47,21 +45,18 @@ class CommunityApiRepository implements CommunityRepository {
           .map(ChatRoomModel.fromJson)
           .where((room) => room.isActive)
           .toList();
-      _cachedRooms
-        ..clear()
-        ..addAll(rooms);
       _lastRoomsLoadErrorMessage = null;
       return rooms;
     } on TimeoutApiException {
       _lastRoomsLoadErrorMessage = 'تعذر تحميل المجتمعات حاليًا. حاول مرة أخرى.';
-      return List<ChatRoomEntity>.from(_cachedRooms);
+      return <ChatRoomEntity>[];
     } on NetworkException {
       _lastRoomsLoadErrorMessage =
           'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
-      return List<ChatRoomEntity>.from(_cachedRooms);
+      return <ChatRoomEntity>[];
     } on ParsingException {
       _lastRoomsLoadErrorMessage = 'تعذر قراءة بيانات المجتمعات.';
-      return List<ChatRoomEntity>.from(_cachedRooms);
+      return <ChatRoomEntity>[];
     }
   }
 
@@ -100,25 +95,18 @@ class CommunityApiRepository implements CommunityRepository {
       } while (page <= lastPage);
 
       messages.sort((a, b) => a.sentAt.compareTo(b.sentAt));
-      _cachedMessagesByRoom[roomId] = List<ChatMessageEntity>.from(messages);
       _lastMessagesLoadErrorMessage = null;
       return messages;
     } on TimeoutApiException {
       _lastMessagesLoadErrorMessage = 'تعذر تحميل الرسائل حاليًا. حاول مرة أخرى.';
-      return List<ChatMessageEntity>.from(
-        _cachedMessagesByRoom[roomId] ?? const <ChatMessageEntity>[],
-      );
+      return <ChatMessageEntity>[];
     } on NetworkException {
       _lastMessagesLoadErrorMessage =
           'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
-      return List<ChatMessageEntity>.from(
-        _cachedMessagesByRoom[roomId] ?? const <ChatMessageEntity>[],
-      );
+      return <ChatMessageEntity>[];
     } on ParsingException {
       _lastMessagesLoadErrorMessage = 'تعذر قراءة بيانات الرسائل.';
-      return List<ChatMessageEntity>.from(
-        _cachedMessagesByRoom[roomId] ?? const <ChatMessageEntity>[],
-      );
+      return <ChatMessageEntity>[];
     }
   }
 

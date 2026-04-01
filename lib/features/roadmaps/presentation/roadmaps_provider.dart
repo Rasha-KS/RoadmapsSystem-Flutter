@@ -109,19 +109,22 @@ class RoadmapsProvider extends SafeChangeNotifier {
         if (enrolledCourseIds != null) ...enrolledCourseIds,
       };
 
-      roadmaps = loadedRoadmaps.map((course) {
-        final isEnrolled = persistedEnrollmentIds.contains(course.id);
-        return course.copyWith(
-          isEnrolled: isEnrolled,
-          status: isEnrolled ? (course.status ?? 'active') : null,
-          clearStatus: !isEnrolled,
-        );
-      }).toList();
+      if (repositoryError == null || loadedRoadmaps.isNotEmpty) {
+        roadmaps = loadedRoadmaps.map((course) {
+          final isEnrolled = persistedEnrollmentIds.contains(course.id);
+          return course.copyWith(
+            isEnrolled: isEnrolled,
+            status: isEnrolled ? (course.status ?? 'active') : null,
+            clearStatus: !isEnrolled,
+          );
+        }).toList();
 
-      myCourses = roadmaps.where((course) => course.isEnrolled).toList();
-      _enrolledCourseIds
-        ..clear()
-        ..addAll(myCourses.map((course) => course.id));
+        myCourses = roadmaps.where((course) => course.isEnrolled).toList();
+        _enrolledCourseIds
+          ..clear()
+          ..addAll(myCourses.map((course) => course.id));
+      }
+
       if (repositoryError != null) {
         errorMessage = repositoryError;
         state = roadmaps.isEmpty ? PageState.connectionError : PageState.loaded;

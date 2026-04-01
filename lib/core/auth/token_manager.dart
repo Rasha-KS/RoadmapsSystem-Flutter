@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class TokenManager {
@@ -25,8 +24,7 @@ class TokenManager {
         aOptions: _androidOptions,
         iOptions: _iosOptions,
       );
-    } catch (e) {
-      debugPrint('TokenManager.saveToken error: $e');
+    } catch (_) {
     }
   }
 
@@ -39,8 +37,7 @@ class TokenManager {
       );
       if (token == null || token.trim().isEmpty) return null;
       return token;
-    } catch (e) {
-      debugPrint('TokenManager.getToken error: $e');
+    } catch (_) {
       return null;
     }
   }
@@ -52,8 +49,7 @@ class TokenManager {
         aOptions: _androidOptions,
         iOptions: _iosOptions,
       );
-    } catch (e) {
-      debugPrint('TokenManager.clearToken error: $e');
+    } catch (_) {
     }
   }
 }

@@ -199,7 +199,6 @@ void _showGlobalError(Object error) {
 
   final messenger = appMessengerKey.currentState;
   if (messenger == null) {
-    debugPrint('Unhandled app error: $error');
     return;
   }
 

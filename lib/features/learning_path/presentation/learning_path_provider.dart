@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
-import 'package:roadmaps/core/cache/lesson_content_cache.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/features/homepage/presentation/home_provider.dart';
 import 'package:roadmaps/features/roadmaps/domain/roadmap_entity.dart';
@@ -23,7 +22,6 @@ class LearningPathProvider extends SafeChangeNotifier {
   final ProfileProvider? _profileProvider;
   final HomeProvider? _homeProvider;
   final RoadmapsProvider? _roadmapsProvider;
-  final LessonContentCache _lessonContentCache = LessonContentCache.instance;
 
   LearningPathProvider(
     this.useCase,
@@ -45,11 +43,13 @@ class LearningPathProvider extends SafeChangeNotifier {
   String? _errorMessage;
   final Map<int, Set<int>> _checkpointAttemptsByRoadmap = {};
   final Map<int, Set<int>> _confirmedCheckpointRetakesByRoadmap = {};
+  final Map<int, Set<int>> _failedCheckpointRetakesByRoadmap = {};
 
   LearningPathState get state => _state;
   String? get errorMessage => _errorMessage;
   RoadmapEntity? get roadmap => _path?.roadmap;
-  List<LearningUnitEntity> get units => _path?.units ?? <LearningUnitEntity>[];
+  List<LearningUnitEntity> get units =>
+      _path?.units.map(_applyLocalOverrides).toList() ?? <LearningUnitEntity>[];
   int get currentRoadmapId => _currentRoadmapId;
   int get userXp {
     return _roadmapXp;
@@ -82,6 +82,13 @@ class LearningPathProvider extends SafeChangeNotifier {
         false;
   }
 
+  bool hasFailedRetake(int unitId) {
+    return _failedCheckpointRetakesByRoadmap[_currentRoadmapId]?.contains(
+          unitId,
+        ) ??
+        false;
+  }
+
   void registerCheckpointAttemptStart(int unitId) {
     if (_currentRoadmapId <= 0) return;
     final attempts = _checkpointAttemptsByRoadmap.putIfAbsent(
@@ -103,6 +110,20 @@ class LearningPathProvider extends SafeChangeNotifier {
   void clearRetakeConfirmed(int unitId) {
     if (_currentRoadmapId <= 0) return;
     _confirmedCheckpointRetakesByRoadmap[_currentRoadmapId]?.remove(unitId);
+  }
+
+  void markFailedRetake(int unitId) {
+    if (_currentRoadmapId <= 0) return;
+    final failedRetakes = _failedCheckpointRetakesByRoadmap.putIfAbsent(
+      _currentRoadmapId,
+      () => <int>{},
+    );
+    failedRetakes.add(unitId);
+  }
+
+  void clearFailedRetake(int unitId) {
+    if (_currentRoadmapId <= 0) return;
+    _failedCheckpointRetakesByRoadmap[_currentRoadmapId]?.remove(unitId);
   }
 
   Future<void> loadPath(int roadmapId, {bool showLoader = true}) async {
@@ -128,7 +149,9 @@ class LearningPathProvider extends SafeChangeNotifier {
       _state = LearningPathState.loaded;
       _syncProfileProgress();
     } catch (error) {
-      _path = null;
+      if (isDifferentRoadmap) {
+        _path = null;
+      }
       _state = LearningPathState.connectionError;
       _errorMessage = _normalizeError(error);
     }
@@ -144,7 +167,6 @@ class LearningPathProvider extends SafeChangeNotifier {
 
   Future<void> refreshPath() async {
     if (_currentRoadmapId <= 0) return;
-    await _lessonContentCache.clearContentCache();
     await loadPath(_currentRoadmapId, showLoader: false);
   }
 
@@ -161,10 +183,13 @@ class LearningPathProvider extends SafeChangeNotifier {
   }) async {
     if (_currentRoadmapId <= 0) return;
     if (passed) {
+      clearFailedRetake(unitId);
       markRetakeConfirmed(unitId);
       await completeUnit(unitId: unitId);
       return;
     }
+    markFailedRetake(unitId);
+    clearRetakeConfirmed(unitId);
     await refreshPath();
   }
 
@@ -202,6 +227,7 @@ class LearningPathProvider extends SafeChangeNotifier {
   Future<void> resetCheckpointProgress({required int unitId}) async {
     if (_currentRoadmapId <= 0) return;
     clearRetakeConfirmed(unitId);
+    clearFailedRetake(unitId);
     await refreshPath();
   }
 
@@ -218,8 +244,6 @@ class LearningPathProvider extends SafeChangeNotifier {
     if (!updateState) {
       return;
     }
-
-    await _lessonContentCache.clearAll();
 
     if (_currentRoadmapId == id) {
       _path = null;
@@ -246,9 +270,6 @@ class LearningPathProvider extends SafeChangeNotifier {
     final progress = progressPercentage ??
         (completionRatio * 100).round().clamp(0, 100);
     final normalizedStatus = progress >= 100 ? 'completed' : 'active';
-    unawaited(
-      _lessonContentCache.writeRoadmapProgress(targetRoadmapId, progress),
-    );
     profileProvider?.updateRoadmapProgress(
       roadmapId: targetRoadmapId,
       progressPercentage: progress,
@@ -260,6 +281,18 @@ class LearningPathProvider extends SafeChangeNotifier {
     roadmapsProvider?.updateRoadmapStatus(
       roadmapId: targetRoadmapId,
       status: normalizedStatus,
+    );
+  }
+
+  LearningUnitEntity _applyLocalOverrides(LearningUnitEntity unit) {
+    if (!hasFailedRetake(unit.id)) {
+      return unit;
+    }
+
+    return unit.copyWith(
+      status: LearningUnitStatus.unlocked,
+      isLocked: false,
+      isCompleted: false,
     );
   }
 

@@ -33,8 +33,11 @@ class NotificationsProvider extends SafeChangeNotifier {
 
     try {
       // Load notifications list and update the notifications UI.
-      notifications = await getNotificationsUseCase();
+      final fetchedNotifications = await getNotificationsUseCase();
       final repositoryError = getNotificationsUseCase.repository.lastLoadErrorMessage;
+      if (repositoryError == null || fetchedNotifications.isNotEmpty) {
+        notifications = fetchedNotifications;
+      }
       if (repositoryError != null) {
         error = repositoryError;
         state = notifications.isEmpty
@@ -64,6 +67,10 @@ class NotificationsProvider extends SafeChangeNotifier {
       final repositoryError = getUnreadCountUseCase.repository.lastLoadErrorMessage;
       if (repositoryError != null) {
         error ??= repositoryError;
+        if (fetchedUnreadCount == 0 && unreadCount > 0) {
+          notifyListeners();
+          return;
+        }
       }
       if (_awaitingUnreadSync && fetchedUnreadCount > 0) {
         unreadCount = 0;

@@ -1,10 +1,5 @@
-import 'dart:math' as math;
-import 'dart:async';
-
 import 'package:roadmaps/core/entities/user_entity.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
-import 'package:roadmaps/core/cache/lesson_content_cache.dart';
-import 'package:roadmaps/core/cache/user_profile_cache.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 import 'package:roadmaps/features/learning_path/domain/get_learning_path_usecase.dart';
@@ -19,8 +14,6 @@ class ProfileProvider extends SafeChangeNotifier {
   final DeleteUserRoadmapUseCase deleteUserRoadmapUseCase;
   final ResetUserRoadmapUseCase resetUserRoadmapUseCase;
   final CurrentUserProvider currentUserProvider;
-  final LessonContentCache _lessonContentCache = LessonContentCache.instance;
-  final UserProfileCache _userProfileCache = UserProfileCache.instance;
 
   ProfileProvider({
     required this.getUserRoadmapsUseCase,
@@ -55,8 +48,7 @@ class ProfileProvider extends SafeChangeNotifier {
     notifyListeners();
 
     try {
-      final cachedUser = currentUserProvider.user ??
-          await _userProfileCache.readCurrentUser();
+      final cachedUser = currentUserProvider.user;
 
       if (cachedUser != null) {
         user = cachedUser;
@@ -87,8 +79,7 @@ class ProfileProvider extends SafeChangeNotifier {
         getUserRoadmapsUseCase.repository.lastRoadmapsLoadErrorMessage;
 
     user = loadedUser;
-    final computedRoadmaps = await _applyComputedProgress(loadedRoadmaps);
-    roadmaps = computedRoadmaps;
+    roadmaps = await _applyComputedProgress(loadedRoadmaps);
     hasLoadedProfileData = true;
     lastLoadFailed = roadmapsLoadError != null;
     error = roadmapsLoadError;
@@ -112,26 +103,13 @@ class ProfileProvider extends SafeChangeNotifier {
           final int computedProgress = units.isEmpty
               ? 0
               : ((completedCount / units.length) * 100).round();
-          final cachedProgress = await _lessonContentCache.readRoadmapProgress(
-            roadmap.roadmapId,
-          );
-          final effectiveProgress = cachedProgress == null
-              ? computedProgress
-              : math.max(computedProgress, cachedProgress);
 
-          if (effectiveProgress == roadmap.progressPercentage) {
+          if (computedProgress == roadmap.progressPercentage) {
             return roadmap;
           }
 
-          return roadmap.copyWith(progressPercentage: effectiveProgress);
+          return roadmap.copyWith(progressPercentage: computedProgress);
         } catch (_) {
-          final cachedProgress = await _lessonContentCache.readRoadmapProgress(
-            roadmap.roadmapId,
-          );
-          if (cachedProgress != null &&
-              cachedProgress != roadmap.progressPercentage) {
-            return roadmap.copyWith(progressPercentage: cachedProgress);
-          }
           return roadmap;
         }
       }),
@@ -177,12 +155,6 @@ class ProfileProvider extends SafeChangeNotifier {
       updated,
       ...roadmaps.sublist(currentIndex + 1),
     ];
-    unawaited(
-      _lessonContentCache.writeRoadmapProgress(
-        roadmapId,
-        updated.progressPercentage,
-      ),
-    );
     notifyListeners();
   }
 
@@ -191,7 +163,6 @@ class ProfileProvider extends SafeChangeNotifier {
     bool updateState = true,
   }) async {
     await deleteUserRoadmapUseCase(enrollmentId);
-    await _lessonContentCache.clearAll();
     if (!updateState) return;
     roadmaps = roadmaps
         .where((roadmap) => roadmap.enrollmentId != enrollmentId)
@@ -204,7 +175,6 @@ class ProfileProvider extends SafeChangeNotifier {
     bool updateState = true,
   }) async {
     await resetUserRoadmapUseCase(enrollmentId);
-    await _lessonContentCache.clearAll();
     if (!updateState) return;
     roadmaps = roadmaps.map((roadmap) {
       if (roadmap.enrollmentId != enrollmentId) {

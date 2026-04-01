@@ -4,11 +4,6 @@ import 'package:roadmaps/core/mock/mock_user.dart';
 
 class MockUserRepository implements UserRepository {
   @override
-  Future<UserEntity?> getCachedCurrentUser() async {
-    return MockUserDataSource.currentUser;
-  }
-
-  @override
   Future<UserEntity> getCurrentUser() async {
     await Future.delayed(const Duration(milliseconds: 120));
     return MockUserDataSource.currentUser;

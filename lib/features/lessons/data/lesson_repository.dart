@@ -2,7 +2,6 @@ import 'package:roadmaps/core/api/api_client.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/auth/token_manager.dart';
 import 'package:roadmaps/core/constants/api_constants.dart';
-import 'package:roadmaps/core/cache/lesson_content_cache.dart';
 import 'package:roadmaps/features/lessons/data/lesson_model.dart';
 import 'package:roadmaps/features/lessons/domain/lesson_entity.dart';
 import 'package:roadmaps/features/lessons/domain/resource_entity.dart';
@@ -17,7 +16,6 @@ class LessonRepository {
 
   final ApiClient _apiClient;
   final TokenManager _tokenManager;
-  final LessonContentCache _cache = LessonContentCache.instance;
 
   Future<LessonEntity?> getLesson(String learningUnitId) async {
     final response = await _apiClient.get(
@@ -36,13 +34,6 @@ class LessonRepository {
   }
 
   Future<List<SubLessonEntity>> getSubLessons(int lessonId) async {
-    try {
-      final cached = await _cache.readSubLessons(lessonId);
-      if (cached != null) {
-        return cached;
-      }
-    } catch (_) {}
-
     final response = await _apiClient.get(
       ApiConstants.url(ApiConstants.lessonSubLessons(lessonId)),
       headers: await _authHeaders(),
@@ -55,20 +46,10 @@ class LessonRepository {
         .map(SubLessonModel.fromJson)
         .map((item) => item.toEntity())
         .toList(growable: false);
-    try {
-      await _cache.writeSubLessons(lessonId, subLessons);
-    } catch (_) {}
     return subLessons;
   }
 
   Future<List<ResourceEntity>> getLessonResources(int subLessonId) async {
-    try {
-      final cached = await _cache.readResources(subLessonId);
-      if (cached != null) {
-        return cached;
-      }
-    } catch (_) {}
-
     final response = await _apiClient.get(
       ApiConstants.url(ApiConstants.subLessonResources(subLessonId)),
       headers: await _authHeaders(),
@@ -81,9 +62,6 @@ class LessonRepository {
         .map(ResourceModel.fromJson)
         .map((item) => item.toEntity())
         .toList(growable: false);
-    try {
-      await _cache.writeResources(subLessonId, resources);
-    } catch (_) {}
     return resources;
   }
 

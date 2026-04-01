@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import 'api_exceptions.dart';
@@ -153,9 +152,6 @@ class ApiClient {
       throw const ParsingException();
     }
 
-    debugPrint(
-      'خطأ API: $url | statusCode=$statusCode | body=${response.body}',
-    );
     final message = _extractMessage(payload) ?? _defaultMessage(statusCode);
     if (statusCode == 401) {
       throw UnauthorizedException(message);

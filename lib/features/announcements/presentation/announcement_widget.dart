@@ -61,7 +61,6 @@ class _AnnouncementWidgetState extends State<AnnouncementWidget> {
 
   final canLaunch = await canLaunchUrl(uri);
   if (!canLaunch) {
-    debugPrint('Cannot launch: $link');
     return;
   }
 

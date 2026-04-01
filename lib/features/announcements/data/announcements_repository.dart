@@ -10,7 +10,6 @@ class AnnouncementsRepository {
       : _apiClient = apiClient;
 
   final ApiClient _apiClient;
-  final List<AnnouncementEntity> _cachedAnnouncements = [];
   String? _lastLoadErrorMessage;
 
   String? get lastLoadErrorMessage => _lastLoadErrorMessage;
@@ -37,21 +36,18 @@ class AnnouncementsRepository {
       );
 
       final announcements = items.map(AnnouncementModel.fromJson).toList();
-      _cachedAnnouncements
-        ..clear()
-        ..addAll(announcements);
       _lastLoadErrorMessage = null;
       return announcements;
     } on TimeoutApiException {
       _lastLoadErrorMessage = 'تعذر تحميل الإعلانات حاليًا. حاول مرة أخرى.';
-      return List<AnnouncementEntity>.from(_cachedAnnouncements);
+      return <AnnouncementEntity>[];
     } on NetworkException {
       _lastLoadErrorMessage =
           'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.';
-      return List<AnnouncementEntity>.from(_cachedAnnouncements);
+      return <AnnouncementEntity>[];
     } on ParsingException {
       _lastLoadErrorMessage = 'تعذر قراءة بيانات الإعلانات.';
-      return List<AnnouncementEntity>.from(_cachedAnnouncements);
+      return <AnnouncementEntity>[];
     }
   }
 

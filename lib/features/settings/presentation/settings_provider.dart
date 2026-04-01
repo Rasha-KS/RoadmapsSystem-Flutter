@@ -1,6 +1,4 @@
 import 'package:roadmaps/core/api/api_exceptions.dart';
-import 'package:roadmaps/core/cache/lesson_content_cache.dart';
-import 'package:roadmaps/core/cache/user_profile_cache.dart';
 import 'package:roadmaps/core/entities/user_entity.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
@@ -22,8 +20,6 @@ class SettingsProvider extends SafeChangeNotifier {
   final DeleteAccountUseCase deleteAccountUseCase;
   final LogoutUseCase logoutUseCase;
   final CurrentUserProvider currentUserProvider;
-  final LessonContentCache _lessonContentCache = LessonContentCache.instance;
-  final UserProfileCache _userProfileCache = UserProfileCache.instance;
 
   SettingsProvider({
     required this.getSettingsDataUseCase,
@@ -204,8 +200,6 @@ class SettingsProvider extends SafeChangeNotifier {
     try {
       await deleteAccountUseCase(password: normalizedPassword);
       await currentUserProvider.deleteUser();
-      await _lessonContentCache.clearAll();
-      await _userProfileCache.clearCurrentUser();
       error = null;
       return true;
     } catch (e) {
@@ -227,8 +221,6 @@ class SettingsProvider extends SafeChangeNotifier {
       error = _resolveErrorMessage(e, fallback: 'تعذر تسجيل الخروج.');
     } finally {
       await currentUserProvider.deleteUser();
-      await _lessonContentCache.clearAll();
-      await _userProfileCache.clearCurrentUser();
       notifyListeners();
     }
     return success;

@@ -3,13 +3,10 @@ import 'package:roadmaps/core/cache/lesson_content_cache.dart';
 import 'package:roadmaps/core/cache/user_profile_cache.dart';
 import 'package:roadmaps/core/entities/user_entity.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
-
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
 
-
-
-import '../domain/delete_account_usecase.dart';
 import '../domain/change_password_usecase.dart';
+import '../domain/delete_account_usecase.dart';
 import '../domain/get_settings_data_usecase.dart';
 import '../domain/logout_usecase.dart';
 import '../domain/toggle_notifications_usecase.dart';
@@ -44,6 +41,7 @@ class SettingsProvider extends SafeChangeNotifier {
   UserEntity? get user => currentUserProvider.user;
   bool loading = false;
   bool togglingNotifications = false;
+  bool deletingAccount = false;
   String? error;
 
   Future<bool> loadSettings() async {
@@ -187,16 +185,34 @@ class SettingsProvider extends SafeChangeNotifier {
     }
   }
 
-  Future<void> deleteAccount() async {
+  Future<bool> deleteAccount({required String password}) async {
+    final normalizedPassword = password.trim();
+    if (normalizedPassword.isEmpty) {
+      error = 'يرجى إدخال كلمة المرور.';
+      notifyListeners();
+      return false;
+    }
+
+    if (deletingAccount) {
+      return false;
+    }
+
+    deletingAccount = true;
+    error = null;
+    notifyListeners();
+
     try {
-      await deleteAccountUseCase();
+      await deleteAccountUseCase(password: normalizedPassword);
       await currentUserProvider.deleteUser();
       await _lessonContentCache.clearAll();
       await _userProfileCache.clearCurrentUser();
       error = null;
-      notifyListeners();
+      return true;
     } catch (e) {
       error = _resolveErrorMessage(e, fallback: 'تعذر حذف الحساب.');
+      return false;
+    } finally {
+      deletingAccount = false;
       notifyListeners();
     }
   }
@@ -231,15 +247,18 @@ class SettingsProvider extends SafeChangeNotifier {
   String _resolveErrorMessage(Object error, {required String fallback}) {
     if (error is ApiException) {
       final message = error.message.trim();
-      if (message.isEmpty) return fallback;
+      if (message.isEmpty) {
+        return fallback;
+      }
 
       final lower = message.toLowerCase();
       final mentionsPasswordConfirmation =
           lower.contains('new_password_confirmation') ||
           lower.contains('password confirmation') ||
           lower.contains('password_confirmation');
+
       if (mentionsPasswordConfirmation && lower.contains('required')) {
-        return 'طھط£ظƒظٹط¯ ظƒظ„ظ…ط© ط§ظ„ظ…ط±ظˆط± ظ…ط·ظ„ظˆط¨.';
+        return 'يرجى تأكيد كلمة المرور الجديدة.';
       }
       if (lower.contains('is notifications enabled field is required') ||
           lower.contains('notifications enabled field is required')) {
@@ -266,11 +285,19 @@ class SettingsProvider extends SafeChangeNotifier {
       if (lower.contains('current password') && lower.contains('required')) {
         return 'كلمة المرور الحالية مطلوبة.';
       }
-      if ((lower.contains('new password') ||
-              lower.contains('new_password') ||
-              lower.contains('password')) &&
+      if (lower.contains('password') &&
+          (lower.contains('incorrect') ||
+              lower.contains('invalid') ||
+              lower.contains('wrong') ||
+              lower.contains('does not match'))) {
+        return 'كلمة المرور غير صحيحة.';
+      }
+      if ((lower.contains('new password') || lower.contains('new_password')) &&
           lower.contains('required')) {
         return 'كلمة المرور الجديدة مطلوبة.';
+      }
+      if (lower.contains('password') && lower.contains('required')) {
+        return 'كلمة المرور مطلوبة.';
       }
       if ((lower.contains('confirmation') && lower.contains('match')) ||
           lower.contains('password confirmation') ||

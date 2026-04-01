@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
+import 'package:roadmaps/core/errors/global_error_gate.dart';
 import 'package:roadmaps/core/auth/token_manager.dart';
 import 'package:roadmaps/core/navigation/auth_guard.dart';
 import 'package:roadmaps/core/navigation/app_route_observer.dart';
@@ -45,7 +46,9 @@ void main() {
               create: (_) => Injection.provideAuthProvider(),
             ),
 
-            ChangeNotifierProvider(create: (_) => Injection.provideHomeProvider()),
+            ChangeNotifierProvider(
+              create: (_) => Injection.provideHomeProvider(),
+            ),
 
             ChangeNotifierProvider(
               create: (_) => Injection.provideRoadmapsProvider(),
@@ -92,10 +95,7 @@ void main() {
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({
-    super.key,
-    required this.initialUri,
-  });
+  const MyApp({super.key, required this.initialUri});
 
   final Uri? initialUri;
 
@@ -139,7 +139,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   @override
-  Future<bool> didPushRouteInformation(RouteInformation routeInformation) async {
+  Future<bool> didPushRouteInformation(
+    RouteInformation routeInformation,
+  ) async {
     return _handleIncomingRoute(routeInformation.uri.toString());
   }
 
@@ -190,6 +192,11 @@ void _installGlobalErrorHandlers() {
 }
 
 void _showGlobalError(Object error) {
+  if (GlobalErrorGate.suppressSnackbars) {
+    debugPrint('Suppressed global error while gated: $error');
+    return;
+  }
+
   final messenger = appMessengerKey.currentState;
   if (messenger == null) {
     debugPrint('Unhandled app error: $error');
@@ -199,10 +206,10 @@ void _showGlobalError(Object error) {
   final message = error is TimeoutApiException
       ? 'استغرق الطلب وقتًا أطول من المعتاد. حاول مرة أخرى.'
       : error is NetworkException
-          ? 'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.'
-          : error is ApiException
-              ? error.message
-              : 'حدث خطأ غير متوقع. حاول مرة أخرى.';
+      ? 'تعذر الاتصال حاليًا. تحقق من الشبكة وحاول مرة أخرى.'
+      : error is ApiException
+      ? error.message
+      : 'حدث خطأ غير متوقع. حاول مرة أخرى.';
 
   showAppSnackBar(
     messenger,
@@ -213,9 +220,7 @@ void _showGlobalError(Object error) {
 }
 
 class _AppEntry extends StatelessWidget {
-  const _AppEntry({
-    required this.initialUri,
-  });
+  const _AppEntry({required this.initialUri});
 
   final Uri? initialUri;
 
@@ -268,8 +273,9 @@ Uri? _parseUri(String value) {
 }
 
 bool _isResetPasswordLink(Uri uri) {
-  final firstSegment =
-      uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+  final firstSegment = uri.pathSegments.isNotEmpty
+      ? uri.pathSegments.first
+      : null;
   return firstSegment == 'reset-password' ||
       uri.path == '/reset-password' ||
       uri.host == 'reset-password';

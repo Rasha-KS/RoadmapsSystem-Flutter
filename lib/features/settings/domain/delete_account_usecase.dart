@@ -5,7 +5,7 @@ class DeleteAccountUseCase {
 
   DeleteAccountUseCase(this.repository);
 
-  Future<void> call() {
-    return repository.deleteAccount();
+  Future<void> call({required String password}) {
+    return repository.deleteAccount(password: password);
   }
 }

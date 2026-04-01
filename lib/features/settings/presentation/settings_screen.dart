@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:roadmaps/core/errors/global_error_gate.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/widgets/settings_confirm_action_dialog.dart';
@@ -19,10 +20,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    GlobalErrorGate.suppressSnackbars = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      ScaffoldMessenger.of(context).clearSnackBars();
+      context.read<SettingsProvider>().clearError();
       context.read<SettingsProvider>().loadSettings();
     });
+  }
+
+  @override
+  void dispose() {
+    GlobalErrorGate.suppressSnackbars = false;
+    super.dispose();
   }
 
   @override
@@ -107,22 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             _ActionCard(
                               text: 'حذف حساب',
                               icon: Icons.delete_outline,
-                              onTap: () {
-                                showSettingsConfirmActionDialog(
-                                  context: context,
-                                  title: 'هل أنت متأكد من حذف الحساب؟',
-                                  onConfirm: () async {
-                                    await provider.deleteAccount();
-                                    if (!context.mounted) return;
-                                    _showSettingsSnackBar(
-                                      ScaffoldMessenger.of(context),
-                                      provider.error ?? 'تم حذف الحساب بنجاح.',
-                                      isError: provider.error != null,
-                                    );
-                                    provider.clearError();
-                                  },
-                                );
-                              },
+                              onTap: _showDeleteAccountDialog,
                             ),
                             const SizedBox(height: 15),
                             _ActionCard(
@@ -228,6 +224,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _showDeleteAccountDialog() async {
+    final provider = context.read<SettingsProvider>();
+    provider.clearError();
+
+    final success = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
+      builder: (_) => _DeleteAccountDialog(provider: provider),
+    );
+
+    if (!mounted || success != true) return;
+    await Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const SplashScreen()),
+      (route) => false,
+    );
+  }
+
   void _showSettingsSnackBar(
     ScaffoldMessengerState messenger,
     String message, {
@@ -254,6 +268,253 @@ class _SettingsScreenState extends State<SettingsScreen> {
           duration: const Duration(seconds: 2),
         ),
       );
+  }
+}
+
+class _DeleteAccountDialog extends StatefulWidget {
+  const _DeleteAccountDialog({required this.provider});
+
+  final SettingsProvider provider;
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  final _passwordController = TextEditingController();
+  final _passwordFocusNode = FocusNode();
+
+  bool _isSubmitting = false;
+  bool _showPasswordField = false;
+  bool _isPasswordHidden = true;
+  String? _passwordError;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _passwordFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final keyboardVisible = mediaQuery.viewInsets.bottom > 0;
+
+    return PopScope(
+      canPop: !_isSubmitting,
+      child: Dialog(
+        alignment: keyboardVisible ? Alignment.center : Alignment.topCenter,
+        backgroundColor: AppColors.primary1.withValues(alpha: 0.82),
+        elevation: 10,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        insetPadding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: keyboardVisible ? 24 : 250,
+          bottom: keyboardVisible ? 24 : 0,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: mediaQuery.size.height * (keyboardVisible ? 0.72 : 0.8),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(30),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _showPasswordField
+                      ? 'أدخل كلمة المرور لتأكيد حذف الحساب'
+                      : 'هل أنت متأكد من حذف الحساب؟',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.heading4.copyWith(
+                    color: AppColors.text_2,
+                  ),
+                ),
+                if (_showPasswordField) ...[
+                  const SizedBox(height: 24),
+                  Container(
+                    height: 48,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(50),
+                      border: Border.all(
+                        color: _passwordError != null
+                            ? AppColors.error
+                            : AppColors.primary1,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _passwordController,
+                            focusNode: _passwordFocusNode,
+                            enabled: !_isSubmitting,
+                            obscureText: _isPasswordHidden,
+                            textAlign: TextAlign.right,
+                            onChanged: (_) {
+                              if (_passwordError == null) return;
+                              setState(() {
+                                _passwordError = null;
+                              });
+                            },
+                            onSubmitted: (_) => _handleConfirm(),
+                            decoration: InputDecoration(
+                              isCollapsed: true,
+                              border: InputBorder.none,
+                              hintText: 'كلمة المرور',
+                              hintStyle: AppTextStyles.body.copyWith(
+                                color: AppColors.text_3,
+                              ),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: _isSubmitting
+                              ? null
+                              : () {
+                                  setState(() {
+                                    _isPasswordHidden = !_isPasswordHidden;
+                                  });
+                                },
+                          icon: Icon(
+                            _isPasswordHidden
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: AppColors.primary1,
+                            size: 20,
+                          ),
+                          splashRadius: 18,
+                          padding: EdgeInsets.zero,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_passwordError != null) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        _passwordError!,
+                        textAlign: TextAlign.right,
+                        style: AppTextStyles.smallText.copyWith(
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+                const SizedBox(height: 30),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    MaterialButton(
+                      color: AppColors.secondary4,
+                      textColor: AppColors.text_1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 6,
+                      ),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () {
+                              Navigator.of(context).pop(false);
+                            },
+                      child: Text(
+                        'إلغاء',
+                        style: AppTextStyles.boldSmallText.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    MaterialButton(
+                      color: AppColors.secondary4,
+                      textColor: AppColors.text_3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 6,
+                      ),
+                      onPressed: _isSubmitting ? null : _handleConfirm,
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                color: AppColors.text_3,
+                              ),
+                            )
+                          : Text(
+                              'تأكيد',
+                              style: AppTextStyles.boldSmallText.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleConfirm() async {
+    if (_isSubmitting) return;
+
+    if (!_showPasswordField) {
+      setState(() {
+        _showPasswordField = true;
+        _passwordError = null;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _passwordFocusNode.requestFocus();
+        }
+      });
+      return;
+    }
+
+    final password = _passwordController.text.trim();
+    if (password.isEmpty) {
+      setState(() {
+        _passwordError = 'يرجى إدخال كلمة المرور.';
+      });
+      _passwordFocusNode.requestFocus();
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _passwordError = null;
+    });
+
+    final success = await widget.provider.deleteAccount(password: password);
+    if (!mounted) return;
+
+    if (success) {
+      widget.provider.clearError();
+      Navigator.of(context).pop(true);
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = false;
+      _passwordError = widget.provider.error ?? 'تعذر حذف الحساب.';
+    });
+    widget.provider.clearError();
   }
 }
 

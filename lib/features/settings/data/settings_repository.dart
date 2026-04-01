@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:roadmaps/core/api/api_client.dart';
@@ -30,7 +30,10 @@ class SettingsRepository {
         'is_notifications_enabled': enabled,
       },
     );
-    _ensureSuccess(response, fallbackMessage: 'ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ« Ø­Ø§Ù„Ø© Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª.');
+    _ensureSuccess(
+      response,
+      fallbackMessage: 'ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ« Ø­Ø§Ù„Ø© Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª.',
+    );
     return _resolveUpdatedUser(
       response,
       refreshFailureMessage:
@@ -47,14 +50,19 @@ class SettingsRepository {
     final _ = (email, password, profileImageUrl);
     final normalizedUsername = username?.trim();
     if (normalizedUsername == null || normalizedUsername.isEmpty) {
-      throw const ApiException('ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ø³Ù… Ù…Ø³ØªØ®Ø¯Ù… ØµØ§Ù„Ø­.');
+      throw const ApiException(
+        'ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ø³Ù… Ù…Ø³ØªØ®Ø¯Ù… ØµØ§Ù„Ø­.',
+      );
     }
 
     final response = await _apiClient.put(
       ApiConstants.url(ApiConstants.updateAccount),
       body: {'username': normalizedUsername},
     );
-    _ensureSuccess(response, fallbackMessage: 'ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ« Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø­Ø³Ø§Ø¨.');
+    _ensureSuccess(
+      response,
+      fallbackMessage: 'ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ« Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø­Ø³Ø§Ø¨.',
+    );
     return _resolveUpdatedUser(
       response,
       refreshFailureMessage:
@@ -69,15 +77,21 @@ class SettingsRepository {
   }) async {
     final normalizedCurrentPassword = currentPassword.trim();
     if (normalizedCurrentPassword.isEmpty) {
-      throw const ApiException('ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø­Ø§Ù„ÙŠØ©.');
+      throw const ApiException(
+        'ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø­Ø§Ù„ÙŠØ©.',
+      );
     }
 
     if (newPassword.isEmpty) {
-      throw const ApiException('ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©.');
+      throw const ApiException(
+        'ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©.',
+      );
     }
 
     if (newPasswordConfirmation.isEmpty) {
-      throw const ApiException('ÙŠØ±Ø¬Ù‰ ØªØ£ÙƒÙŠØ¯ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©.');
+      throw const ApiException(
+        'ÙŠØ±Ø¬Ù‰ ØªØ£ÙƒÙŠØ¯ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©.',
+      );
     }
 
     if (newPassword != newPasswordConfirmation) {
@@ -114,7 +128,9 @@ class SettingsRepository {
 
     final file = File(normalizedPath);
     if (!await file.exists()) {
-      throw const ApiException('ØªØ¹Ø°Ø± Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„ØµÙˆØ±Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©.');
+      throw const ApiException(
+        'ØªØ¹Ø°Ø± Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„ØµÙˆØ±Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø©.',
+      );
     }
 
     final fileSizeInBytes = await file.length();
@@ -143,7 +159,10 @@ class SettingsRepository {
       );
     }
 
-    _ensureSuccess(response, fallbackMessage: 'ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ« Ø§Ù„ØµÙˆØ±Ø© Ø§Ù„Ø´Ø®ØµÙŠØ©.');
+    _ensureSuccess(
+      response,
+      fallbackMessage: 'ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ« Ø§Ù„ØµÙˆØ±Ø© Ø§Ù„Ø´Ø®ØµÙŠØ©.',
+    );
     return _resolveUpdatedUser(
       response,
       refreshFailureMessage:
@@ -151,8 +170,17 @@ class SettingsRepository {
     );
   }
 
-  Future<void> deleteAccount() async {
-    await _userRepository.deleteCurrentUser();
+  Future<void> deleteAccount({required String password}) async {
+    final normalizedPassword = password.trim();
+    if (normalizedPassword.isEmpty) {
+      throw const ApiException('يرجى إدخال كلمة المرور.');
+    }
+
+    final response = await _apiClient.delete(
+      ApiConstants.url(ApiConstants.deleteAccount),
+      body: {'password': normalizedPassword},
+    );
+    _ensureSuccess(response, fallbackMessage: 'تعذر حذف الحساب.');
   }
 
   Future<void> logout() async {
@@ -275,4 +303,3 @@ class SettingsRepository {
     throw ApiException(fallbackMessage);
   }
 }
-

@@ -29,6 +29,7 @@ class ApiConstants {
 
   // Settings
   static const String updateAccount = "/update-account";
+  static const String deleteAccount = "/delete-account";
   static const String changePassword = "/change-password";
   static const String updateProfilePicture = "/update-profile-picture";
 

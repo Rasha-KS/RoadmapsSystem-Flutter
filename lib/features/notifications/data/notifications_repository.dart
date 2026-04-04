@@ -87,6 +87,20 @@ class NotificationsRepository {
     }
   }
 
+  Future<void> saveDeviceToken({
+    required String token,
+    required String deviceType,
+  }) async {
+    final response = await _apiClient.post(
+      ApiConstants.url(ApiConstants.saveDeviceToken),
+      body: <String, dynamic>{
+        'token': token,
+        'device_type': deviceType,
+      },
+    );
+    _ensureSuccess(response, fallbackMessage: 'تعذر حفظ رمز الجهاز.');
+  }
+
   void _ensureSuccess(
     Map<String, dynamic> response, {
     String fallbackMessage = 'تعذر تحميل البيانات.',

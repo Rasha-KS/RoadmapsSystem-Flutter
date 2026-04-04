@@ -1,10 +1,15 @@
 import 'dart:async';
+import 'dart:ui';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/errors/global_error_gate.dart';
 import 'package:roadmaps/core/auth/token_manager.dart';
+import 'package:roadmaps/core/navigation/app_navigator.dart';
 import 'package:roadmaps/core/navigation/auth_guard.dart';
 import 'package:roadmaps/core/navigation/app_route_observer.dart';
 import 'package:roadmaps/core/theme/app_colors.dart';
@@ -21,19 +26,75 @@ import 'package:roadmaps/features/notifications/presentation/notifications_provi
 import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_provider.dart';
 import 'package:roadmaps/injection.dart';
 
-final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<ScaffoldMessengerState> appMessengerKey =
-    GlobalKey<ScaffoldMessengerState>();
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  DartPluginRegistrant.ensureInitialized();
+  await Firebase.initializeApp();
+  debugPrint(
+    'FCM background message received: id=${message.messageId}, title=${message.notification?.title}, body=${message.notification?.body}',
+  );
 
-void main() {
+  if (message.notification == null && message.data.isEmpty) {
+    return;
+  }
+
+  final plugin = FlutterLocalNotificationsPlugin();
+  await plugin.initialize(const InitializationSettings());
+
+  const details = NotificationDetails(
+    android: AndroidNotificationDetails(
+      'roadmaps_high_importance',
+      'Roadmaps Notifications',
+      channelDescription: 'Notifications from the Roadmaps app',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+      icon: '@mipmap/ic_launcher',
+    ),
+  );
+
+  final title =
+      message.notification?.title ??
+      message.data['title']?.toString() ??
+      message.data['subject']?.toString() ??
+      message.data['heading']?.toString() ??
+      'Roadmaps';
+  final body =
+      message.notification?.body ??
+      message.data['body']?.toString() ??
+      message.data['message']?.toString() ??
+      message.data['description']?.toString() ??
+      message.data['content']?.toString() ??
+      'لديك إشعار جديد';
+
+  await plugin.show(
+    message.hashCode,
+    title,
+    body,
+    details,
+    payload: message.messageId,
+  );
+}
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runZonedGuarded(
     () async {
       _installGlobalErrorHandlers();
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
       final launchUri = _resolveLaunchUri();
 
       final currentUserProvider = Injection.provideCurrentUserProvider();
       await currentUserProvider.loadCurrentUser();
+
+      final pushNotificationService = Injection.providePushNotificationService();
+      await pushNotificationService.initialize();
+      if (currentUserProvider.user != null) {
+        await pushNotificationService.syncCurrentDeviceToken();
+      }
 
       runApp(
         MultiProvider(
@@ -108,6 +169,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        Injection.providePushNotificationService().handleInitialMessage(),
+      );
+    });
   }
 
   @override

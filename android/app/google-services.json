@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "502486262561",
+    "project_id": "roadmap-system-notifications",
+    "storage_bucket": "roadmap-system-notifications.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:502486262561:android:3cde773ef2f8619912d460",
+        "android_client_info": {
+          "package_name": "com.example.roadmaps"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsk-YMIN-kMR6Flo1m-UHrjvl_UsLhBVM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

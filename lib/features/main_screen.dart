@@ -6,13 +6,13 @@ import 'package:roadmaps/core/theme/app_colors.dart';
 import 'package:roadmaps/core/widgets/app_appbar.dart';
 import 'package:roadmaps/core/widgets/app_bottom_nav.dart';
 import 'package:roadmaps/core/utils/page_refresh.dart';
+import 'package:roadmaps/core/navigation/notification_navigation.dart';
 import 'package:roadmaps/features/auth/presentation/login_screen.dart';
 import 'package:roadmaps/features/announcements/presentation/announcements_provider.dart';
 import 'package:roadmaps/features/community/presentation/community_provider.dart';
 import 'package:roadmaps/features/community/presentation/community_screen.dart';
 import 'package:roadmaps/features/homepage/presentation/home_screen.dart';
 import 'package:roadmaps/features/notifications/presentation/notifications_provider.dart';
-import 'package:roadmaps/features/notifications/presentation/notifications_screen.dart';
 import 'package:roadmaps/features/profile/presentation/profile_screen.dart';
 import 'package:roadmaps/features/settings/presentation/settings_screen.dart';
 import 'package:roadmaps/features/smart_instructor/presentation/smart_instructor_screen.dart';
@@ -105,16 +105,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
       appBar: buildAppBar(
         context: context,
         showUnreadDot: hasUnread,
-        onNotificationsTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => AuthGuard(
-                child: const NotificationsScreen(),
-                unauthenticatedBuilder: (_) => const LoginScreen(),
-              ),
-            ),
-          );
-        },
+        onNotificationsTap: openNotificationsPage,
         onSettingsTap: () {
           Navigator.of(
             context,

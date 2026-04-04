@@ -9,6 +9,7 @@ import 'package:roadmaps/core/theme/app_text_styles.dart';
 import 'package:roadmaps/core/widgets/lesson_card_1.dart';
 import 'package:roadmaps/core/widgets/lesson_card_2.dart';
 import 'package:roadmaps/core/navigation/app_route_observer.dart';
+import 'package:roadmaps/core/navigation/notification_navigation.dart';
 import 'package:roadmaps/core/utils/enrollment_sync.dart';
 import 'package:roadmaps/core/utils/page_refresh.dart';
 import 'package:roadmaps/features/homepage/domain/home_entity.dart';
@@ -17,7 +18,6 @@ import 'package:roadmaps/features/learning_path/presentation/learning_path_provi
 import 'package:roadmaps/features/learning_path/presentation/learning_path_screen.dart';
 import 'package:roadmaps/features/main_screen.dart';
 import 'package:roadmaps/features/notifications/presentation/notifications_provider.dart';
-import 'package:roadmaps/features/notifications/presentation/notifications_screen.dart';
 import 'package:roadmaps/features/profile/presentation/profile_provider.dart';
 
 import '../domain/roadmap_entity.dart';
@@ -288,13 +288,7 @@ class _RoadmapsScreenState extends State<RoadmapsScreen> with RouteAware {
                     children: [
                       IconButton(
                         padding: const EdgeInsets.all(15),
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const NotificationsScreen(),
-                            ),
-                          );
-                        },
+                        onPressed: openNotificationsPage,
                         icon: Stack(
                           clipBehavior: Clip.none,
                           children: [

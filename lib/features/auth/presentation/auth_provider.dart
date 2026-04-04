@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/entities/user_entity.dart';
 import 'package:roadmaps/core/providers/current_user_provider.dart';
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
+import 'package:roadmaps/core/services/push_notification_service.dart';
 import '../domain/forgot_password_usecase.dart';
 import '../domain/github_login_usecase.dart';
 import '../domain/login_usecase.dart';
@@ -16,6 +19,7 @@ class AuthProvider extends SafeChangeNotifier {
     required this.forgotPasswordUseCase,
     required this.resetPasswordUseCase,
     required this.currentUserProvider,
+    this.pushNotificationService,
   });
 
   final LoginUseCase loginUseCase;
@@ -24,6 +28,7 @@ class AuthProvider extends SafeChangeNotifier {
   final ForgotPasswordUseCase forgotPasswordUseCase;
   final ResetPasswordUseCase resetPasswordUseCase;
   final CurrentUserProvider currentUserProvider;
+  final PushNotificationService? pushNotificationService;
 
   bool _loading = false;
   String? _error;
@@ -44,6 +49,7 @@ class AuthProvider extends SafeChangeNotifier {
     try {
       final user = await loginUseCase(email: email, password: password);
       currentUserProvider.setUser(user);
+      unawaited(pushNotificationService?.syncCurrentDeviceToken());
       return user;
     } catch (e) {
       _setError(e);
@@ -71,6 +77,7 @@ class AuthProvider extends SafeChangeNotifier {
         passwordConfirmation: passwordConfirmation,
       );
       currentUserProvider.setUser(user);
+      unawaited(pushNotificationService?.syncCurrentDeviceToken());
       return user;
     } catch (e) {
       _setError(e);
@@ -91,6 +98,7 @@ class AuthProvider extends SafeChangeNotifier {
     try {
       final user = await githubLoginUseCase(code: code, state: state);
       currentUserProvider.setUser(user);
+      unawaited(pushNotificationService?.syncCurrentDeviceToken());
       return user;
     } catch (e) {
       _setError(e);

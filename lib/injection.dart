@@ -52,6 +52,7 @@ import 'package:roadmaps/features/notifications/domain/get_notifications_usecase
 import 'package:roadmaps/features/notifications/domain/get_unread_count_usecase.dart';
 import 'package:roadmaps/features/notifications/domain/read_all_notifications_usecase.dart';
 import 'package:roadmaps/features/notifications/presentation/notifications_provider.dart';
+import 'package:roadmaps/core/services/push_notification_service.dart';
 import 'package:roadmaps/features/profile/data/profile_repository.dart';
 import 'package:roadmaps/features/profile/domain/delete_user_roadmap_usecase.dart';
 import 'package:roadmaps/features/profile/domain/get_user_roadmaps_usecase.dart';
@@ -95,9 +96,16 @@ class Injection {
     apiClient: _publicApiClient,
     tokenManager: _tokenManager,
   );
+  static final NotificationsRepository _notificationsRepository =
+      NotificationsRepository(apiClient: _apiClient);
   static final CurrentUserProvider _currentUserProvider = CurrentUserProvider(
     userRepository: _userRepository,
   );
+  static final PushNotificationService _pushNotificationService =
+      PushNotificationService(
+        notificationsRepository: _notificationsRepository,
+        currentUserProvider: _currentUserProvider,
+      );
 
   static CurrentUserProvider provideCurrentUserProvider() {
     return _currentUserProvider;
@@ -115,6 +123,7 @@ class Injection {
       forgotPasswordUseCase: ForgotPasswordUseCase(_authRepository),
       resetPasswordUseCase: ResetPasswordUseCase(_authRepository),
       currentUserProvider: _currentUserProvider,
+      pushNotificationService: _pushNotificationService,
     );
   }
 
@@ -257,12 +266,15 @@ class Injection {
   }
 
   static NotificationsProvider provideNotificationsProvider() {
-    final repository = NotificationsRepository(apiClient: _apiClient);
     return NotificationsProvider(
-      GetNotificationsUseCase(repository),
-      GetUnreadCountUseCase(repository),
-      ReadAllNotificationsUseCase(repository),
+      GetNotificationsUseCase(_notificationsRepository),
+      GetUnreadCountUseCase(_notificationsRepository),
+      ReadAllNotificationsUseCase(_notificationsRepository),
     );
+  }
+
+  static PushNotificationService providePushNotificationService() {
+    return _pushNotificationService;
   }
 
   static SmartInstructorProvider provideSmartInstructorProvider() {

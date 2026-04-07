@@ -113,8 +113,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                     : hasInitialError
                     ? _ErrorState(
                         message:
-                            provider.errorMessage ??
-                            'تعذر تحميل بيانات التحدي.',
+                            provider.errorMessage ?? 'تعذر تحميل بيانات التحدي.',
                         onRetry: () async {
                           await context.read<ChallengeProvider>().loadChallenge(
                             widget.challengeId,
@@ -476,8 +475,9 @@ class _CodeEditorCard extends StatelessWidget {
     final bool isSuccess = runState == ChallengeRunState.success;
     final normalizedOutput = (runOutput ?? '').trimLeft();
     final String? errorHeader = isFailure && normalizedOutput.isNotEmpty
-        ? normalizedOutput.split('\n').first.trim()
+        ? _resolveFailureHeader(normalizedOutput)
         : null;
+    final bool hasErrorHeader = errorHeader != null;
 
     return Container(
       width: double.infinity,
@@ -503,7 +503,7 @@ class _CodeEditorCard extends StatelessWidget {
               decoration: InputDecoration(
                 contentPadding: EdgeInsets.fromLTRB(
                   16,
-                  isFailure ? 44 : 14,
+                  hasErrorHeader ? 66 : 14,
                   16,
                   54,
                 ),
@@ -511,12 +511,15 @@ class _CodeEditorCard extends StatelessWidget {
               ),
             ),
           ),
-          if (errorHeader != null)
+          if (hasErrorHeader)
             Positioned(
               left: 16,
-              top: 20,
-              child: Text(
+              right: 40,
+              top: 18,
+              child: Text(textAlign: TextAlign.right,
                 errorHeader,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.body.copyWith(
                   color: AppColors.error,
                   fontWeight: FontWeight.w700,
@@ -538,9 +541,7 @@ class _CodeEditorCard extends StatelessWidget {
                 ),
                 onPressed: onRunPressed,
                 child: Text(
-                  runState == ChallengeRunState.running
-                      ? 'جاري التنفيذ'
-                      : 'تنفيذ',
+                  runState == ChallengeRunState.running ? 'جاري التنفيذ' : 'تنفيذ',
                   style: AppTextStyles.body.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -571,7 +572,7 @@ class _CodeEditorCard extends StatelessWidget {
                       child: Text(
                         isSuccess
                             ? 'تم تنفيذ الكود بنجاح'
-                            : 'هناك خطأ في الكود',
+                            : _resolveFailureBannerText(normalizedOutput),
                         textAlign: TextAlign.center,
                         style: AppTextStyles.heading5.copyWith(
                           color: isSuccess
@@ -596,5 +597,44 @@ class _CodeEditorCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _resolveFailureHeader(String output) {
+    return output
+        .split('\n')
+        .map((line) => line.trim())
+        .firstWhere((line) => line.isNotEmpty, orElse: () => output.trim());
+  }
+
+  String _resolveFailureBannerText(String output) {
+    if (output.isEmpty) {
+      return 'تعذر إكمال التنفيذ';
+    }
+    if (_isExecutionServiceIssue(output)) {
+      return 'تعذر تنفيذ الكود حاليًا';
+    }
+    if (_isEmptyCodeMessage(output)) {
+      return 'اكتب الكود أولًا';
+    }
+    return 'راجع الكود ثم حاول مجددًا';
+  }
+
+  bool _isExecutionServiceIssue(String output) {
+    final lowerOutput = output.toLowerCase();
+    return output.contains('خادم التنفيذ') ||
+        output.contains('خدمة التنفيذ') ||
+        lowerOutput.contains('execution failed with status code') ||
+        lowerOutput.contains('server error') ||
+        lowerOutput.contains('internal server error') ||
+        lowerOutput.contains('method is not supported') ||
+        lowerOutput.contains('timeout') ||
+        lowerOutput.contains('timed out') ||
+        lowerOutput.contains('failed to fetch') ||
+        lowerOutput.contains('failed to connect') ||
+        lowerOutput.contains('connection refused');
+  }
+
+  bool _isEmptyCodeMessage(String output) {
+    return output.contains('الكود فارغ') || output.contains('اكتب الكود');
   }
 }

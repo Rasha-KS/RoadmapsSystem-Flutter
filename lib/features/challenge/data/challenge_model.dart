@@ -81,24 +81,62 @@ class ChallengeRunResultModel {
 
   factory ChallengeRunResultModel.fromJson(Map<String, dynamic> json) {
     final attempt = _asMap(json['attempt']);
-    final rawDetails = _extractDetails(json['details']);
-    final rawExecutionOutput = _asString(
-      attempt['execution_output'] ?? json['execution_output'],
+    final result = _asMap(json['result']);
+    final submission = _asMap(json['submission']);
+    final challengeResult = _asMap(json['challenge_result']);
+
+    final rawDetails = _extractDetails(
+      json['details'] ?? result['details'] ?? submission['details'],
     );
+    final rawExecutionOutput = _firstNonEmptyString([
+      attempt['execution_output'],
+      json['execution_output'],
+      result['execution_output'],
+      submission['execution_output'],
+      challengeResult['execution_output'],
+    ]);
+    final rawMessage = _firstNonEmptyString([
+      json['message'],
+      json['error'],
+      result['message'],
+      result['error'],
+      submission['message'],
+      submission['error'],
+      challengeResult['message'],
+      challengeResult['error'],
+      attempt['message'],
+      attempt['error'],
+    ]);
+
     final details = rawDetails.isNotEmpty
         ? rawDetails
         : _extractDetailsFromExecutionOutput(rawExecutionOutput);
-    final passed = _asBool(json['passed'] ?? attempt['passed']);
+    final passed = _resolvePassed(
+      candidates: [
+        json['passed'],
+        attempt['passed'],
+        result['passed'],
+        submission['passed'],
+        challengeResult['passed'],
+      ],
+      details: details,
+      rawMessage: rawMessage,
+    );
 
     return ChallengeRunResultModel(
       attemptId: _asIntOrNull(
-        attempt['id'] ?? json['attempt_id'] ?? json['id'],
+        attempt['id'] ??
+            json['attempt_id'] ??
+            json['id'] ??
+            result['attempt_id'] ??
+            submission['attempt_id'],
       ),
       passed: passed,
       executionOutput: _resolveExecutionOutput(
         passed: passed,
         details: details,
         rawExecutionOutput: rawExecutionOutput,
+        rawMessage: rawMessage,
       ),
       details: details,
     );
@@ -117,15 +155,37 @@ class ChallengeRunResultModel {
     required bool passed,
     required List<ChallengeExecutionDetailModel> details,
     required String rawExecutionOutput,
+    required String rawMessage,
   }) {
     if (passed) {
       return 'تم تنفيذ الكود بنجاح.';
     }
 
+    return _normalizeFailureMessage(
+      _resolveFailureOutput(
+        details: details,
+        rawExecutionOutput: rawExecutionOutput,
+        rawMessage: rawMessage,
+      ),
+    );
+  }
+
+  static String _resolveFailureOutput({
+    required List<ChallengeExecutionDetailModel> details,
+    required String rawExecutionOutput,
+    required String rawMessage,
+  }) {
     for (final detail in details) {
       if (detail.error.trim().isNotEmpty) {
         return detail.error.trim();
       }
+    }
+
+    if (rawMessage.trim().isNotEmpty) {
+      return rawMessage.trim();
+    }
+
+    for (final detail in details) {
       if (detail.output.trim().isNotEmpty) {
         return detail.output.trim();
       }
@@ -137,6 +197,63 @@ class ChallengeRunResultModel {
     }
 
     return 'تعذر التحقق من نتيجة التنفيذ.';
+  }
+
+  static bool _resolvePassed({
+    required List<dynamic> candidates,
+    required List<ChallengeExecutionDetailModel> details,
+    required String rawMessage,
+  }) {
+    for (final candidate in candidates) {
+      if (candidate != null) {
+        return _asBool(candidate);
+      }
+    }
+
+    if (rawMessage.trim().isNotEmpty) {
+      return false;
+    }
+
+    return details.isNotEmpty && details.every((detail) => detail.passed);
+  }
+
+  static String _normalizeFailureMessage(String message) {
+    final normalizedMessage = message.trim();
+    if (normalizedMessage.isEmpty) {
+      return 'تعذر إكمال تنفيذ التحدي. حاول مرة أخرى.';
+    }
+
+    final lowerMessage = normalizedMessage.toLowerCase();
+
+    if (lowerMessage.contains('execution failed with status code')) {
+      return 'تم إرسال الطلب بنجاح إلى الخادم، لكن تنفيذ الكود فشل داخل خدمة التشغيل. حاول مرة أخرى بعد قليل.';
+    }
+
+    if (lowerMessage.contains('method is not supported for route') ||
+        (lowerMessage.contains('not supported') &&
+            lowerMessage.contains('route'))) {
+      return 'تعذر إرسال الكود إلى خدمة التنفيذ بسبب إعداد غير متوافق في الخادم.';
+    }
+
+    if (lowerMessage.contains('internal server error') ||
+        lowerMessage.contains('server error') ||
+        lowerMessage.contains('status code: 500')) {
+      return 'حدثت مشكلة في خادم التنفيذ أثناء تشغيل الكود. حاول مرة أخرى بعد قليل.';
+    }
+
+    if (lowerMessage.contains('timeout') ||
+        lowerMessage.contains('timed out')) {
+      return 'استغرق تنفيذ الكود وقتًا أطول من المتوقع. حاول مرة أخرى.';
+    }
+
+    if (lowerMessage.contains('connection refused') ||
+        lowerMessage.contains('failed to connect') ||
+        lowerMessage.contains('failed to fetch') ||
+        lowerMessage.contains('network error')) {
+      return 'تعذر الاتصال بخدمة التنفيذ حاليًا. تحقق من الشبكة ثم حاول مرة أخرى.';
+    }
+
+    return normalizedMessage;
   }
 }
 
@@ -247,6 +364,16 @@ String _asString(dynamic value, {String fallback = ''}) {
   }
   final normalized = text.trim();
   return normalized.isEmpty ? fallback : normalized;
+}
+
+String _firstNonEmptyString(List<dynamic> values, {String fallback = ''}) {
+  for (final value in values) {
+    final normalized = _asString(value);
+    if (normalized.isNotEmpty) {
+      return normalized;
+    }
+  }
+  return fallback;
 }
 
 bool _asBool(dynamic value, {bool fallback = false}) {

@@ -9,6 +9,7 @@ class CheckpointEntity {
   final bool answersRevealed;
   final int minXp;
   final int maxXp;
+  final double passingPercentage;
   final List<QuestionEntity> questions;
 
   const CheckpointEntity({
@@ -20,6 +21,7 @@ class CheckpointEntity {
     required this.answersRevealed,
     required this.minXp,
     required this.maxXp,
+    required this.passingPercentage,
     required this.questions,
   });
 
@@ -32,6 +34,7 @@ class CheckpointEntity {
     bool? answersRevealed,
     int? minXp,
     int? maxXp,
+    double? passingPercentage,
     List<QuestionEntity>? questions,
   }) {
     return CheckpointEntity(
@@ -43,6 +46,7 @@ class CheckpointEntity {
       answersRevealed: answersRevealed ?? this.answersRevealed,
       minXp: minXp ?? this.minXp,
       maxXp: maxXp ?? this.maxXp,
+      passingPercentage: passingPercentage ?? this.passingPercentage,
       questions: questions ?? this.questions,
     );
   }

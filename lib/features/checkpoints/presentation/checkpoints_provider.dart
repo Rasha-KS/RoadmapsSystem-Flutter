@@ -68,27 +68,13 @@ class CheckpointsProvider extends SafeChangeNotifier {
   int get maximumPossibleXp {
     final currentCheckpoint = checkpoint;
     if (currentCheckpoint == null) return 0;
-    if (currentCheckpoint.maxXp > 0) {
-      return currentCheckpoint.maxXp;
-    }
-    final total = currentCheckpoint.questions.fold<int>(
-      0,
-      (sum, question) => sum + (question.questionXp > 0 ? question.questionXp : 0),
-    );
-    if (total > 0) {
-      return total;
-    }
-    return currentCheckpoint.questions.length * _defaultQuestionXp;
+    return _maximumPossibleXpFor(currentCheckpoint);
   }
 
   int get minimumRequiredXp {
     final currentCheckpoint = checkpoint;
     if (currentCheckpoint == null) return 0;
-    if (currentCheckpoint.minXp > 0) {
-      return currentCheckpoint.minXp;
-    }
-    final totalPossibleXp = maximumPossibleXp;
-    return (totalPossibleXp * _passingPercentThreshold / 100).ceil();
+    return _minimumRequiredXpFor(currentCheckpoint);
   }
 
   int get previewEarnedXp {
@@ -359,15 +345,17 @@ class CheckpointsProvider extends SafeChangeNotifier {
     required QuizSubmissionResultModel submission,
     required Map<String, String> answers,
   }) {
-    final int effectiveEarnedXp = submission.earnedPoints > 0
-        ? submission.earnedPoints
-        : submission.score;
-    final int effectiveTotalPossibleXp = checkpoint.maxXp > 0
-        ? checkpoint.maxXp
-        : maximumPossibleXp;
-    final int effectiveMinimumXp = checkpoint.minXp > 0
-        ? checkpoint.minXp
-        : minimumRequiredXp;
+    final int localEarnedXp = _earnedXpFromSelectedAnswers(checkpoint, answers);
+    final int effectiveEarnedXp;
+    if (_hasAnswerKey(checkpoint)) {
+      effectiveEarnedXp = localEarnedXp;
+    } else {
+      effectiveEarnedXp = submission.earnedPoints > 0
+          ? submission.earnedPoints
+          : submission.score;
+    }
+    final int effectiveTotalPossibleXp = _maximumPossibleXpFor(checkpoint);
+    final int effectiveMinimumXp = _minimumRequiredXpFor(checkpoint);
     final bool effectivePassed = effectiveEarnedXp >= effectiveMinimumXp;
     final int? correct = _hasAnswerKey(checkpoint)
         ? _countCorrectAnswers(checkpoint, answers)
@@ -409,11 +397,7 @@ class CheckpointsProvider extends SafeChangeNotifier {
       if (!_isSelectedAnswerCorrect(question, answers)) {
         continue;
       }
-      earned += question.questionXp > 0
-          ? question.questionXp
-          : checkpoint.maxXp > 0 && checkpoint.questions.isNotEmpty
-              ? (checkpoint.maxXp / checkpoint.questions.length).round()
-              : _defaultQuestionXp;
+      earned += question.questionXp > 0 ? question.questionXp : _defaultQuestionXp;
     }
     return earned;
   }
@@ -537,9 +521,9 @@ class CheckpointsProvider extends SafeChangeNotifier {
       0,
       (sum, question) => sum + (question.questionXp > 0 ? question.questionXp : 0),
     );
-    final adjustedMinXp = _scaledMinimumRequiredXp(
+    final adjustedMinXp = _minimumRequiredXpFromTotal(
       source,
-      adjustedMaxXp: adjustedMaxXp,
+      totalPossibleXp: adjustedMaxXp,
     );
     final checkpointSubset = source.copyWith(
       minXp: adjustedMinXp,
@@ -569,55 +553,36 @@ class CheckpointsProvider extends SafeChangeNotifier {
     }).toList(growable: false);
   }
 
-  int _scaledMinimumRequiredXp(
-    CheckpointEntity source, {
-    required int adjustedMaxXp,
-  }) {
-    if (adjustedMaxXp <= 0) {
-      return 0;
-    }
-
-    final originalMaxXp = _originalMaximumPossibleXp(source);
-    if (originalMaxXp <= 0) {
-      return (adjustedMaxXp * _passingPercentThreshold / 100).ceil();
-    }
-
-    final originalMinXp = source.minXp > 0
-        ? source.minXp
-        : (originalMaxXp * _passingPercentThreshold / 100).ceil();
-    final scaledMinXp = (adjustedMaxXp * (originalMinXp / originalMaxXp)).ceil();
-
-    if (scaledMinXp < 0) {
-      return 0;
-    }
-    if (scaledMinXp > adjustedMaxXp) {
-      return adjustedMaxXp;
-    }
-    return scaledMinXp;
-  }
-
-  int _originalMaximumPossibleXp(CheckpointEntity checkpoint) {
-    if (checkpoint.maxXp > 0) {
-      return checkpoint.maxXp;
-    }
-
-    final fallbackQuestionXp = _fallbackQuestionXp(checkpoint);
-    final total = checkpoint.questions.fold<int>(
-      0,
-      (sum, question) =>
-          sum + (question.questionXp > 0 ? question.questionXp : fallbackQuestionXp),
-    );
-    if (total > 0) {
-      return total;
-    }
-    return checkpoint.questions.length * _defaultQuestionXp;
-  }
-
-  int _fallbackQuestionXp(CheckpointEntity checkpoint) {
-    if (checkpoint.maxXp > 0 && checkpoint.questions.isNotEmpty) {
-      return (checkpoint.maxXp / checkpoint.questions.length).round();
-    }
+  int _fallbackQuestionXp(CheckpointEntity _) {
     return _defaultQuestionXp;
+  }
+
+  int _maximumPossibleXpFor(CheckpointEntity checkpoint) {
+    return checkpoint.questions.fold<int>(
+      0,
+      (sum, question) => sum + (question.questionXp > 0 ? question.questionXp : 0),
+    );
+  }
+
+  int _minimumRequiredXpFor(CheckpointEntity checkpoint) {
+    return _minimumRequiredXpFromTotal(
+      checkpoint,
+      totalPossibleXp: _maximumPossibleXpFor(checkpoint),
+    );
+  }
+
+  int _minimumRequiredXpFromTotal(
+    CheckpointEntity checkpoint, {
+    required int totalPossibleXp,
+  }) {
+    if (totalPossibleXp <= 0) return 0;
+
+    final passingPercentage = checkpoint.passingPercentage > 0
+        ? checkpoint.passingPercentage
+        : _passingPercentThreshold;
+    final minimumXp = (totalPossibleXp * passingPercentage / 100).ceil();
+    if (minimumXp > totalPossibleXp) return totalPossibleXp;
+    return minimumXp;
   }
 
   List<QuestionEntity> _selectAttemptQuestions(

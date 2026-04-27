@@ -11,6 +11,7 @@ class CheckpointModel {
   final bool answersRevealed;
   final int minXp;
   final int maxXp;
+  final double passingPercentage;
   final List<QuestionModel> questions;
 
   const CheckpointModel({
@@ -22,6 +23,7 @@ class CheckpointModel {
     required this.answersRevealed,
     required this.minXp,
     required this.maxXp,
+    required this.passingPercentage,
     required this.questions,
   });
 
@@ -41,6 +43,9 @@ class CheckpointModel {
       answersRevealed: _asBool(json['answers_revealed'] ?? json['answersRevealed']),
       minXp: _asInt(quiz['min_xp'] ?? json['min_xp']),
       maxXp: _asInt(quiz['max_xp'] ?? json['max_xp']),
+      passingPercentage: _asDouble(
+        quiz['passing_percentage'] ?? json['passing_percentage'],
+      ),
       questions: questions,
     );
   }
@@ -55,6 +60,7 @@ class CheckpointModel {
       answersRevealed: answersRevealed,
       minXp: minXp,
       maxXp: maxXp,
+      passingPercentage: passingPercentage,
       questions: questions
           .map((question) => question.toEntity())
           .toList(growable: false),
@@ -87,7 +93,7 @@ class QuestionModel {
       options: options,
       correctOptionId: _extractCorrectOptionId(json),
       order: _asInt(json['order']),
-      questionXp: _asInt(json['question_xp'] ?? json['xp']),
+      questionXp: _asInt(json['points'] ?? json['question_xp'] ?? json['xp']),
     );
   }
 
@@ -162,6 +168,12 @@ int _asInt(dynamic value, {int fallback = 0}) {
   if (value is int) return value;
   if (value is num) return value.toInt();
   return int.tryParse(value?.toString() ?? '') ?? fallback;
+}
+
+double _asDouble(dynamic value, {double fallback = 0}) {
+  if (value is int) return value.toDouble();
+  if (value is num) return value.toDouble();
+  return double.tryParse(value?.toString() ?? '') ?? fallback;
 }
 
 bool _asBool(dynamic value) {

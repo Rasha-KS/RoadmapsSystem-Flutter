@@ -22,4 +22,28 @@ class CheckpointEntity {
     required this.maxXp,
     required this.questions,
   });
+
+  CheckpointEntity copyWith({
+    String? id,
+    int? quizId,
+    int? learningUnitId,
+    String? title,
+    String? subtitle,
+    bool? answersRevealed,
+    int? minXp,
+    int? maxXp,
+    List<QuestionEntity>? questions,
+  }) {
+    return CheckpointEntity(
+      id: id ?? this.id,
+      quizId: quizId ?? this.quizId,
+      learningUnitId: learningUnitId ?? this.learningUnitId,
+      title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      answersRevealed: answersRevealed ?? this.answersRevealed,
+      minXp: minXp ?? this.minXp,
+      maxXp: maxXp ?? this.maxXp,
+      questions: questions ?? this.questions,
+    );
+  }
 }

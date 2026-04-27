@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:roadmaps/core/api/api_exceptions.dart';
 import 'package:roadmaps/core/providers/safe_change_notifier.dart';
@@ -42,6 +43,8 @@ class CheckpointsProvider extends SafeChangeNotifier {
   bool _useRetakeAttempt = false;
   CheckpointSubmissionResult? lastSubmissionResult;
   final Map<String, String> selectedOptionByQuestionId = <String, String>{};
+  final Random _random = Random();
+  List<String> _currentQuestionIds = <String>[];
 
   bool get isAllAnswered {
     final currentCheckpoint = checkpoint;
@@ -133,10 +136,11 @@ class CheckpointsProvider extends SafeChangeNotifier {
     notifyListeners();
 
     try {
-      checkpoint = await _getCheckpointUseCase(
+      final loadedCheckpoint = await _getCheckpointUseCase(
         learningPathId: learningPathId,
         checkpointId: checkpointId,
       );
+      checkpoint = _buildDisplayedCheckpoint(loadedCheckpoint);
     } catch (error) {
       errorMessage = _friendlyError(error);
       checkpoint = null;
@@ -182,10 +186,11 @@ class CheckpointsProvider extends SafeChangeNotifier {
           ? await _retakeAttemptUseCase(quizId: quizId)
           : await _createAttemptUseCase(quizId: quizId);
       _attemptReady = true;
-      checkpoint = await _getCheckpointUseCase(
+      final loadedCheckpoint = await _getCheckpointUseCase(
         learningPathId: learningPathId,
         checkpointId: quizId.toString(),
       );
+      checkpoint = _buildDisplayedCheckpoint(loadedCheckpoint);
     } catch (error) {
       errorMessage = _friendlyError(error);
       checkpoint = null;
@@ -297,10 +302,11 @@ class CheckpointsProvider extends SafeChangeNotifier {
     notifyListeners();
 
     try {
-      checkpoint = await _getCheckpointUseCase(
+      final loadedCheckpoint = await _getCheckpointUseCase(
         learningPathId: learningPathId,
         checkpointId: checkpointId,
       );
+      checkpoint = _buildDisplayedCheckpoint(loadedCheckpoint);
     } catch (error) {
       errorMessage = _friendlyError(error);
       checkpoint = null;
@@ -330,9 +336,10 @@ class CheckpointsProvider extends SafeChangeNotifier {
         learningPathId: learningPathId,
         checkpointId: checkpointId,
       );
-      refreshedCheckpoint = candidate;
-      if (_hasAnswerKey(candidate)) {
-        return candidate;
+      final preparedCandidate = _buildSubmissionCheckpoint(candidate);
+      refreshedCheckpoint = preparedCandidate;
+      if (_hasAnswerKey(preparedCandidate)) {
+        return preparedCandidate;
       }
     }
 
@@ -340,10 +347,11 @@ class CheckpointsProvider extends SafeChangeNotifier {
       return refreshedCheckpoint;
     }
 
-    return await _getCheckpointUseCase(
+    final candidate = await _getCheckpointUseCase(
       learningPathId: learningPathId,
       checkpointId: checkpointId,
     );
+    return _buildSubmissionCheckpoint(candidate);
   }
 
   CheckpointSubmissionResult _buildSubmissionResult({
@@ -465,8 +473,240 @@ class CheckpointsProvider extends SafeChangeNotifier {
     _currentQuizId = null;
     _currentLearningPathId = null;
     _useRetakeAttempt = false;
+    _currentQuestionIds = <String>[];
     lastSubmissionResult = null;
     selectedOptionByQuestionId.clear();
+  }
+
+  CheckpointEntity _buildDisplayedCheckpoint(CheckpointEntity source) {
+    if (source.questions.isEmpty) {
+      _currentQuestionIds = <String>[];
+      return source;
+    }
+
+    if (source.questions.length <= _questionsPerAttempt) {
+      _currentQuestionIds = source.questions
+          .map((question) => question.id)
+          .toList(growable: false);
+      return source;
+    }
+
+    final selectedQuestions = _selectAttemptQuestions(
+      source.questions,
+      previousQuestionIds: _currentQuestionIds,
+    );
+    return _buildSubsetCheckpoint(
+      source,
+      selectedQuestions,
+      updateCurrentQuestionIds: true,
+    );
+  }
+
+  CheckpointEntity _buildSubmissionCheckpoint(CheckpointEntity source) {
+    if (source.questions.isEmpty ||
+        source.questions.length <= _questionsPerAttempt ||
+        _currentQuestionIds.isEmpty) {
+      return source;
+    }
+
+    final selectedQuestions = _selectQuestionsByIds(
+      source.questions,
+      _currentQuestionIds,
+    );
+    if (selectedQuestions.isEmpty) {
+      return source;
+    }
+
+    return _buildSubsetCheckpoint(
+      source,
+      selectedQuestions,
+      updateCurrentQuestionIds: false,
+    );
+  }
+
+  CheckpointEntity _buildSubsetCheckpoint(
+    CheckpointEntity source,
+    List<QuestionEntity> selectedQuestions, {
+    required bool updateCurrentQuestionIds,
+  }) {
+    final normalizedQuestions = _normalizeSelectedQuestions(
+      source: source,
+      selectedQuestions: selectedQuestions,
+    );
+    final adjustedMaxXp = normalizedQuestions.fold<int>(
+      0,
+      (sum, question) => sum + (question.questionXp > 0 ? question.questionXp : 0),
+    );
+    final adjustedMinXp = _scaledMinimumRequiredXp(
+      source,
+      adjustedMaxXp: adjustedMaxXp,
+    );
+    final checkpointSubset = source.copyWith(
+      minXp: adjustedMinXp,
+      maxXp: adjustedMaxXp,
+      questions: normalizedQuestions,
+    );
+
+    if (updateCurrentQuestionIds) {
+      _currentQuestionIds = normalizedQuestions
+          .map((question) => question.id)
+          .toList(growable: false);
+    }
+
+    return checkpointSubset;
+  }
+
+  List<QuestionEntity> _normalizeSelectedQuestions({
+    required CheckpointEntity source,
+    required List<QuestionEntity> selectedQuestions,
+  }) {
+    final fallbackQuestionXp = _fallbackQuestionXp(source);
+    return selectedQuestions.map((question) {
+      if (question.questionXp > 0 || fallbackQuestionXp <= 0) {
+        return question;
+      }
+      return question.copyWith(questionXp: fallbackQuestionXp);
+    }).toList(growable: false);
+  }
+
+  int _scaledMinimumRequiredXp(
+    CheckpointEntity source, {
+    required int adjustedMaxXp,
+  }) {
+    if (adjustedMaxXp <= 0) {
+      return 0;
+    }
+
+    final originalMaxXp = _originalMaximumPossibleXp(source);
+    if (originalMaxXp <= 0) {
+      return (adjustedMaxXp * _passingPercentThreshold / 100).ceil();
+    }
+
+    final originalMinXp = source.minXp > 0
+        ? source.minXp
+        : (originalMaxXp * _passingPercentThreshold / 100).ceil();
+    final scaledMinXp = (adjustedMaxXp * (originalMinXp / originalMaxXp)).ceil();
+
+    if (scaledMinXp < 0) {
+      return 0;
+    }
+    if (scaledMinXp > adjustedMaxXp) {
+      return adjustedMaxXp;
+    }
+    return scaledMinXp;
+  }
+
+  int _originalMaximumPossibleXp(CheckpointEntity checkpoint) {
+    if (checkpoint.maxXp > 0) {
+      return checkpoint.maxXp;
+    }
+
+    final fallbackQuestionXp = _fallbackQuestionXp(checkpoint);
+    final total = checkpoint.questions.fold<int>(
+      0,
+      (sum, question) =>
+          sum + (question.questionXp > 0 ? question.questionXp : fallbackQuestionXp),
+    );
+    if (total > 0) {
+      return total;
+    }
+    return checkpoint.questions.length * _defaultQuestionXp;
+  }
+
+  int _fallbackQuestionXp(CheckpointEntity checkpoint) {
+    if (checkpoint.maxXp > 0 && checkpoint.questions.isNotEmpty) {
+      return (checkpoint.maxXp / checkpoint.questions.length).round();
+    }
+    return _defaultQuestionXp;
+  }
+
+  List<QuestionEntity> _selectAttemptQuestions(
+    List<QuestionEntity> questions, {
+    List<String> previousQuestionIds = const <String>[],
+  }) {
+    if (questions.length <= _questionsPerAttempt) {
+      return List<QuestionEntity>.unmodifiable(questions);
+    }
+
+    var selectedQuestions = _pickRandomQuestions(questions);
+    final shouldAvoidRepeat = previousQuestionIds.length == _questionsPerAttempt;
+
+    if (shouldAvoidRepeat &&
+        _hasSameQuestionSelection(selectedQuestions, previousQuestionIds)) {
+      for (var attempt = 0; attempt < _maxRandomSelectionRetries; attempt++) {
+        final candidate = _pickRandomQuestions(questions);
+        if (!_hasSameQuestionSelection(candidate, previousQuestionIds)) {
+          selectedQuestions = candidate;
+          break;
+        }
+      }
+    }
+
+    if (shouldAvoidRepeat &&
+        _hasSameQuestionSelection(selectedQuestions, previousQuestionIds)) {
+      final previousQuestionIdsSet = previousQuestionIds.toSet();
+      QuestionEntity? replacementQuestion;
+
+      for (final question in questions) {
+        if (!previousQuestionIdsSet.contains(question.id)) {
+          replacementQuestion = question;
+          break;
+        }
+      }
+
+      if (replacementQuestion != null) {
+        final updatedSelection = List<QuestionEntity>.from(selectedQuestions);
+        updatedSelection[updatedSelection.length - 1] = replacementQuestion;
+        updatedSelection.shuffle(_random);
+        selectedQuestions = updatedSelection;
+      }
+    }
+
+    return List<QuestionEntity>.unmodifiable(selectedQuestions);
+  }
+
+  List<QuestionEntity> _pickRandomQuestions(List<QuestionEntity> questions) {
+    final indexedQuestions = questions.asMap().entries.toList(growable: false)
+      ..shuffle(_random);
+    final selectedEntries = indexedQuestions.take(_questionsPerAttempt).toList();
+    return selectedEntries
+        .map((entry) => entry.value)
+        .toList(growable: false);
+  }
+
+  bool _hasSameQuestionSelection(
+    List<QuestionEntity> questions,
+    List<String> questionIds,
+  ) {
+    if (questions.length != questionIds.length) {
+      return false;
+    }
+
+    for (var index = 0; index < questions.length; index++) {
+      if (questions[index].id != questionIds[index]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  List<QuestionEntity> _selectQuestionsByIds(
+    List<QuestionEntity> questions,
+    List<String> questionIds,
+  ) {
+    final questionById = <String, QuestionEntity>{
+      for (final question in questions) question.id: question,
+    };
+    final selectedQuestions = <QuestionEntity>[];
+
+    for (final questionId in questionIds) {
+      final question = questionById[questionId];
+      if (question != null) {
+        selectedQuestions.add(question);
+      }
+    }
+
+    return selectedQuestions;
   }
 
   String _friendlyError(Object error) {
@@ -483,5 +723,7 @@ class CheckpointsProvider extends SafeChangeNotifier {
   }
 
   static const int _defaultQuestionXp = 0;
+  static const int _questionsPerAttempt = 4;
+  static const int _maxRandomSelectionRetries = 6;
   static const double _passingPercentThreshold = 70.0;
 }

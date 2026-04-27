@@ -587,7 +587,7 @@ class _HeaderCard extends StatelessWidget {
               ),
             ],
           ),
-          RoadmapProgress(units: units, userXp: userXp, levelLabel: 'المستوى'),
+          RoadmapProgress(units: units, userXp: userXp, levelLabel: 'نسبة التقدم'),
         ],
       ),
     );

@@ -14,4 +14,20 @@ class QuestionEntity {
     required this.correctOptionId,
     this.questionXp = 0,
   });
+
+  QuestionEntity copyWith({
+    String? id,
+    String? text,
+    List<OptionEntity>? options,
+    String? correctOptionId,
+    int? questionXp,
+  }) {
+    return QuestionEntity(
+      id: id ?? this.id,
+      text: text ?? this.text,
+      options: options ?? this.options,
+      correctOptionId: correctOptionId ?? this.correctOptionId,
+      questionXp: questionXp ?? this.questionXp,
+    );
+  }
 }
